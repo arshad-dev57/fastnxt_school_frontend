@@ -1,220 +1,256 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Users, UserCheck, UserX, School, Briefcase, Wallet, TrendingUp, TrendingDown,
-  ReceiptText, Plus, FileText, CreditCard, ArrowRight, CalendarDays, Activity,
-  Download, UserPlus, Landmark,
+  Home, CalendarCheck, Star, LayoutGrid, Search, Bell, Inbox, UserPlus, Puzzle, HelpCircle,
+  ChevronDown, ChevronRight, Plus, Users, Wallet, GraduationCap, BarChart3, Bus,
+  Filter, ArrowUpDown, EyeOff, Layers, MoreHorizontal, MessageSquarePlus, Table2, Kanban,
+  CalendarDays, Sparkles, PanelLeftClose, Menu, X,
 } from "lucide-react";
-import {
-  Avatar, Badge, Card, CardHead, PageHeader, StatCard, rs,
-  type IconType, type Tone,
-} from "@/components/ui";
-import {
-  DASHBOARD_STATS as S, RECENT_ADMISSIONS, RECENT_ACTIVITIES, UPCOMING_EVENTS,
-  ENROLLMENT_TREND, FEE_COLLECTION_TREND, CLASS_ROWS, INVOICES, SCHOOL,
-} from "@/lib/mock-data";
 
-type Stat = { label: string; value: string | number; Icon: IconType; tone: Tone; sub?: string };
+type Status = "Done" | "Working on it" | "Stuck" | "Pending";
+type Priority = "High" | "Medium" | "Low";
+type Item = { id: number; name: string; owner: string; status: Status; due: string; priority: Priority; progress: number; checked?: boolean };
+type Group = { id: string; title: string; color: string; open: boolean; items: Item[] };
 
-const STATS: Stat[] = [
-  { label: "Total Students", value: S.totalStudents, Icon: Users, tone: "blue", sub: "Enrolled for 2025-2026" },
-  { label: "Active Students", value: S.activeStudents, Icon: UserCheck, tone: "green", sub: "Currently attending" },
-  { label: "Inactive Students", value: S.inactiveStudents, Icon: UserX, tone: "gray", sub: "Suspended / left" },
-  { label: "Total Classes", value: S.totalClasses, Icon: School, tone: "purple", sub: "Nursery to Grade 10" },
-  { label: "Total Employees", value: S.totalEmployees, Icon: Briefcase, tone: "purple", sub: "Teaching & non-teaching" },
-  { label: "Pending Fees", value: rs(S.pendingFees), Icon: ReceiptText, tone: "orange", sub: "Across 43 invoices" },
-  { label: "Collected Fees", value: rs(S.collectedFees), Icon: Wallet, tone: "green", sub: "January 2026" },
-  { label: "Expenses", value: rs(S.expenses), Icon: TrendingDown, tone: "red", sub: "January 2026" },
-  { label: "Income", value: rs(S.income), Icon: TrendingUp, tone: "blue", sub: "Year to date" },
+const STATUS: Record<Status, string> = { Done: "#00C875", "Working on it": "#FDAB3D", Stuck: "#DF2F4A", Pending: "#C4C4C4" };
+const PRIORITY: Record<Priority, string> = { High: "#401694", Medium: "#5559DF", Low: "#579BFC" };
+const OWNER_COLORS = ["#579BFC", "#A25DDC", "#00C875", "#FF158A", "#FDAB3D", "#037F4C"];
+
+const boards = [
+  { k: "students", label: "Student management", Icon: Users },
+  { k: "attendance", label: "Attendance", Icon: CalendarCheck },
+  { k: "fees", label: "Fee management", Icon: Wallet },
+  { k: "exams", label: "Exams & results", Icon: GraduationCap },
+  { k: "transport", label: "Transport routes", Icon: Bus },
+  { k: "reports", label: "Reports dashboard", Icon: BarChart3 },
 ];
 
-const QUICK: { label: string; href: string; Icon: IconType }[] = [
-  { label: "Add Student", href: "/students/new", Icon: UserPlus },
-  { label: "New Class", href: "/classes/new", Icon: School },
-  { label: "Add Employee", href: "/employees/new", Icon: Briefcase },
-  { label: "Create Invoice", href: "/fees/invoices", Icon: FileText },
-  { label: "Add Income", href: "/accounts/income", Icon: Landmark },
-  { label: "Add Expense", href: "/accounts/expense", Icon: CreditCard },
+const seed: Group[] = [
+  {
+    id: "g1", title: "This week", color: "#579BFC", open: true,
+    items: [
+      { id: 1, name: "Grade 10A roster verification", owner: "Amara Reyes", status: "Done", due: "Sep 28", priority: "High", progress: 100 },
+      { id: 2, name: "Term 2 attendance reconciliation", owner: "Daniel Okafor", status: "Working on it", due: "Oct 02", priority: "Medium", progress: 60 },
+      { id: 3, name: "Send fee reminders to guardians", owner: "Priya Nair", status: "Stuck", due: "Oct 01", priority: "High", progress: 25 },
+      { id: 4, name: "Upload mid-term exam marks", owner: "Liam Bennett", status: "Pending", due: "Oct 05", priority: "Low", progress: 0 },
+    ],
+  },
+  {
+    id: "g2", title: "Next week", color: "#A25DDC", open: true,
+    items: [
+      { id: 5, name: "Parent–teacher meeting schedule", owner: "Amara Reyes", status: "Pending", due: "Oct 08", priority: "Medium", progress: 10 },
+      { id: 6, name: "Plan bus route changes for Zone 3", owner: "Daniel Okafor", status: "Working on it", due: "Oct 09", priority: "Low", progress: 40 },
+      { id: 7, name: "Generate teacher performance report", owner: "Priya Nair", status: "Pending", due: "Oct 11", priority: "High", progress: 0 },
+    ],
+  },
+  {
+    id: "g3", title: "Completed", color: "#00C875", open: false,
+    items: [
+      { id: 8, name: "New admissions data import", owner: "Liam Bennett", status: "Done", due: "Sep 20", priority: "High", progress: 100 },
+      { id: 9, name: "Set up guardian portal access", owner: "Amara Reyes", status: "Done", due: "Sep 15", priority: "Medium", progress: 100 },
+    ],
+  },
 ];
 
-const STATUS_DOT: Record<string, string> = {
-  green: "#00C875", blue: "#579BFC", purple: "#A25DDC", orange: "#FDAB3D", red: "#DF2F4A", gray: "#C4C4C4",
-};
+const initials = (n: string) => n.split(" ").map((x) => x[0]).join("");
+const ownerColor = (n: string) => OWNER_COLORS[n.length % OWNER_COLORS.length];
 
-function BarChart({ data, color = "#2563EB", format }: { data: { label: string; value: number }[]; color?: string; format?: (n: number) => string }) {
-  const max = Math.max(...data.map((d) => d.value));
+/* Colored pill with dropdown (used for Status + Priority) */
+function Pill<T extends string>({ id, value, colors, onPick, menu, setMenu, className = "" }: {
+  id: string; value: T; colors: Record<T, string>; onPick: (v: T) => void;
+  menu: string | null; setMenu: (v: string | null) => void; className?: string;
+}) {
   return (
-    <div className="flex h-44 items-end gap-2 sm:gap-4">
-      {data.map((d) => (
-        <div key={d.label} className="group flex min-w-0 flex-1 flex-col items-center gap-2">
-          <span className="whitespace-nowrap text-[11px] text-[#9699A6]">{format ? format(d.value) : d.value}</span>
-          <div className="flex w-full flex-1 items-end">
-            <div className="w-full rounded-t-md transition-all group-hover:opacity-90" style={{ height: `${(d.value / max) * 100}%`, background: color, minHeight: 6 }} />
-          </div>
-          <span className="text-[12px] text-[#676879]">{d.label}</span>
+    <div className={`relative ${className}`}>
+      <button
+        onClick={(e) => { e.stopPropagation(); setMenu(menu === id ? null : id); }}
+        className="pill h-full min-h-9 w-full rounded-sm px-2 text-[14px] font-medium text-white"
+        style={{ background: colors[value] }}
+      >{value}</button>
+      {menu === id && (
+        <div className="absolute left-1/2 top-full z-30 mt-1 w-44 -translate-x-1/2 space-y-1 rounded-lg bg-white p-2 shadow-xl ring-1 ring-[#E6E9EF]">
+          {(Object.keys(colors) as T[]).map((o) => (
+            <button key={o} onClick={(e) => { e.stopPropagation(); onPick(o); setMenu(null); }}
+              className="pill block h-9 w-full rounded text-[14px] font-medium text-white" style={{ background: colors[o] }}>{o}</button>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
 
 export default function DashboardPage() {
-  const topClasses = [...CLASS_ROWS].sort((a, b) => b.students - a.students).slice(0, 6);
-  const maxClass = Math.max(...topClasses.map((c) => c.students));
-  const overdue = INVOICES.filter((i) => i.status === "Overdue").length;
-  const paid = INVOICES.filter((i) => i.status === "Paid").length;
+  const [activeBoard, setActiveBoard] = useState("students");
+  const [view, setView] = useState("Main table");
+  const [groups, setGroups] = useState<Group[]>(seed);
+  const [q, setQ] = useState("");
+  const [menu, setMenu] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+
+  const update = (gid: string, fn: (g: Group) => Group) => setGroups((p) => p.map((g) => (g.id === gid ? fn(g) : g)));
+  const patchItem = (gid: string, id: number, patch: Partial<Item>) =>
+    update(gid, (g) => ({ ...g, items: g.items.map((i) => (i.id === id ? { ...i, ...patch } : i)) }));
+  const setStatus = (gid: string, it: Item, s: Status) => patchItem(gid, it.id, { status: s, progress: s === "Done" ? 100 : it.progress });
+
+  const addItem = (gid: string) => {
+    const name = (draft[gid] || "").trim();
+    if (!name) return;
+    update(gid, (g) => ({ ...g, items: [...g.items, { id: Date.now(), name, owner: "Amara Reyes", status: "Pending", due: "—", priority: "Medium", progress: 0 }] }));
+    setDraft((d) => ({ ...d, [gid]: "" }));
+  };
+
+  const filtered = useMemo(
+    () => groups.map((g) => ({ ...g, items: g.items.filter((i) => i.name.toLowerCase().includes(q.toLowerCase())) })),
+    [groups, q]
+  );
+
+  const cols = "grid-cols-[44px_minmax(240px,1fr)_90px_160px_120px_140px_170px]";
+  const tb = "flex h-9 shrink-0 items-center gap-2 rounded px-2.5 text-[14px] text-[#323338] transition-colors hover:bg-[#E6E9EF]";
+  const boardTitle = boards.find((b) => b.k === activeBoard)?.label;
 
   return (
     <>
-      <PageHeader
-        title="Dashboard"
-        subtitle={`Welcome back — here is what is happening at ${SCHOOL.shortName} today.`}
-        actions={
-          <>
-            <Link href="/students/print-list" className="hidden items-center gap-2 rounded border border-[#C5C7D0] bg-white px-3.5 py-2 text-[14px] hover:bg-[#F5F6F8] sm:inline-flex">
-              <Download className="h-[18px] w-[18px]" /> Export
-            </Link>
-            <Link href="/students/new" className="inline-flex items-center gap-2 rounded bg-[#2563EB] px-3.5 py-2 text-[14px] font-medium text-white hover:bg-[#1D4ED8]">
-              <Plus className="h-[18px] w-[18px]" /> New Admission
-            </Link>
-          </>
-        }
-      />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <style>{`.pill{transition:filter .15s}.pill:hover{filter:brightness(.92)}.row:hover .rowact{opacity:1}@media (hover:none){.rowact{opacity:1!important}}@media (prefers-reduced-motion:reduce){*{transition:none!important}}`}</style>
 
-      <div className="space-y-5 px-4 pb-24 pt-4 sm:px-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {STATS.map((s) => (
-            <StatCard key={s.label} label={s.label} value={s.value} Icon={s.Icon} tone={s.tone} sub={s.sub} />
-          ))}
-        </div>
+      <div className="flex min-h-0 flex-1 flex-col bg-white">
+        <div className="shrink-0 px-4 pt-4 sm:px-6">
+          <div className="flex items-center gap-2">
+            <h1 className="min-w-0 truncate text-[22px] font-bold leading-tight sm:text-[30px]">{boardTitle}</h1>
+            <ChevronDown className="h-6 w-6 shrink-0 text-[#676879]" />
+            <Star className="hidden h-5 w-5 shrink-0 text-[#676879] hover:text-[#FFCB00] sm:block" />
+            <div className="flex-1" />
+            <div className="hidden -space-x-2 md:flex">
+              {["Amara Reyes", "Daniel Okafor", "Priya Nair"].map((n) => (
+                <span key={n} title={n} className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold text-white ring-2 ring-white" style={{ background: ownerColor(n) }}>{initials(n)}</span>
+              ))}
+            </div>
+            <Link href="/students/new" className="hidden h-9 items-center gap-2 rounded border border-[#C5C7D0] bg-white px-3 text-[14px] hover:bg-[#F5F6F8] md:flex"><UserPlus className="h-[18px] w-[18px]" /> Invite / 4</Link>
+            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded hover:bg-[#F5F6F8]" aria-label="More"><MoreHorizontal className="h-5 w-5" /></button>
+          </div>
+          <p className="mt-1 text-[14px] text-[#676879] sm:text-[15px]">Track students, fees, and tasks for the current term.</p>
 
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-          {/* LEFT COLUMN */}
-          <div className="space-y-5 xl:col-span-2">
-            <Card pad={false}>
-              <CardHead title="Student statistics" subtitle="Enrollment trend across recent months" Icon={TrendingUp}
-                right={<Badge label="+3.2% MoM" tone="green" />} />
-              <div className="p-4">
-                <BarChart data={ENROLLMENT_TREND} color="#2563EB" />
-              </div>
-            </Card>
-
-            <Card pad={false}>
-              <CardHead title="Fee collection" subtitle="Collected amount over the last five months" Icon={Wallet}
-                right={<span className="text-[13px] font-semibold text-[#037F4C]">{rs(S.collectedFees)} this month</span>} />
-              <div className="p-4">
-                <BarChart data={FEE_COLLECTION_TREND} color="#00C875" format={(n) => `${Math.round(n / 1000)}k`} />
-              </div>
-            </Card>
-
-            <Card pad={false}>
-              <CardHead title="Recent admissions" subtitle="Newest students added to the school" Icon={UserPlus}
-                right={<Link href="/students" className="inline-flex items-center gap-1 text-[13px] font-medium text-[#2563EB] hover:underline">View all <ArrowRight className="h-4 w-4" /></Link>} />
-              <div className="divide-y divide-[#E6E9EF]">
-                {RECENT_ADMISSIONS.map((st) => (
-                  <div key={st.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[#F5F6F8]">
-                    <Avatar name={st.name} size={36} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-medium">{st.name}</p>
-                      <p className="truncate text-[12px] text-[#676879]">{st.id} · {st.cls}-{st.section}</p>
-                    </div>
-                    <div className="hidden text-right sm:block">
-                      <p className="text-[12px] text-[#676879]">Guardian</p>
-                      <p className="truncate text-[13px]">{st.guardian}</p>
-                    </div>
-                    <Badge label={st.status} className="hidden sm:inline-flex" />
-                  </div>
-                ))}
-              </div>
-            </Card>
+          <div className="mt-3 flex gap-1 overflow-x-auto border-b border-[#E6E9EF]">
+            {[["Main table", Table2], ["Kanban", Kanban], ["Calendar", CalendarDays]].map(([t, I]: any) => (
+              <button key={t} onClick={() => setView(t)}
+                className={`relative -mb-px flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t px-3 pb-3 pt-2 text-[15px] transition-colors hover:bg-[#F5F6F8] ${view === t ? "font-medium text-[#323338]" : "text-[#676879]"}`}>
+                <I className="h-5 w-5" /> {t}
+                {view === t && <span className="absolute inset-x-1 bottom-0 h-0.5 bg-[#2563EB]" />}
+              </button>
+            ))}
+            <button className="flex shrink-0 items-center px-2 pb-3 text-[#676879] hover:text-[#323338]" aria-label="Add view"><Plus className="h-5 w-5" /></button>
           </div>
 
-          {/* RIGHT COLUMN */}
-          <div className="space-y-5">
-            <Card pad={false}>
-              <CardHead title="Quick actions" Icon={Activity} />
-              <div className="grid grid-cols-2 gap-2 p-3">
-                {QUICK.map(({ label, href, Icon }) => (
-                  <Link key={label} href={href}
-                    className="flex flex-col items-center gap-2 rounded-lg border border-[#E6E9EF] px-2 py-3 text-center transition-colors hover:bg-[#F5F6F8]">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#DBEAFE] text-[#1D4ED8]"><Icon className="h-[18px] w-[18px]" /></span>
-                    <span className="text-[12px] font-medium leading-tight">{label}</span>
-                  </Link>
-                ))}
-              </div>
-            </Card>
+          <div className="flex items-center gap-1 overflow-x-auto py-3">
+            <div className="flex shrink-0 overflow-hidden rounded">
+              <button className="flex h-9 items-center bg-[#2563EB] px-3.5 text-[14px] font-medium text-white hover:bg-[#1D4ED8]">New item</button>
+              <button className="flex h-9 items-center border-l border-white/30 bg-[#2563EB] px-1.5 text-white hover:bg-[#1D4ED8]" aria-label="More"><ChevronDown className="h-5 w-5" /></button>
+            </div>
+            <div className="ml-1 flex h-9 shrink-0 items-center gap-2 rounded px-2 hover:bg-[#E6E9EF] focus-within:ring-2 focus-within:ring-[#2563EB]">
+              <Search className="h-5 w-5" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="w-16 bg-transparent text-[14px] outline-none placeholder:text-[#323338] focus:w-36 sm:w-24" />
+            </div>
+            <button className={tb}><Users className="h-5 w-5" /><span className="hidden sm:inline">Person</span></button>
+            <button className={tb}><Filter className="h-5 w-5" /><span className="hidden sm:inline">Filter</span></button>
+            <button className={tb}><ArrowUpDown className="h-5 w-5" /><span className="hidden sm:inline">Sort</span></button>
+            <button className={tb}><EyeOff className="h-5 w-5" /><span className="hidden sm:inline">Hide</span></button>
+            <button className={tb}><Layers className="h-5 w-5" /><span className="hidden sm:inline">Group by</span></button>
+          </div>
+        </div>
 
-            <Card pad={false}>
-              <CardHead title="Class distribution" subtitle="Students per class" Icon={School} />
-              <div className="space-y-3 p-4">
-                {topClasses.map((c) => (
-                  <div key={c.id}>
-                    <div className="mb-1 flex items-center justify-between text-[13px]">
-                      <span className="truncate font-medium">{c.name}</span>
-                      <span className="text-[#676879]">{c.students}</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-[#E6E9EF]">
-                      <div className="h-full rounded-full bg-[#6C47FF]" style={{ width: `${(c.students / maxClass) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card pad={false}>
-              <CardHead title="Upcoming events" Icon={CalendarDays} />
-              <div className="divide-y divide-[#E6E9EF]">
-                {UPCOMING_EVENTS.map((e) => (
-                  <div key={e.id} className="flex items-center gap-3 px-4 py-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F0F1F4] text-[#676879]">
-                      <CalendarDays className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-medium">{e.title}</p>
-                      <p className="text-[12px] text-[#676879]">{e.date}</p>
-                    </div>
-                    <Badge label={e.tag} tone="purple" />
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card pad={false}>
-              <CardHead title="Recent activity" Icon={Activity} />
-              <div className="px-4 py-2">
-                {RECENT_ACTIVITIES.map((a, i) => (
-                  <div key={a.id} className="relative flex gap-3 py-3">
-                    <div className="flex flex-col items-center">
-                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_DOT[a.tone] ?? "#9699A6" }} />
-                      {i < RECENT_ACTIVITIES.length - 1 && <span className="mt-1 w-px flex-1 bg-[#E6E9EF]" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] leading-snug">{a.text}</p>
-                      <p className="mt-0.5 text-[11px] text-[#9699A6]">{a.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card pad={false}>
-              <CardHead title="Fee health" Icon={ReceiptText} />
-              <div className="grid grid-cols-2 gap-3 p-4">
-                <div className="rounded-lg bg-[#D6F5E3] p-3">
-                  <p className="text-[22px] font-bold text-[#037F4C]">{paid}</p>
-                  <p className="text-[12px] text-[#037F4C]">Paid invoices</p>
+        {/* GROUPS */}
+        <div className="flex-1 overflow-auto px-4 pb-32 sm:px-6">
+          <div className="space-y-8 md:min-w-[940px]">
+            {filtered.map((g) => (
+              <section key={g.id}>
+                <div className="mb-1.5 flex items-center gap-1">
+                  <button onClick={() => update(g.id, (x) => ({ ...x, open: !x.open }))} className="flex h-8 w-8 items-center justify-center rounded hover:bg-[#E6E9EF]" style={{ color: g.color }} aria-label="Toggle group">
+                    <ChevronDown className={`h-6 w-6 transition-transform ${g.open ? "" : "-rotate-90"}`} />
+                  </button>
+                  <h2 className="rounded px-1 text-[19px] font-medium" style={{ color: g.color }}>{g.title}</h2>
+                  <span className="ml-1 text-[14px] text-[#9699A6]">{g.items.length} items</span>
                 </div>
-                <div className="rounded-lg bg-[#FDD9DF] p-3">
-                  <p className="text-[22px] font-bold text-[#C0233B]">{overdue}</p>
-                  <p className="text-[12px] text-[#C0233B]">Overdue invoices</p>
-                </div>
-              </div>
-            </Card>
+
+                {g.open && (
+                  <>
+                    {/* DESKTOP / TABLET TABLE */}
+                    <div className="hidden rounded-l border-y border-r border-[#E6E9EF] md:block">
+                      <div className={`grid ${cols} border-b border-[#E6E9EF] bg-white text-[14px]`}>
+                        <div className="flex items-center justify-center border-l-[6px] py-2.5" style={{ borderColor: g.color }}><input type="checkbox" className="h-4 w-4 accent-[#2563EB]" /></div>
+                        {["Item", "Person", "Status", "Due date", "Priority", "Progress"].map((h, i) => (
+                          <div key={h} className={`border-l border-[#E6E9EF] px-3 py-2.5 ${i === 0 ? "" : "text-center"}`}>{h}</div>
+                        ))}
+                      </div>
+                      {g.items.map((it) => (
+                        <div key={it.id} className={`row grid ${cols} border-b border-[#E6E9EF] bg-white text-[15px] transition-colors hover:bg-[#F5F6F8]`}>
+                          <div className="flex items-center justify-center border-l-[6px]" style={{ borderColor: g.color }}>
+                            <input type="checkbox" checked={!!it.checked} onChange={(e) => patchItem(g.id, it.id, { checked: e.target.checked })} className="h-4 w-4 accent-[#2563EB]" />
+                          </div>
+                          <div className="flex min-w-0 items-center gap-2 px-3 py-2.5">
+                            <span className="truncate">{it.name}</span>
+                            <button className="rowact ml-auto text-[#9699A6] opacity-0 transition-opacity hover:text-[#2563EB]" aria-label="Add update"><MessageSquarePlus className="h-5 w-5" /></button>
+                          </div>
+                          <div className="flex items-center justify-center border-l border-[#E6E9EF]">
+                            <span title={it.owner} className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: ownerColor(it.owner) }}>{initials(it.owner)}</span>
+                          </div>
+                          <Pill<Status> id={`s${it.id}`} value={it.status} colors={STATUS} onPick={(s) => setStatus(g.id, it, s)} menu={menu} setMenu={setMenu} className="border-l border-[#E6E9EF] p-1" />
+                          <div className="flex items-center justify-center border-l border-[#E6E9EF] text-[14px]">
+                            <span className="rounded-full border border-[#E6E9EF] px-3 py-0.5">{it.due}</span>
+                          </div>
+                          <Pill<Priority> id={`p${it.id}`} value={it.priority} colors={PRIORITY} onPick={(p) => patchItem(g.id, it.id, { priority: p })} menu={menu} setMenu={setMenu} className="border-l border-[#E6E9EF] p-1" />
+                          <div className="flex items-center gap-2 border-l border-[#E6E9EF] px-3">
+                            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#E6E9EF]"><div className="h-full rounded-full bg-[#00C875] transition-[width] duration-300" style={{ width: `${it.progress}%` }} /></div>
+                            <span className="w-10 text-right text-[13px] text-[#676879]">{it.progress}%</span>
+                          </div>
+                        </div>
+                      ))}
+                      <div className={`grid ${cols} border-b border-[#E6E9EF] bg-white`}>
+                        <div className="border-l-[6px] opacity-50" style={{ borderColor: g.color }} />
+                        <div className="col-span-6 flex items-center px-3">
+                          <input value={draft[g.id] || ""} onChange={(e) => setDraft((d) => ({ ...d, [g.id]: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && addItem(g.id)}
+                            placeholder="+ Add item" className="h-10 w-full rounded bg-transparent px-1 text-[15px] outline-none placeholder:text-[#676879] focus:ring-2 focus:ring-[#2563EB]" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* MOBILE CARDS */}
+                    <div className="space-y-3 md:hidden">
+                      {g.items.map((it) => (
+                        <div key={it.id} className="rounded-lg border border-[#E6E9EF] bg-white p-3 shadow-sm" style={{ borderLeft: `6px solid ${g.color}` }}>
+                          <div className="flex items-start gap-3">
+                            <input type="checkbox" checked={!!it.checked} onChange={(e) => patchItem(g.id, it.id, { checked: e.target.checked })} className="mt-1 h-5 w-5 shrink-0 accent-[#2563EB]" />
+                            <p className="min-w-0 flex-1 text-[16px] font-medium leading-snug">{it.name}</p>
+                            <span title={it.owner} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: ownerColor(it.owner) }}>{initials(it.owner)}</span>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            <Pill<Status> id={`ms${it.id}`} value={it.status} colors={STATUS} onPick={(s) => setStatus(g.id, it, s)} menu={menu} setMenu={setMenu} />
+                            <Pill<Priority> id={`mp${it.id}`} value={it.priority} colors={PRIORITY} onPick={(p) => patchItem(g.id, it.id, { priority: p })} menu={menu} setMenu={setMenu} />
+                          </div>
+                          <div className="mt-3 flex items-center gap-3 text-[13px] text-[#676879]">
+                            <span className="flex items-center gap-1"><CalendarDays className="h-4 w-4" /> {it.due}</span>
+                            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#E6E9EF]"><div className="h-full rounded-full bg-[#00C875] transition-[width] duration-300" style={{ width: `${it.progress}%` }} /></div>
+                            <span className="w-9 text-right">{it.progress}%</span>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="rounded-lg border border-dashed border-[#C5C7D0] px-3">
+                        <input value={draft[g.id] || ""} onChange={(e) => setDraft((d) => ({ ...d, [g.id]: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && addItem(g.id)}
+                          placeholder="+ Add item" className="h-11 w-full bg-transparent text-[16px] outline-none placeholder:text-[#676879]" />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </section>
+            ))}
+            <button className="flex h-10 items-center gap-2 rounded border border-[#C5C7D0] px-4 text-[14px] hover:bg-[#F5F6F8]">
+              <Plus className="h-5 w-5" /> Add new group
+            </button>
           </div>
         </div>
       </div>
     </>
   );
 }
-
