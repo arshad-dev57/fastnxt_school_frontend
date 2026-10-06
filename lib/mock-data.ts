@@ -298,6 +298,23 @@ export const RECENT_ACTIVITIES = [
   { id: 6, text: "Scholarship discount applied to family FAM-004", time: "2 days ago", tone: "blue" },
 ];
 
+/* -------------------------------------------------------- Notifications */
+export type NotificationRow = {
+  id: number; title: string; message: string; time: string;
+  icon: "user" | "fee" | "invoice" | "calendar" | "staff" | "chat";
+  tone: "blue" | "green" | "purple" | "orange" | "red" | "gray";
+  read: boolean;
+};
+
+export const NOTIFICATIONS: NotificationRow[] = [
+  { id: 1, title: "New admission request", message: "Laiba Anwar has applied for Grade 1-C. Review the admission form.", time: "10 minutes ago", icon: "user", tone: "blue", read: false },
+  { id: 2, title: "Fee payment received", message: "Rs 20,000 received from Sara Ahmed (Grade 5-A).", time: "1 hour ago", icon: "fee", tone: "green", read: false },
+  { id: 3, title: "Invoice batch generated", message: "Monthly invoices for January 2026 are ready to send.", time: "3 hours ago", icon: "invoice", tone: "purple", read: false },
+  { id: 4, title: "Attendance incomplete", message: "Grade 8-B attendance was not marked for today.", time: "Yesterday", icon: "calendar", tone: "orange", read: true },
+  { id: 5, title: "New employee added", message: "Ayesha Malik was added as a Teacher in Academics.", time: "Yesterday", icon: "staff", tone: "blue", read: true },
+  { id: 6, title: "New message from guardian", message: "Parent of Bilal Raza (Grade 9-A) sent a message.", time: "2 days ago", icon: "chat", tone: "gray", read: true },
+];
+
 export const UPCOMING_EVENTS = [
   { id: 1, title: "Parent–Teacher Meeting", date: "Feb 08, 2026", tag: "Meeting" },
   { id: 2, title: "Mid-term Examinations Begin", date: "Feb 12, 2026", tag: "Exams" },

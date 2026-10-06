@@ -47,8 +47,8 @@ export default function AccountStatementPage() {
             <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
               <SearchBox value={q} onChange={setQ} placeholder="Search reference, description" />
               <Select value={type} onChange={(e) => setType(e.target.value)} options={["Income", "Expense"]} placeholder="All Types" />
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 rounded border border-[#C5C7D0] bg-white px-3 text-[14px] outline-none focus:border-[#2563EB]" />
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 rounded border border-[#C5C7D0] bg-white px-3 text-[14px] outline-none focus:border-[#2563EB]" />
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] outline-none focus:border-[var(--theme-primary)]" />
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] outline-none focus:border-[var(--theme-primary)]" />
             </div>
           </Card>
         </div>
@@ -60,54 +60,54 @@ export default function AccountStatementPage() {
 
           <div className="hidden overflow-x-auto md:block">
             <div className="min-w-[860px]">
-              <div className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-[#F6F7FB]")}>
-                <Th className="border-l border-[#E6E9EF]">Date</Th>
-                <Th className="border-l border-[#E6E9EF]">Reference</Th>
-                <Th className="border-l border-[#E6E9EF]">Description</Th>
-                <Th className="border-l border-[#E6E9EF]">Income</Th>
-                <Th className="border-l border-[#E6E9EF]">Expense</Th>
-                <Th className="border-l border-[#E6E9EF]">Balance</Th>
+              <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-sidebar)]")}>
+                <Th className="border-l border-[var(--theme-border)]">Date</Th>
+                <Th className="border-l border-[var(--theme-border)]">Reference</Th>
+                <Th className="border-l border-[var(--theme-border)]">Description</Th>
+                <Th className="border-l border-[var(--theme-border)]">Income</Th>
+                <Th className="border-l border-[var(--theme-border)]">Expense</Th>
+                <Th className="border-l border-[var(--theme-border)]">Balance</Th>
               </div>
               {rows.map((t) => (
-                <div key={t.id} className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white text-[14px] hover:bg-[#F5F6F8]")}>
-                  <Td className="border-l border-[#E6E9EF] text-[#676879]">{t.date}</Td>
-                  <Td className="border-l border-[#E6E9EF] font-mono text-[13px] text-[#676879]">{t.ref}</Td>
-                  <Td className="border-l border-[#E6E9EF]"><span className="truncate">{t.description}</span></Td>
-                  <Td className="border-l border-[#E6E9EF] font-medium text-[#037F4C]">{t.income ? rs(t.income) : "—"}</Td>
-                  <Td className="border-l border-[#E6E9EF] font-medium text-[#C0233B]">{t.expense ? rs(t.expense) : "—"}</Td>
-                  <Td className={cn("border-l border-[#E6E9EF] font-medium", t.balance < 0 ? "text-[#C0233B]" : "")}>{rs(t.balance)}</Td>
+                <div key={t.id} className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] text-[14px] hover:bg-[var(--theme-hover)]")}>
+                  <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{t.date}</Td>
+                  <Td className="border-l border-[var(--theme-border)] font-mono text-[13px] text-[var(--theme-text-muted)]">{t.ref}</Td>
+                  <Td className="border-l border-[var(--theme-border)]"><span className="truncate">{t.description}</span></Td>
+                  <Td className="border-l border-[var(--theme-border)] font-medium text-[var(--theme-success-text)]">{t.income ? rs(t.income) : "—"}</Td>
+                  <Td className="border-l border-[var(--theme-border)] font-medium text-[var(--theme-danger-text)]">{t.expense ? rs(t.expense) : "—"}</Td>
+                  <Td className={cn("border-l border-[var(--theme-border)] font-medium", t.balance < 0 ? "text-[var(--theme-danger-text)]" : "")}>{rs(t.balance)}</Td>
                 </div>
               ))}
-              <div className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-[#F6F7FB] text-[14px] font-semibold")}>
-                <Td className="border-l border-[#E6E9EF]">Totals</Td>
-                <Td className="border-l border-[#E6E9EF]" />
-                <Td className="border-l border-[#E6E9EF]">{rows.length} transactions</Td>
-                <Td className="border-l border-[#E6E9EF] text-[#037F4C]">{rs(totalIn)}</Td>
-                <Td className="border-l border-[#E6E9EF] text-[#C0233B]">{rs(totalOut)}</Td>
-                <Td className="border-l border-[#E6E9EF]">{rs(net)}</Td>
+              <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-sidebar)] text-[14px] font-semibold")}>
+                <Td className="border-l border-[var(--theme-border)]">Totals</Td>
+                <Td className="border-l border-[var(--theme-border)]" />
+                <Td className="border-l border-[var(--theme-border)]">{rows.length} transactions</Td>
+                <Td className="border-l border-[var(--theme-border)] text-[var(--theme-success-text)]">{rs(totalIn)}</Td>
+                <Td className="border-l border-[var(--theme-border)] text-[var(--theme-danger-text)]">{rs(totalOut)}</Td>
+                <Td className="border-l border-[var(--theme-border)]">{rs(net)}</Td>
               </div>
             </div>
           </div>
 
-          <div className="divide-y divide-[#E6E9EF] md:hidden">
+          <div className="divide-y divide-[var(--theme-border)] md:hidden">
             {rows.map((t) => (
               <div key={t.id} className="flex items-start gap-3 p-3">
-                <span className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", t.income ? "bg-[#D6F5E3] text-[#037F4C]" : "bg-[#FDD9DF] text-[#C0233B]")}>
+                <span className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", t.income ? "bg-[var(--theme-success-soft)] text-[var(--theme-success-text)]" : "bg-[var(--theme-danger-soft)] text-[var(--theme-danger-text)]")}>
                   {t.income ? <TrendingUp className="h-[18px] w-[18px]" /> : <TrendingDown className="h-[18px] w-[18px]" />}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-medium">{t.description}</p>
-                  <p className="text-[12px] text-[#676879]">{t.date} · {t.ref}</p>
+                  <p className="text-[12px] text-[var(--theme-text-muted)]">{t.date} · {t.ref}</p>
                 </div>
                 <div className="text-right">
-                  <p className={cn("text-[14px] font-semibold", t.income ? "text-[#037F4C]" : "text-[#C0233B]")}>{t.income ? `+${rs(t.income)}` : `−${rs(t.expense)}`}</p>
-                  <p className="text-[11px] text-[#9699A6]">Bal {rs(t.balance)}</p>
+                  <p className={cn("text-[14px] font-semibold", t.income ? "text-[var(--theme-success-text)]" : "text-[var(--theme-danger-text)]")}>{t.income ? `+${rs(t.income)}` : `−${rs(t.expense)}`}</p>
+                  <p className="text-[11px] text-[var(--theme-text-faint)]">Bal {rs(t.balance)}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {rows.length === 0 && <p className="py-10 text-center text-[14px] text-[#676879]">No transactions match the selected filters.</p>}
+          {rows.length === 0 && <p className="py-10 text-center text-[14px] text-[var(--theme-text-muted)]">No transactions match the selected filters.</p>}
         </Card>
       </div>
     </>

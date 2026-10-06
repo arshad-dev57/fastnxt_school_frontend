@@ -11,7 +11,7 @@ import { cn, type IconType } from "./ui";
    ========================================================================== */
 
 export function Board({ children }: { children: ReactNode }) {
-  return <div className="flex min-h-0 flex-1 flex-col bg-white">{children}</div>;
+  return <div className="flex min-h-0 flex-1 flex-col bg-[var(--theme-surface)]">{children}</div>;
 }
 
 /* Fixed top area (title + tabs + toolbar) — pads like the dashboard header */
@@ -31,20 +31,20 @@ export function BoardHead({ title, subtitle, Icon, actions }: {
     <>
       <div className="flex items-center gap-2">
         {Icon && (
-          <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#CCE5FF] text-[#1D4ED8] sm:flex">
+          <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-primary-soft)] text-[var(--theme-primary-hover)] sm:flex">
             <Icon className="h-5 w-5" />
           </span>
         )}
         <h1 className="min-w-0 truncate text-[22px] font-bold leading-tight sm:text-[30px]">{title}</h1>
-        <ChevronDown className="h-6 w-6 shrink-0 text-[#676879]" />
-        <Star className="hidden h-5 w-5 shrink-0 text-[#676879] hover:text-[#FFCB00] sm:block" />
+        <ChevronDown className="h-6 w-6 shrink-0 text-[var(--theme-text-muted)]" />
+        <Star className="hidden h-5 w-5 shrink-0 text-[var(--theme-text-muted)] hover:text-[var(--theme-star)] sm:block" />
         <div className="flex-1" />
         <div className="flex shrink-0 items-center gap-2">
           {actions}
-          <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded hover:bg-[#F5F6F8]" aria-label="More"><MoreHorizontal className="h-5 w-5" /></button>
+          <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded hover:bg-[var(--theme-hover)]" aria-label="More"><MoreHorizontal className="h-5 w-5" /></button>
         </div>
       </div>
-      {subtitle && <p className="mt-1 text-[14px] text-[#676879] sm:text-[15px]">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-[14px] text-[var(--theme-text-muted)] sm:text-[15px]">{subtitle}</p>}
     </>
   );
 }
@@ -53,13 +53,13 @@ export function BoardTabs<T extends string>({ tabs, value, onChange }: {
   tabs: readonly T[]; value: T; onChange: (t: T) => void;
 }) {
   return (
-    <div className="mt-3 flex gap-1 overflow-x-auto border-b border-[#E6E9EF]">
+    <div className="mt-3 flex gap-1 overflow-x-auto border-b border-[var(--theme-border)]">
       {tabs.map((t) => (
         <button key={t} type="button" onClick={() => onChange(t)}
-          className={cn("relative -mb-px flex shrink-0 items-center whitespace-nowrap rounded-t px-3 pb-3 pt-2 text-[15px] transition-colors hover:bg-[#F5F6F8]",
-            value === t ? "font-medium text-[#323338]" : "text-[#676879]")}>
+          className={cn("relative -mb-px flex shrink-0 items-center whitespace-nowrap rounded-t px-3 pb-3 pt-2 text-[15px] transition-colors hover:bg-[var(--theme-hover)]",
+            value === t ? "font-medium text-[var(--theme-text)]" : "text-[var(--theme-text-muted)]")}>
           {t}
-          {value === t && <span className="absolute inset-x-1 bottom-0 h-0.5 bg-[#2563EB]" />}
+          {value === t && <span className="absolute inset-x-1 bottom-0 h-0.5 bg-[var(--theme-primary)]" />}
         </button>
       ))}
     </div>
@@ -74,10 +74,10 @@ export function BoardSearch({ value, onChange, placeholder = "Search", className
   value: string; onChange: (v: string) => void; placeholder?: string; className?: string;
 }) {
   return (
-    <div className={cn("ml-1 flex h-9 min-w-0 shrink-0 items-center gap-2 rounded px-2 hover:bg-[#E6E9EF] focus-within:ring-2 focus-within:ring-[#2563EB]", className)}>
+    <div className={cn("ml-1 flex h-9 min-w-0 shrink-0 items-center gap-2 rounded px-2 hover:bg-[var(--theme-border)] focus-within:ring-2 focus-within:ring-[var(--theme-primary)]", className)}>
       <Search className="h-5 w-5 shrink-0" />
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="w-24 min-w-0 bg-transparent text-[14px] outline-none placeholder:text-[#9699A6] focus:w-40 sm:w-32" />
+        className="w-24 min-w-0 bg-transparent text-[14px] outline-none placeholder:text-[var(--theme-text-faint)] focus:w-40 sm:w-32" />
     </div>
   );
 }
@@ -88,11 +88,11 @@ export function GroupHead({ title, color, count, open = true, onToggle }: {
 }) {
   return (
     <div className="mb-1.5 flex items-center gap-1">
-      <button type="button" onClick={onToggle} className="flex h-8 w-8 shrink-0 items-center justify-center rounded hover:bg-[#E6E9EF]" style={{ color }} aria-label="Toggle group">
+      <button type="button" onClick={onToggle} className="flex h-8 w-8 shrink-0 items-center justify-center rounded hover:bg-[var(--theme-border)]" style={{ color }} aria-label="Toggle group">
         <ChevronDown className={cn("h-6 w-6 transition-transform", !open && "-rotate-90")} />
       </button>
       <h2 className="truncate rounded px-1 text-[19px] font-medium" style={{ color }}>{title}</h2>
-      {count !== undefined && <span className="ml-1 shrink-0 text-[14px] text-[#9699A6]">{count} {count === 1 ? "item" : "items"}</span>}
+      {count !== undefined && <span className="ml-1 shrink-0 text-[14px] text-[var(--theme-text-faint)]">{count} {count === 1 ? "item" : "items"}</span>}
     </div>
   );
 }
@@ -116,5 +116,5 @@ export function BarCell({ color, children, className = "" }: { color: string; ch
 
 /* Bordered wrapper for a group table (left edge stays open for the color bar) */
 export function GroupTable({ children }: { children: ReactNode }) {
-  return <div className="rounded-l border-y border-r border-[#E6E9EF]">{children}</div>;
+  return <div className="rounded-l border-y border-r border-[var(--theme-border)]">{children}</div>;
 }

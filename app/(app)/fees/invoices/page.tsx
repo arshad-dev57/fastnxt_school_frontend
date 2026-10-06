@@ -8,12 +8,16 @@ import {
   SearchBox, Select, SplitButton, Th, Td, cn, rs, INVOICE_COLORS, PillSelect,
 } from "@/components/ui";
 import { INVOICES, STUDENT_ROWS, FEE_PARTICULARS, SCHOOL, type InvoiceRow, type InvoiceStatus } from "@/lib/mock-data";
+import { useBranch } from "@/lib/branch-context";
+import { isInBranchScope } from "@/lib/branch-scope";
+import { BranchScopeBar } from "@/components/branch/branch-ui";
 
 const COLS = "grid-cols-[130px_minmax(150px,1.2fr)_100px_110px_100px_100px_100px_90px_90px_100px_120px_64px]";
 const STEPS = 8;
 const STATUSES: InvoiceStatus[] = ["Paid", "Partially Paid", "Pending", "Overdue"];
 
 export default function FeeInvoicesPage() {
+  const { currentBranchId } = useBranch();
   const [rows, setRows] = useState<InvoiceRow[]>(INVOICES);
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("");
@@ -25,11 +29,12 @@ export default function FeeInvoicesPage() {
   const [toDelete, setToDelete] = useState<InvoiceRow | null>(null);
 
   const filtered = useMemo(() => rows
+    .filter((r) => isInBranchScope(r.id, currentBranchId))
     .filter((r) => r.student.toLowerCase().includes(q.toLowerCase()) || r.id.toLowerCase().includes(q.toLowerCase()))
     .filter((r) => (cls ? r.cls === cls : true))
     .filter((r) => (status ? r.status === status : true))
     .sort((a, b) => (sortAsc ? a.student.localeCompare(b.student) : b.student.localeCompare(a.student))),
-  [rows, q, cls, status, sortAsc]);
+  [rows, currentBranchId, q, cls, status, sortAsc]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / STEPS));
   const current = Math.min(page, pages);
@@ -49,7 +54,7 @@ export default function FeeInvoicesPage() {
       <PageHeader title="Fee Invoices" subtitle="Track billed, paid and outstanding fee invoices."
         actions={
           <>
-            <Link href="/fees/structure" className="hidden items-center gap-2 rounded border border-[#C5C7D0] bg-white px-3.5 py-2 text-[14px] hover:bg-[#F5F6F8] sm:inline-flex">
+            <Link href="/fees/structure" className="hidden items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3.5 py-2 text-[14px] hover:bg-[var(--theme-hover)] sm:inline-flex">
               <FileText className="h-[18px] w-[18px]" /> Fee Structure
             </Link>
             <SplitButton label="Create Invoice" Icon={Plus} onClick={() => setCreating(true)} />
@@ -74,40 +79,42 @@ export default function FeeInvoicesPage() {
           </div>
         </div>
 
+        <BranchScopeBar count={filtered.length} noun="invoices" />
+
         <Card pad={false}>
           <div className="hidden md:block">
             <div className="overflow-x-auto">
               <div className="min-w-[1240px]">
-                <div className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white")}>
-                  <Th className="border-l border-[#E6E9EF]">Invoice No</Th>
-                  <Th className="border-l border-[#E6E9EF]">Student</Th>
-                  <Th className="border-l border-[#E6E9EF]">Class</Th>
-                  <Th className="border-l border-[#E6E9EF]">Period</Th>
-                  <Th className="border-l border-[#E6E9EF]">Issue</Th>
-                  <Th className="border-l border-[#E6E9EF]">Due</Th>
-                  <Th className="border-l border-[#E6E9EF]">Total</Th>
-                  <Th className="border-l border-[#E6E9EF]">Disc.</Th>
-                  <Th className="border-l border-[#E6E9EF]">Paid</Th>
-                  <Th className="border-l border-[#E6E9EF]">Balance</Th>
-                  <Th className="border-l border-[#E6E9EF]">Status</Th>
-                  <Th className="border-l border-[#E6E9EF]"><span className="sr-only">Actions</span></Th>
+                <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)]")}>
+                  <Th className="border-l border-[var(--theme-border)]">Invoice No</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Student</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Class</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Period</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Issue</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Due</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Total</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Disc.</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Paid</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Balance</Th>
+                  <Th className="border-l border-[var(--theme-border)]">Status</Th>
+                  <Th className="border-l border-[var(--theme-border)]"><span className="sr-only">Actions</span></Th>
                 </div>
                 {paged.map((r) => (
-                  <div key={r.id} className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white text-[13.5px] last:border-b-0 hover:bg-[#F5F6F8]")}>
-                    <Td className="border-l border-[#E6E9EF] font-mono text-[12.5px] text-[#676879]">{r.id}</Td>
-                    <Td className="border-l border-[#E6E9EF] font-medium"><span className="truncate">{r.student}</span></Td>
-                    <Td className="border-l border-[#E6E9EF]">{r.cls}-{r.section}</Td>
-                    <Td className="border-l border-[#E6E9EF] text-[#676879]">{r.period}</Td>
-                    <Td className="border-l border-[#E6E9EF] text-[#676879]">{r.issue}</Td>
-                    <Td className="border-l border-[#E6E9EF] text-[#676879]">{r.due}</Td>
-                    <Td className="border-l border-[#E6E9EF] font-medium">{rs(r.total)}</Td>
-                    <Td className="border-l border-[#E6E9EF] text-[#676879]">{r.discount ? rs(r.discount) : "—"}</Td>
-                    <Td className="border-l border-[#E6E9EF] text-[#037F4C]">{rs(r.paid)}</Td>
-                    <Td className={cn("border-l border-[#E6E9EF] font-medium", r.balance > 0 && "text-[#C0233B]")}>{rs(r.balance)}</Td>
-                    <Td className="border-l border-[#E6E9EF]">
+                  <div key={r.id} className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] text-[13.5px] last:border-b-0 hover:bg-[var(--theme-hover)]")}>
+                    <Td className="border-l border-[var(--theme-border)] font-mono text-[12.5px] text-[var(--theme-text-muted)]">{r.id}</Td>
+                    <Td className="border-l border-[var(--theme-border)] font-medium"><span className="truncate">{r.student}</span></Td>
+                    <Td className="border-l border-[var(--theme-border)]">{r.cls}-{r.section}</Td>
+                    <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.period}</Td>
+                    <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.issue}</Td>
+                    <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.due}</Td>
+                    <Td className="border-l border-[var(--theme-border)] font-medium">{rs(r.total)}</Td>
+                    <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.discount ? rs(r.discount) : "—"}</Td>
+                    <Td className="border-l border-[var(--theme-border)] text-[var(--theme-success-text)]">{rs(r.paid)}</Td>
+                    <Td className={cn("border-l border-[var(--theme-border)] font-medium", r.balance > 0 && "text-[var(--theme-danger-text)]")}>{rs(r.balance)}</Td>
+                    <Td className="border-l border-[var(--theme-border)]">
                       <PillSelect<InvoiceStatus> value={r.status} options={STATUSES} colors={INVOICE_COLORS} onPick={(s) => setRows((p) => p.map((x) => (x.id === r.id ? { ...x, status: s } : x)))} className="w-32" />
                     </Td>
-                    <Td className="justify-center border-l border-[#E6E9EF]">
+                    <Td className="justify-center border-l border-[var(--theme-border)]">
                       <RowMenu items={[
                         { label: "View / Preview", Icon: Eye, onClick: () => setView(r) },
                         { label: "Record Payment", Icon: CreditCard, onClick: () => markPaid(r.id) },
@@ -122,11 +129,11 @@ export default function FeeInvoicesPage() {
 
           <div className="space-y-3 p-3 md:hidden">
             {paged.map((r) => (
-              <div key={r.id} className="rounded-lg border border-[#E6E9EF] bg-white p-3 shadow-sm" style={{ borderLeft: "6px solid #579BFC" }}>
+              <div key={r.id} className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3 shadow-sm" style={{ borderLeft: "6px solid var(--theme-info)" }}>
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-medium">{r.student}</p>
-                    <p className="font-mono text-[12px] text-[#9699A6]">{r.id}</p>
+                    <p className="font-mono text-[12px] text-[var(--theme-text-faint)]">{r.id}</p>
                   </div>
                   <PillSelect<InvoiceStatus> value={r.status} options={STATUSES} colors={INVOICE_COLORS} onPick={(s) => setRows((p) => p.map((x) => (x.id === r.id ? { ...x, status: s } : x)))} className="w-32" />
                 </div>
@@ -165,17 +172,17 @@ export default function FeeInvoicesPage() {
 }
 
 function Mini({ label, value, tone }: { label: string; value: string; tone: "blue" | "green" | "red" | "purple" }) {
-  const cls = tone === "green" ? "text-[#037F4C]" : tone === "red" ? "text-[#C0233B]" : tone === "purple" ? "text-[#5A34D6]" : "text-[#0060B9]";
+  const cls = tone === "green" ? "text-[var(--theme-success-text)]" : tone === "red" ? "text-[var(--theme-danger-text)]" : tone === "purple" ? "text-[var(--theme-accent-strong)]" : "text-[var(--theme-primary-soft-text)]";
   return (
     <Card>
-      <p className="text-[12px] text-[#9699A6]">{label}</p>
+      <p className="text-[12px] text-[var(--theme-text-faint)]">{label}</p>
       <p className={cn("text-[19px] font-bold", cls)}>{value}</p>
     </Card>
   );
 }
 
 function Info({ label, value }: { label: string; value: string }) {
-  return (<div className="rounded-lg border border-[#E6E9EF] px-3 py-2"><p className="text-[11px] uppercase tracking-wide text-[#9699A6]">{label}</p><p className="truncate text-[14px] font-medium">{value}</p></div>);
+  return (<div className="rounded-lg border border-[var(--theme-border)] px-3 py-2"><p className="text-[11px] uppercase tracking-wide text-[var(--theme-text-faint)]">{label}</p><p className="truncate text-[14px] font-medium">{value}</p></div>);
 }
 
 function CreateInvoice({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (inv: InvoiceRow) => void }) {
@@ -209,26 +216,26 @@ function CreateInvoice({ open, onClose, onCreate }: { open: boolean; onClose: ()
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Student" className="sm:col-span-2"><Select options={STUDENT_ROWS.map((x) => x.name)} value={student} onChange={(e) => setStudent(e.target.value)} placeholder="Select student" /></Field>
           <Field label="Billing Period"><Select options={["Jan 2026", "Feb 2026", "Mar 2026"]} value={period} onChange={(e) => setPeriod(e.target.value)} /></Field>
-          <Field label="Due Date"><input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="h-10 w-full rounded border border-[#C5C7D0] bg-white px-3 text-[14px] outline-none focus:border-[#2563EB]" /></Field>
-          <Field label="Issue Date" className="sm:col-span-2"><input type="date" value={issue} onChange={(e) => setIssue(e.target.value)} className="h-10 w-full rounded border border-[#C5C7D0] bg-white px-3 text-[14px] outline-none focus:border-[#2563EB]" /></Field>
+          <Field label="Due Date"><input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] outline-none focus:border-[var(--theme-primary)]" /></Field>
+          <Field label="Issue Date" className="sm:col-span-2"><input type="date" value={issue} onChange={(e) => setIssue(e.target.value)} className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] outline-none focus:border-[var(--theme-primary)]" /></Field>
         </div>
 
         <div>
           <p className="mb-2 text-[13px] font-medium">Fee particulars</p>
-          <div className="space-y-1.5 rounded-lg border border-[#E6E9EF] p-3">
+          <div className="space-y-1.5 rounded-lg border border-[var(--theme-border)] p-3">
             {FEE_PARTICULARS.map((p) => (
               <label key={p.id} className="flex items-center gap-2.5 text-[14px]">
-                <input type="checkbox" checked={picked.includes(p.particular)} className="h-4 w-4 accent-[#2563EB]"
+                <input type="checkbox" checked={picked.includes(p.particular)} className="h-4 w-4 accent-[var(--theme-primary)]"
                   onChange={(e) => setPicked((prev) => (e.target.checked ? [...prev, p.particular] : prev.filter((x) => x !== p.particular)))} />
                 <span className="flex-1">{p.particular}</span>
-                <span className="text-[#676879]">{rs(p.amount)}</span>
+                <span className="text-[var(--theme-text-muted)]">{rs(p.amount)}</span>
               </label>
             ))}
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-lg bg-[#F6F7FB] px-4 py-3">
-          <span className="text-[14px] text-[#676879]">Invoice Total</span>
+        <div className="flex items-center justify-between rounded-lg bg-[var(--theme-sidebar)] px-4 py-3">
+          <span className="text-[14px] text-[var(--theme-text-muted)]">Invoice Total</span>
           <span className="text-[18px] font-bold">{rs(total)}</span>
         </div>
       </div>
@@ -239,18 +246,18 @@ function CreateInvoice({ open, onClose, onCreate }: { open: boolean; onClose: ()
 function InvoiceDoc({ inv }: { inv: InvoiceRow }) {
   const lines = FEE_PARTICULARS.slice(0, 4);
   return (
-    <div className="print-area mx-auto max-w-[720px] bg-white p-4 text-[#323338] sm:p-6">
-      <div className="flex items-start justify-between gap-4 border-b-2 border-[#2563EB] pb-4">
+    <div className="print-area mx-auto max-w-[720px] bg-[var(--theme-surface)] p-4 text-[var(--theme-text)] sm:p-6">
+      <div className="flex items-start justify-between gap-4 border-b-2 border-[var(--theme-primary)] pb-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#6C47FF] text-[20px] font-extrabold text-white">B</span>
+          <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--theme-accent)] text-[20px] font-extrabold text-white">B</span>
           <div>
             <h1 className="text-[18px] font-bold leading-tight">{SCHOOL.name}</h1>
-            <p className="text-[12px] text-[#676879]">{SCHOOL.address}</p>
-            <p className="text-[12px] text-[#676879]">{SCHOOL.phone} · {SCHOOL.email}</p>
+            <p className="text-[12px] text-[var(--theme-text-muted)]">{SCHOOL.address}</p>
+            <p className="text-[12px] text-[var(--theme-text-muted)]">{SCHOOL.phone} · {SCHOOL.email}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[11px] uppercase tracking-wide text-[#9699A6]">Invoice</p>
+          <p className="text-[11px] uppercase tracking-wide text-[var(--theme-text-faint)]">Invoice</p>
           <p className="font-mono text-[14px] font-semibold">{inv.id}</p>
           <div className="mt-1"><Badge label={inv.status} /></div>
         </div>
@@ -258,31 +265,31 @@ function InvoiceDoc({ inv }: { inv: InvoiceRow }) {
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] uppercase tracking-wide text-[#9699A6]">Billed To</p>
+          <p className="text-[11px] uppercase tracking-wide text-[var(--theme-text-faint)]">Billed To</p>
           <p className="text-[15px] font-semibold">{inv.student}</p>
-          <p className="text-[13px] text-[#676879]">Class {inv.cls}-{inv.section}</p>
+          <p className="text-[13px] text-[var(--theme-text-muted)]">Class {inv.cls}-{inv.section}</p>
         </div>
         <div className="text-[13px]">
-          <p><span className="text-[#676879]">Billing Period:</span> <span className="font-medium">{inv.period}</span></p>
-          <p><span className="text-[#676879]">Issue Date:</span> {inv.issue}</p>
-          <p><span className="text-[#676879]">Due Date:</span> {inv.due}</p>
+          <p><span className="text-[var(--theme-text-muted)]">Billing Period:</span> <span className="font-medium">{inv.period}</span></p>
+          <p><span className="text-[var(--theme-text-muted)]">Issue Date:</span> {inv.issue}</p>
+          <p><span className="text-[var(--theme-text-muted)]">Due Date:</span> {inv.due}</p>
         </div>
       </div>
 
       <table className="mt-4 w-full border-collapse text-[13px]">
         <thead>
-          <tr className="bg-[#F6F7FB]">
-            <th className="border border-[#E6E9EF] px-3 py-2 text-left">Fee Particular</th>
-            <th className="border border-[#E6E9EF] px-3 py-2 text-left">Frequency</th>
-            <th className="border border-[#E6E9EF] px-3 py-2 text-right">Amount</th>
+          <tr className="bg-[var(--theme-sidebar)]">
+            <th className="border border-[var(--theme-border)] px-3 py-2 text-left">Fee Particular</th>
+            <th className="border border-[var(--theme-border)] px-3 py-2 text-left">Frequency</th>
+            <th className="border border-[var(--theme-border)] px-3 py-2 text-right">Amount</th>
           </tr>
         </thead>
         <tbody>
           {lines.map((p) => (
             <tr key={p.id}>
-              <td className="border border-[#E6E9EF] px-3 py-2">{p.particular}</td>
-              <td className="border border-[#E6E9EF] px-3 py-2 text-[#676879]">{p.frequency}</td>
-              <td className="border border-[#E6E9EF] px-3 py-2 text-right">{rs(p.amount)}</td>
+              <td className="border border-[var(--theme-border)] px-3 py-2">{p.particular}</td>
+              <td className="border border-[var(--theme-border)] px-3 py-2 text-[var(--theme-text-muted)]">{p.frequency}</td>
+              <td className="border border-[var(--theme-border)] px-3 py-2 text-right">{rs(p.amount)}</td>
             </tr>
           ))}
         </tbody>
@@ -291,12 +298,12 @@ function InvoiceDoc({ inv }: { inv: InvoiceRow }) {
       <div className="ml-auto mt-4 w-full max-w-[300px] space-y-1.5 text-[13px]">
         <InvRow label="Subtotal" value={rs(inv.total)} />
         <InvRow label="Discount" value={inv.discount ? `− ${rs(inv.discount)}` : "—"} />
-        <div className="flex items-center justify-between border-t border-[#E6E9EF] pt-1.5 text-[15px] font-bold"><span>Total</span><span>{rs(inv.total)}</span></div>
+        <div className="flex items-center justify-between border-t border-[var(--theme-border)] pt-1.5 text-[15px] font-bold"><span>Total</span><span>{rs(inv.total)}</span></div>
         <InvRow label="Paid" value={rs(inv.paid)} green />
-        <div className="flex items-center justify-between text-[15px] font-bold"><span>Balance Due</span><span className={inv.balance > 0 ? "text-[#C0233B]" : "text-[#037F4C]"}>{rs(inv.balance)}</span></div>
+        <div className="flex items-center justify-between text-[15px] font-bold"><span>Balance Due</span><span className={inv.balance > 0 ? "text-[var(--theme-danger-text)]" : "text-[var(--theme-success-text)]"}>{rs(inv.balance)}</span></div>
       </div>
 
-      <p className="mt-6 border-t border-dashed border-[#C5C7D0] pt-3 text-center text-[11px] text-[#9699A6]">
+      <p className="mt-6 border-t border-dashed border-[var(--theme-border-strong)] pt-3 text-center text-[11px] text-[var(--theme-text-faint)]">
         Thank you · Payments are non-refundable · {SCHOOL.website}
       </p>
     </div>
@@ -306,8 +313,8 @@ function InvoiceDoc({ inv }: { inv: InvoiceRow }) {
 function InvRow({ label, value, green }: { label: string; value: string; green?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[#676879]">{label}</span>
-      <span className={cn("font-medium", green && "text-[#037F4C]")}>{value}</span>
+      <span className="text-[var(--theme-text-muted)]">{label}</span>
+      <span className={cn("font-medium", green && "text-[var(--theme-success-text)]")}>{value}</span>
     </div>
   );
 }

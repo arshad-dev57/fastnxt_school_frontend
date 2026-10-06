@@ -46,7 +46,7 @@ export default function FeeParticularsPage() {
       <PageHeader title="Fees Particulars" subtitle="Define the individual fee heads charged by the school."
         actions={
           <>
-            <Link href="/fees/structure" className="hidden items-center gap-2 rounded border border-[#C5C7D0] bg-white px-3.5 py-2 text-[14px] hover:bg-[#F5F6F8] sm:inline-flex">
+            <Link href="/fees/structure" className="hidden items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3.5 py-2 text-[14px] hover:bg-[var(--theme-hover)] sm:inline-flex">
               <Calculator className="h-[18px] w-[18px]" /> Fee Structure
             </Link>
             <SplitButton label="Add Particular" Icon={Plus} onClick={() => setModal({ mode: "add" })} />
@@ -64,41 +64,41 @@ export default function FeeParticularsPage() {
           </div>
         </div>
 
-        <div className="mb-3 flex items-center gap-2 rounded-lg border border-[#E6E9EF] bg-[#F6F7FB] px-4 py-3 text-[13px]">
-          <Tags className="h-4 w-4 text-[#5A34D6]" />
-          <span className="text-[#676879]">Active monthly total:</span>
+        <div className="mb-3 flex items-center gap-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-sidebar)] px-4 py-3 text-[13px]">
+          <Tags className="h-4 w-4 text-[var(--theme-accent-strong)]" />
+          <span className="text-[var(--theme-text-muted)]">Active monthly total:</span>
           <span className="font-semibold">{rs(totalMonthly)}</span>
         </div>
 
         <Card pad={false}>
           <div className="hidden md:block">
-            <div className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white")}>
-              <Th className="border-l border-[#E6E9EF]">Particular</Th>
-              <Th className="border-l border-[#E6E9EF]">Description</Th>
-              <Th className="border-l border-[#E6E9EF]">Amount</Th>
-              <Th className="border-l border-[#E6E9EF]">Frequency</Th>
-              <Th className="border-l border-[#E6E9EF]">Status</Th>
-              <Th className="border-l border-[#E6E9EF]"><span className="sr-only">Actions</span></Th>
+            <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)]")}>
+              <Th className="border-l border-[var(--theme-border)]">Particular</Th>
+              <Th className="border-l border-[var(--theme-border)]">Description</Th>
+              <Th className="border-l border-[var(--theme-border)]">Amount</Th>
+              <Th className="border-l border-[var(--theme-border)]">Frequency</Th>
+              <Th className="border-l border-[var(--theme-border)]">Status</Th>
+              <Th className="border-l border-[var(--theme-border)]"><span className="sr-only">Actions</span></Th>
             </div>
             {paged.map((r) => (
-              <div key={r.id} className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white text-[14px] last:border-b-0 hover:bg-[#F5F6F8]")}>
-                <Td className="gap-2 border-l border-[#E6E9EF] font-medium"><Receipt className="h-4 w-4 text-[#5A34D6]" />{r.particular}</Td>
-                <Td className="border-l border-[#E6E9EF] text-[#676879]"><span className="truncate">{r.description}</span></Td>
-                <Td className="border-l border-[#E6E9EF] font-medium">{rs(r.amount)}</Td>
-                <Td className="border-l border-[#E6E9EF]"><Badge label={r.frequency} tone="blue" /></Td>
-                <Td className="border-l border-[#E6E9EF]"><Badge label={r.status} /></Td>
-                <Td className="justify-center border-l border-[#E6E9EF]"><RowMenu items={rowMenu(r)} /></Td>
+              <div key={r.id} className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] text-[14px] last:border-b-0 hover:bg-[var(--theme-hover)]")}>
+                <Td className="gap-2 border-l border-[var(--theme-border)] font-medium"><Receipt className="h-4 w-4 text-[var(--theme-accent-strong)]" />{r.particular}</Td>
+                <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]"><span className="truncate">{r.description}</span></Td>
+                <Td className="border-l border-[var(--theme-border)] font-medium">{rs(r.amount)}</Td>
+                <Td className="border-l border-[var(--theme-border)]"><Badge label={r.frequency} tone="blue" /></Td>
+                <Td className="border-l border-[var(--theme-border)]"><Badge label={r.status} /></Td>
+                <Td className="justify-center border-l border-[var(--theme-border)]"><RowMenu items={rowMenu(r)} /></Td>
               </div>
             ))}
           </div>
 
           <div className="space-y-3 p-3 md:hidden">
             {paged.map((r) => (
-              <div key={r.id} className="rounded-lg border border-[#E6E9EF] bg-white p-3 shadow-sm" style={{ borderLeft: "6px solid #A25DDC" }}>
+              <div key={r.id} className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3 shadow-sm" style={{ borderLeft: "6px solid var(--theme-accent-2)" }}>
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-medium">{r.particular}</p>
-                    <p className="text-[13px] text-[#676879]">{r.description}</p>
+                    <p className="text-[13px] text-[var(--theme-text-muted)]">{r.description}</p>
                   </div>
                   <RowMenu items={rowMenu(r)} />
                 </div>
@@ -129,7 +129,7 @@ export default function FeeParticularsPage() {
               <Info label="Status" value={view.status} />
               <Info label="ID" value={view.id} />
             </div>
-            <div className="rounded-lg bg-[#F6F7FB] p-3 text-[13px] text-[#676879]">{view.description}</div>
+            <div className="rounded-lg bg-[var(--theme-sidebar)] p-3 text-[13px] text-[var(--theme-text-muted)]">{view.description}</div>
           </div>
         )}
       </Modal>
@@ -141,7 +141,7 @@ export default function FeeParticularsPage() {
 }
 
 function Info({ label, value }: { label: string; value: string }) {
-  return (<div><p className="text-[12px] text-[#9699A6]">{label}</p><p className="text-[14px] font-medium">{value}</p></div>);
+  return (<div><p className="text-[12px] text-[var(--theme-text-faint)]">{label}</p><p className="text-[14px] font-medium">{value}</p></div>);
 }
 
 function ParticularForm({ modal, onClose, onSave }: { modal: { mode: "add" | "edit"; row?: FeeParticular } | null; onClose: () => void; onSave: (r: FeeParticular) => void }) {

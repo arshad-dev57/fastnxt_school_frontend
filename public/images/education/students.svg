@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200" role="img" aria-label="Students illustration">
+  <defs>
+    <linearGradient id="stdBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#EAF6FF"/><stop offset="1" stop-color="#EDEBFF"/>
+    </linearGradient>
+    <linearGradient id="stdCard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="320" height="200" rx="22" fill="url(#stdBg)"/>
+  <circle cx="286" cy="52" r="26" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="36" cy="160" r="18" fill="#FFFFFF" opacity="0.6"/>
+
+  <!-- id card -->
+  <rect x="42" y="44" width="150" height="106" rx="14" fill="#FFFFFF" stroke="#E1E6F0" stroke-width="2"/>
+  <rect x="42" y="44" width="150" height="30" rx="14" fill="url(#stdCard)"/>
+  <rect x="42" y="62" width="150" height="12" fill="url(#stdCard)"/>
+  <rect x="56" y="54" width="46" height="6" rx="3" fill="#FFFFFF" opacity="0.95"/>
+  <rect x="150" y="54" width="28" height="6" rx="3" fill="#FFFFFF" opacity="0.55"/>
+  <rect x="56" y="88" width="46" height="46" rx="12" fill="#E9F1FF"/>
+  <circle cx="79" cy="104" r="9" fill="#2563EB"/>
+  <path d="M64 130c3-11 8-15 15-15s12 4 15 15z" fill="#2563EB"/>
+  <g fill="#E6E9EF">
+    <rect x="114" y="88" width="62" height="8" rx="4"/>
+    <rect x="114" y="104" width="46" height="7" rx="3.5"/>
+    <rect x="114" y="119" width="54" height="7" rx="3.5"/>
+  </g>
+  <rect x="114" y="133" width="34" height="10" rx="5" fill="#D6F5E3"/>
+  <rect x="120" y="136" width="22" height="4" rx="2" fill="#037F4C"/>
+
+  <!-- results card -->
+  <rect x="186" y="60" width="104" height="92" rx="14" fill="#FFFFFF" stroke="#E1E6F0" stroke-width="2"/>
+  <circle cx="238" cy="92" r="20" fill="#EDEBFF"/>
+  <path d="M229 92l6 7 13-14" fill="none" stroke="#6C47FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#E6E9EF">
+    <rect x="202" y="120" width="72" height="8" rx="4"/>
+    <rect x="202" y="134" width="52" height="8" rx="4"/>
+  </g>
+
+  <!-- graduation cap -->
+  <path d="M240 26l44 18-44 18-44-18z" fill="#292F4C"/>
+  <path d="M240 62l-24-10v16c0 6 11 11 24 11s24-5 24-11V52z" fill="#3B4256"/>
+  <path d="M282 46v22" stroke="#FDAB3D" stroke-width="4" stroke-linecap="round"/>
+</svg>

@@ -55,33 +55,33 @@ export default function DiscountTypesPage() {
 
         <Card pad={false}>
           <div className="hidden md:block">
-            <div className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white")}>
-              <Th className="border-l border-[#E6E9EF]">Discount</Th>
-              <Th className="border-l border-[#E6E9EF]">Basis</Th>
-              <Th className="border-l border-[#E6E9EF]">Value</Th>
-              <Th className="border-l border-[#E6E9EF]">Description</Th>
-              <Th className="border-l border-[#E6E9EF]">Status</Th>
-              <Th className="border-l border-[#E6E9EF]"><span className="sr-only">Actions</span></Th>
+            <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)]")}>
+              <Th className="border-l border-[var(--theme-border)]">Discount</Th>
+              <Th className="border-l border-[var(--theme-border)]">Basis</Th>
+              <Th className="border-l border-[var(--theme-border)]">Value</Th>
+              <Th className="border-l border-[var(--theme-border)]">Description</Th>
+              <Th className="border-l border-[var(--theme-border)]">Status</Th>
+              <Th className="border-l border-[var(--theme-border)]"><span className="sr-only">Actions</span></Th>
             </div>
             {paged.map((r) => (
-              <div key={r.id} className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white text-[14px] last:border-b-0 hover:bg-[#F5F6F8]")}>
-                <Td className="gap-2 border-l border-[#E6E9EF] font-medium"><Tag className="h-4 w-4 text-[#5A34D6]" />{r.name}</Td>
-                <Td className="border-l border-[#E6E9EF]"><Badge label={r.basis} tone={r.basis === "Percentage" ? "purple" : "blue"} /></Td>
-                <Td className="border-l border-[#E6E9EF] font-medium">{r.basis === "Percentage" ? `${r.value}%` : `Rs ${r.value}`}</Td>
-                <Td className="border-l border-[#E6E9EF] text-[#676879]"><span className="truncate">{r.description}</span></Td>
-                <Td className="border-l border-[#E6E9EF]"><Badge label={r.status} /></Td>
-                <Td className="justify-center border-l border-[#E6E9EF]"><RowMenu items={rowMenu(r)} /></Td>
+              <div key={r.id} className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] text-[14px] last:border-b-0 hover:bg-[var(--theme-hover)]")}>
+                <Td className="gap-2 border-l border-[var(--theme-border)] font-medium"><Tag className="h-4 w-4 text-[var(--theme-accent-strong)]" />{r.name}</Td>
+                <Td className="border-l border-[var(--theme-border)]"><Badge label={r.basis} tone={r.basis === "Percentage" ? "purple" : "blue"} /></Td>
+                <Td className="border-l border-[var(--theme-border)] font-medium">{r.basis === "Percentage" ? `${r.value}%` : `Rs ${r.value}`}</Td>
+                <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]"><span className="truncate">{r.description}</span></Td>
+                <Td className="border-l border-[var(--theme-border)]"><Badge label={r.status} /></Td>
+                <Td className="justify-center border-l border-[var(--theme-border)]"><RowMenu items={rowMenu(r)} /></Td>
               </div>
             ))}
           </div>
 
           <div className="space-y-3 p-3 md:hidden">
             {paged.map((r) => (
-              <div key={r.id} className="rounded-lg border border-[#E6E9EF] bg-white p-3 shadow-sm" style={{ borderLeft: "6px solid #00C875" }}>
+              <div key={r.id} className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3 shadow-sm" style={{ borderLeft: "6px solid var(--theme-success)" }}>
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-medium">{r.name}</p>
-                    <p className="text-[13px] text-[#676879]">{r.description}</p>
+                    <p className="text-[13px] text-[var(--theme-text-muted)]">{r.description}</p>
                   </div>
                   <RowMenu items={rowMenu(r)} />
                 </div>
@@ -112,7 +112,7 @@ export default function DiscountTypesPage() {
               <Info label="Status" value={view.status} />
               <Info label="ID" value={view.id} />
             </div>
-            <div className="rounded-lg bg-[#F6F7FB] p-3 text-[13px] text-[#676879]">{view.description}</div>
+            <div className="rounded-lg bg-[var(--theme-sidebar)] p-3 text-[13px] text-[var(--theme-text-muted)]">{view.description}</div>
           </div>
         )}
       </Modal>
@@ -124,7 +124,7 @@ export default function DiscountTypesPage() {
 }
 
 function Info({ label, value }: { label: string; value: string }) {
-  return (<div><p className="text-[12px] text-[#9699A6]">{label}</p><p className="text-[14px] font-medium">{value}</p></div>);
+  return (<div><p className="text-[12px] text-[var(--theme-text-faint)]">{label}</p><p className="text-[14px] font-medium">{value}</p></div>);
 }
 
 function DiscountForm({ modal, onClose, onSave }: { modal: { mode: "add" | "edit"; row?: DiscountType } | null; onClose: () => void; onSave: (r: DiscountType) => void }) {

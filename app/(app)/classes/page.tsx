@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  Plus, Filter, ArrowUpDown, Eye, Pencil, Trash2, School, Users, Building2, BookOpen, Layers,
+  Plus, Filter, ArrowUpDown, Eye, Pencil, Trash2, School, Users, Building2, BookOpen, Layers, RefreshCw, AlertCircle,
 } from "lucide-react";
 import {
   Avatar, Badge, Btn, ConfirmDialog, EmptyState, Field, Input, Modal, PillSelect, RowMenu,
@@ -12,27 +12,69 @@ import {
 import {
   Board, BoardBar, BoardBody, BoardHead, BoardSearch, BoardTabs, BoardToolbar, BarCell, GroupHead, GroupTable,
 } from "@/components/board";
-import { CLASS_ROWS, SESSIONS, CLASS_NAMES, type ClassRow } from "@/lib/mock-data";
+import { useBranch } from "@/lib/branch-context";
+import { BranchScopeBar } from "@/components/branch/branch-ui";
+import { classesApi, type ClassItem, type TeacherOption } from "@/lib/auth/api-client";
 
 const SECTIONS_ALL = ["A", "B", "C", "D"];
-const STATUSES: ClassRow["status"][] = ["Active", "Inactive"];
+const STATUSES: ClassItem["status"][] = ["Active", "Inactive"];
 const TABS = ["All", "Active", "Inactive"] as const;
 type Tab = (typeof TABS)[number];
 const COLS = "grid-cols-[44px_minmax(180px,1.3fr)_90px_150px_100px_minmax(160px,1fr)_130px_64px]";
 
 export default function AllClassesPage() {
-  const [rows, setRows] = useState<ClassRow[]>(CLASS_ROWS);
+  const { currentBranchId } = useBranch();
+
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [q, setQ] = useState("");
   const [tab, setTab] = useState<Tab>("All");
   const [section, setSection] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [modal, setModal] = useState<{ mode: "add" | "edit"; row?: ClassRow } | null>(null);
-  const [view, setView] = useState<ClassRow | null>(null);
-  const [toDelete, setToDelete] = useState<ClassRow | null>(null);
+  const [modal, setModal] = useState<{ mode: "add" | "edit"; row?: ClassItem } | null>(null);
+  const [view, setView] = useState<ClassItem | null>(null);
+  const [toDelete, setToDelete] = useState<ClassItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchData = useCallback(async () => {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
+      const [classRes, teacherRes] = await Promise.all([
+        classesApi.list({ branchId: branchScope }, ctrl.signal),
+        classesApi.listTeachers(branchScope, ctrl.signal),
+      ]);
+      setClasses(classRes.classes ?? []);
+      setTeachers(teacherRes.teachers ?? []);
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name === "AbortError") return;
+      setError((err as Error).message || "Failed to load classes.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    return () => abortRef.current?.abort();
+  }, [fetchData]);
 
   const groups = useMemo(() => {
-    const base = rows
+    const base = classes
+      .filter((r) => !currentBranchId || currentBranchId === "all" || !r.branchId || r.branchId === currentBranchId)
       .filter((r) => tab === "All" || r.status === tab)
       .filter((r) => r.name.toLowerCase().includes(q.toLowerCase()) || r.code.toLowerCase().includes(q.toLowerCase()))
       .filter((r) => (section ? r.sections.includes(section) : true))
@@ -40,18 +82,55 @@ export default function AllClassesPage() {
     return STATUSES
       .map((s) => ({ status: s, color: ACTIVE_COLORS[s], items: base.filter((r) => r.status === s) }))
       .filter((g) => g.items.length > 0);
-  }, [rows, q, tab, section, sortAsc]);
+  }, [classes, currentBranchId, q, tab, section, sortAsc]);
 
   const total = groups.reduce((n, g) => n + g.items.length, 0);
 
-  const save = (row: ClassRow) => {
-    setRows((p) => (modal?.mode === "edit" ? p.map((r) => (r.id === row.id ? row : r)) : [row, ...p]));
-    setModal(null);
+  const handleSave = async (payload: Partial<ClassItem> & { teacherId?: string | null }) => {
+    setSaving(true);
+    setApiError(null);
+    try {
+      const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
+      if (modal?.mode === "edit" && modal.row) {
+        const res = await classesApi.update(modal.row.id, { ...payload, branchId: branchScope });
+        setClasses((p) => p.map((r) => (r.id === modal.row!.id ? res.class : r)));
+      } else {
+        const res = await classesApi.create({ ...payload, branchId: branchScope } as Parameters<typeof classesApi.create>[0]);
+        setClasses((p) => [res.class, ...p]);
+      }
+      setModal(null);
+    } catch (err: unknown) {
+      setApiError((err as Error).message || "Failed to save class.");
+    } finally {
+      setSaving(false);
+    }
   };
-  const setStatus = (id: string, status: ClassRow["status"]) =>
-    setRows((p) => p.map((r) => (r.id === id ? { ...r, status } : r)));
 
-  const rowMenu = (r: ClassRow) => [
+  const handleStatusChange = async (id: string, status: ClassItem["status"]) => {
+    try {
+      const res = await classesApi.updateStatus(id, status);
+      setClasses((p) => p.map((r) => (r.id === id ? res.class : r)));
+    } catch {
+      // silently revert — reload
+      fetchData();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setDeleting(true);
+    try {
+      await classesApi.delete(toDelete.id);
+      setClasses((p) => p.filter((r) => r.id !== toDelete.id));
+      setToDelete(null);
+    } catch (err: unknown) {
+      alert((err as Error).message || "Failed to delete class.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const rowMenu = (r: ClassItem) => [
     { label: "View", Icon: Eye, onClick: () => setView(r) },
     { label: "Edit", Icon: Pencil, onClick: () => setModal({ mode: "edit", row: r }) },
     { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
@@ -67,105 +146,135 @@ export default function AllClassesPage() {
           actions={
             <>
               <div className="hidden -space-x-2 md:flex">
-                {rows.slice(0, 3).map((r) => (
+                {classes.slice(0, 3).map((r) => (
                   <span key={r.id} className="rounded-full ring-2 ring-white"><Avatar name={r.teacher} size={32} /></span>
                 ))}
               </div>
-              <Link href="/subjects/assign" className="hidden h-9 items-center gap-2 rounded border border-[#C5C7D0] bg-white px-3 text-[14px] hover:bg-[#F5F6F8] lg:flex">
+              <Link href="/subjects/assign" className="hidden h-9 items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] hover:bg-[var(--theme-hover)] lg:flex">
                 <BookOpen className="h-[18px] w-[18px]" /> Assign Subjects
               </Link>
             </>
           }
         />
+        <BranchScopeBar count={total} noun="classes" />
         <BoardTabs tabs={TABS} value={tab} onChange={setTab} />
         <BoardToolbar>
           <SplitButton label="Add Class" Icon={Plus} onClick={() => setModal({ mode: "add" })} />
           <BoardSearch value={q} onChange={setQ} placeholder="Search classes" />
           <ToolbarBtn Icon={ArrowUpDown} label={sortAsc ? "A–Z" : "Z–A"} onClick={() => setSortAsc((s) => !s)} />
           <div className="shrink-0"><Select value={section} onChange={(e) => setSection(e.target.value)} options={SECTIONS_ALL} placeholder="All Sections" className="h-9 w-36" /></div>
+          <ToolbarBtn Icon={RefreshCw} label="Refresh" onClick={fetchData} />
           <ToolbarBtn Icon={Filter} label="Filter" />
           <ToolbarBtn Icon={Layers} label="Group by" />
         </BoardToolbar>
       </BoardBar>
 
       <BoardBody>
-        {total === 0 && (
+        {/* Error banner */}
+        {error && (
+          <div className="mx-4 mt-4 flex items-center gap-3 rounded-lg border border-[var(--theme-danger-border)] bg-[var(--theme-danger-soft)] px-4 py-3 text-[14px] text-[var(--theme-danger-text)]">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+            <button onClick={fetchData} className="ml-auto underline">Retry</button>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {loading && (
+          <div className="flex items-center justify-center py-20 text-[var(--theme-text-muted)]">
+            <RefreshCw className="h-5 w-5 animate-spin mr-2" /> Loading classes…
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && total === 0 && (
           <EmptyState Icon={School} title="No classes found" message="Try adjusting your filters, or add a new class."
             action={<Btn variant="primary" Icon={Plus} onClick={() => setModal({ mode: "add" })}>Add Class</Btn>} />
         )}
 
-        <div className="space-y-8 md:min-w-[900px]">
-          {groups.map((g) => {
-            const open = !collapsed[g.status];
-            return (
-              <section key={g.status}>
-                <GroupHead title={g.status} color={g.color} count={g.items.length} open={open}
-                  onToggle={() => setCollapsed((p) => ({ ...p, [g.status]: open }))} />
+        {!loading && (
+          <div className="space-y-8 md:min-w-[900px]">
+            {groups.map((g) => {
+              const open = !collapsed[g.status];
+              return (
+                <section key={g.status}>
+                  <GroupHead title={g.status} color={g.color} count={g.items.length} open={open}
+                    onToggle={() => setCollapsed((p) => ({ ...p, [g.status]: open }))} />
 
-                {open && (
-                  <>
-                    {/* DESKTOP TABLE */}
-                    <div className="hidden md:block">
-                      <GroupTable>
-                        <div className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white")}>
-                          <div className="border-l-[6px]" style={{ borderColor: g.color }} />
-                          <Th className="border-l border-[#E6E9EF]">Class</Th>
-                          <Th className="border-l border-[#E6E9EF]">Code</Th>
-                          <Th className="border-l border-[#E6E9EF]">Sections</Th>
-                          <Th className="border-l border-[#E6E9EF]">Students</Th>
-                          <Th className="border-l border-[#E6E9EF]">Class Teacher</Th>
-                          <Th className="border-l border-[#E6E9EF]">Status</Th>
-                          <Th className="border-l border-[#E6E9EF]"><span className="sr-only">Actions</span></Th>
-                        </div>
+                  {open && (
+                    <>
+                      {/* DESKTOP TABLE */}
+                      <div className="hidden md:block">
+                        <GroupTable>
+                          <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)]")}>
+                            <div className="border-l-[6px]" style={{ borderColor: g.color }} />
+                            <Th className="border-l border-[var(--theme-border)]">Class</Th>
+                            <Th className="border-l border-[var(--theme-border)]">Code</Th>
+                            <Th className="border-l border-[var(--theme-border)]">Sections</Th>
+                            <Th className="border-l border-[var(--theme-border)]">Students</Th>
+                            <Th className="border-l border-[var(--theme-border)]">Class Teacher</Th>
+                            <Th className="border-l border-[var(--theme-border)]">Status</Th>
+                            <Th className="border-l border-[var(--theme-border)]"><span className="sr-only">Actions</span></Th>
+                          </div>
+                          {g.items.map((r) => (
+                            <div key={r.id} className={cn("row grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] text-[15px] transition-colors last:border-b-0 hover:bg-[var(--theme-hover)]")}>
+                              <BarCell color={g.color} className="py-2.5">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--theme-primary-soft)] text-[var(--theme-primary-soft-text)]"><School className="h-4 w-4" /></span>
+                              </BarCell>
+                              <Td className="gap-2 font-medium"><span className="truncate">{r.name}</span></Td>
+                              <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.code}</Td>
+                              <Td className="gap-1 border-l border-[var(--theme-border)]">{r.sections.map((s) => <Badge key={s} label={s} tone="gray" />)}</Td>
+                              <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.students}</Td>
+                              <Td className="border-l border-[var(--theme-border)]"><span className="truncate">{r.teacher}</span></Td>
+                              <Td className="border-l border-[var(--theme-border)]">
+                                <PillSelect<ClassItem["status"]> value={r.status} options={STATUSES} colors={ACTIVE_COLORS} onPick={(s) => handleStatusChange(r.id, s)} className="w-24" menuWidth="w-32" />
+                              </Td>
+                              <Td className="justify-center border-l border-[var(--theme-border)]"><RowMenu items={rowMenu(r)} /></Td>
+                            </div>
+                          ))}
+                        </GroupTable>
+                      </div>
+
+                      {/* MOBILE CARDS */}
+                      <div className="space-y-3 md:hidden">
                         {g.items.map((r) => (
-                          <div key={r.id} className={cn("row grid", COLS, "border-b border-[#E6E9EF] bg-white text-[15px] transition-colors last:border-b-0 hover:bg-[#F5F6F8]")}>
-                            <BarCell color={g.color} className="py-2.5">
-                              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#CCE5FF] text-[#0060B9]"><School className="h-4 w-4" /></span>
-                            </BarCell>
-                            <Td className="gap-2 font-medium"><span className="truncate">{r.name}</span></Td>
-                            <Td className="border-l border-[#E6E9EF] text-[#676879]">{r.code}</Td>
-                            <Td className="gap-1 border-l border-[#E6E9EF]">{r.sections.map((s) => <Badge key={s} label={s} tone="gray" />)}</Td>
-                            <Td className="border-l border-[#E6E9EF] text-[#676879]">{r.students}</Td>
-                            <Td className="border-l border-[#E6E9EF]"><span className="truncate">{r.teacher}</span></Td>
-                            <Td className="border-l border-[#E6E9EF]">
-                              <PillSelect<ClassRow["status"]> value={r.status} options={STATUSES} colors={ACTIVE_COLORS} onPick={(s) => setStatus(r.id, s)} className="w-24" menuWidth="w-32" />
-                            </Td>
-                            <Td className="justify-center border-l border-[#E6E9EF]"><RowMenu items={rowMenu(r)} /></Td>
+                          <div key={r.id} className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3 shadow-sm" style={{ borderLeft: `6px solid ${g.color}` }}>
+                            <div className="flex items-start gap-3">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-primary-soft)] text-[var(--theme-primary-soft-text)]"><School className="h-4 w-4" /></span>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-[16px] font-medium">{r.name}</p>
+                                <p className="text-[13px] text-[var(--theme-text-muted)]">{r.code} · {r.students} students</p>
+                              </div>
+                              <RowMenu items={rowMenu(r)} />
+                            </div>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              {r.sections.map((s) => <Badge key={s} label={`Section ${s}`} tone="gray" />)}
+                              <PillSelect<ClassItem["status"]> value={r.status} options={STATUSES} colors={ACTIVE_COLORS} onPick={(s) => handleStatusChange(r.id, s)} className="w-24" menuWidth="w-32" />
+                            </div>
+                            <p className="mt-2 text-[13px] text-[var(--theme-text-muted)]">Teacher: {r.teacher}</p>
                           </div>
                         ))}
-                      </GroupTable>
-                    </div>
-
-                    {/* MOBILE CARDS */}
-                    <div className="space-y-3 md:hidden">
-                      {g.items.map((r) => (
-                        <div key={r.id} className="rounded-lg border border-[#E6E9EF] bg-white p-3 shadow-sm" style={{ borderLeft: `6px solid ${g.color}` }}>
-                          <div className="flex items-start gap-3">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#CCE5FF] text-[#0060B9]"><School className="h-4 w-4" /></span>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[16px] font-medium">{r.name}</p>
-                              <p className="text-[13px] text-[#676879]">{r.code} · {r.students} students</p>
-                            </div>
-                            <RowMenu items={rowMenu(r)} />
-                          </div>
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            {r.sections.map((s) => <Badge key={s} label={`Section ${s}`} tone="gray" />)}
-                            <PillSelect<ClassRow["status"]> value={r.status} options={STATUSES} colors={ACTIVE_COLORS} onPick={(s) => setStatus(r.id, s)} className="w-24" menuWidth="w-32" />
-                          </div>
-                          <p className="mt-2 text-[13px] text-[#676879]">Teacher: {r.teacher}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </section>
-            );
-          })}
-        </div>
+                      </div>
+                    </>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        )}
       </BoardBody>
 
-      <ClassForm modal={modal} onClose={() => setModal(null)} onSave={save} />
+      {/* Class Form Modal */}
+      <ClassFormModal
+        modal={modal}
+        teachers={teachers}
+        saving={saving}
+        apiError={apiError}
+        onClose={() => { setModal(null); setApiError(null); }}
+        onSave={handleSave}
+      />
 
+      {/* View Modal */}
       <Modal open={!!view} onClose={() => setView(null)} title={view?.name ?? ""} subtitle="Class details"
         footer={<Btn variant="secondary" onClick={() => setView(null)}>Close</Btn>}>
         {view && (
@@ -176,17 +285,26 @@ export default function AllClassesPage() {
               <Detail label="Students" value={String(view.students)} />
               <Detail label="Class Teacher" value={view.teacher} />
               <Detail label="Sections" value={view.sections.join(", ")} />
-              <Detail label="Class ID" value={view.id} />
+              <Detail label="Session" value={view.session} />
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-[#F6F7FB] p-3 text-[13px] text-[#676879]">
-              <Building2 className="h-4 w-4" /> Session 2025-2026 · Academic year
+            {view.description && (
+              <p className="rounded-lg bg-[var(--theme-sidebar)] px-3 py-2 text-[13px] text-[var(--theme-text-muted)]">{view.description}</p>
+            )}
+            <div className="flex items-center gap-2 rounded-lg bg-[var(--theme-sidebar)] p-3 text-[13px] text-[var(--theme-text-muted)]">
+              <Building2 className="h-4 w-4" /> Session {view.session} · Academic year
             </div>
           </div>
         )}
       </Modal>
 
-      <ConfirmDialog open={!!toDelete} onClose={() => setToDelete(null)} onConfirm={() => setRows((p) => p.filter((r) => r.id !== toDelete?.id))}
-        title="Delete class" confirmLabel="Delete" message={`Are you sure you want to delete ${toDelete?.name}? This action cannot be undone.`} />
+      <ConfirmDialog
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        onConfirm={handleDelete}
+        title="Delete class"
+        confirmLabel={deleting ? "Deleting…" : "Delete"}
+        message={`Are you sure you want to delete ${toDelete?.name}? This action cannot be undone.`}
+      />
     </Board>
   );
 }
@@ -194,54 +312,160 @@ export default function AllClassesPage() {
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[12px] text-[#9699A6]">{label}</p>
+      <p className="text-[12px] text-[var(--theme-text-faint)]">{label}</p>
       <p className="text-[14px] font-medium">{value}</p>
     </div>
   );
 }
 
-function ClassForm({ modal, onClose, onSave }: { modal: { mode: "add" | "edit"; row?: ClassRow } | null; onClose: () => void; onSave: (r: ClassRow) => void }) {
-  const [form, setForm] = useState<ClassRow>(modal?.row ?? { id: "", name: "", code: "", sections: ["A"], students: 0, teacher: "", status: "Active" });
-  const [sections, setSections] = useState<string[]>(modal?.row?.sections ?? ["A"]);
+/* ─────────────────────── Class Form Modal ─────────────────────── */
 
-  const key = `${modal?.mode ?? ""}-${modal?.row?.id ?? ""}`;
-  const [lastKey, setLastKey] = useState(key);
-  if (lastKey !== key) {
-    setLastKey(key);
-    setForm(modal?.row ?? { id: "", name: "", code: "", sections: ["A"], students: 0, teacher: "", status: "Active" });
-    setSections(modal?.row?.sections ?? ["A"]);
+type ClassFormData = {
+  name: string;
+  code: string;
+  session: string;
+  sections: string[];
+  teacherId: string;
+  description: string;
+  status: "Active" | "Inactive";
+};
+
+const SESSIONS = ["2025-2026", "2024-2025", "2026-2027"];
+const CLASS_NAMES = [
+  "Nursery", "KG", "Prep", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5",
+  "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+  "Class 1", "Class 2", "Class 3", "Class 4", "Class 5",
+  "Class 6", "Class 7", "Class 8", "Class 9", "Class 10",
+];
+
+function ClassFormModal({
+  modal,
+  teachers,
+  saving,
+  apiError,
+  onClose,
+  onSave,
+}: {
+  modal: { mode: "add" | "edit"; row?: ClassItem } | null;
+  teachers: TeacherOption[];
+  saving: boolean;
+  apiError: string | null;
+  onClose: () => void;
+  onSave: (payload: Partial<ClassItem> & { teacherId?: string | null }) => void;
+}) {
+  const blank: ClassFormData = { name: "", code: "", session: "2025-2026", sections: ["A"], teacherId: "", description: "", status: "Active" };
+  const [form, setForm] = useState<ClassFormData>(blank);
+  const [sections, setSections] = useState<string[]>(["A"]);
+
+  // Reset when modal changes
+  const key = `${modal?.mode ?? ""}-${modal?.row?.id ?? "new"}`;
+  const lastKey = useRef(key);
+  if (lastKey.current !== key) {
+    lastKey.current = key;
+    if (modal?.row) {
+      setForm({
+        name: modal.row.name,
+        code: modal.row.code,
+        session: modal.row.session,
+        sections: modal.row.sections,
+        teacherId: modal.row.teacherId ?? "",
+        description: modal.row.description,
+        status: modal.row.status,
+      });
+      setSections(modal.row.sections);
+    } else {
+      setForm(blank);
+      setSections(["A"]);
+    }
   }
 
-  const set = (patch: Partial<ClassRow>) => setForm((f) => ({ ...f, ...patch }));
+  const set = (patch: Partial<ClassFormData>) => setForm((f) => ({ ...f, ...patch }));
+
+  const submit = () => {
+    const teacher = teachers.find((t) => t.id === form.teacherId);
+    onSave({
+      name: form.name,
+      code: form.code,
+      session: form.session,
+      sections,
+      teacherId: form.teacherId || null,
+      teacher: teacher?.name || undefined,
+      description: form.description,
+      status: form.status,
+    });
+  };
 
   return (
-    <Modal open={!!modal} onClose={onClose} width="max-w-2xl"
-      title={modal?.mode === "edit" ? "Edit Class" : "New Class"} subtitle="Define the class, sections and class teacher."
+    <Modal
+      open={!!modal}
+      onClose={onClose}
+      width="max-w-2xl"
+      title={modal?.mode === "edit" ? "Edit Class" : "New Class"}
+      subtitle="Define the class, sections and class teacher."
       footer={
         <>
-          <Btn variant="secondary" onClick={onClose}>Cancel</Btn>
-          <Btn variant="primary" onClick={() => onSave({ ...form, sections, id: form.id || `CLS-${String(Date.now()).slice(-4)}` })}>
-            {modal?.mode === "edit" ? "Save Changes" : "Create Class"}
+          <Btn variant="secondary" onClick={onClose} disabled={saving}>Cancel</Btn>
+          <Btn variant="primary" onClick={submit} disabled={saving || !form.name.trim()}>
+            {saving ? "Saving…" : modal?.mode === "edit" ? "Save Changes" : "Create Class"}
           </Btn>
         </>
-      }>
+      }
+    >
+      {apiError && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-[var(--theme-danger-border)] bg-[var(--theme-danger-soft)] px-3 py-2 text-[13px] text-[var(--theme-danger-text)]">
+          <AlertCircle className="h-4 w-4 shrink-0" />{apiError}
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Class Name"><Input value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. Grade 5" list="class-names" /><datalist id="class-names">{CLASS_NAMES.map((c) => <option key={c} value={c} />)}</datalist></Field>
-        <Field label="Class Code"><Input value={form.code} onChange={(e) => set({ code: e.target.value.toUpperCase() })} placeholder="e.g. G5" /></Field>
-        <Field label="Academic Session"><Select options={SESSIONS} value="2025-2026" onChange={() => {}} /></Field>
-        <Field label="Class Teacher"><Input value={form.teacher} onChange={(e) => set({ teacher: e.target.value })} placeholder="Teacher name" /></Field>
+        <Field label="Class Name">
+          <Input value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. Grade 5" list="class-names-list" />
+          <datalist id="class-names-list">{CLASS_NAMES.map((c) => <option key={c} value={c} />)}</datalist>
+        </Field>
+        <Field label="Class Code">
+          <Input value={form.code} onChange={(e) => set({ code: e.target.value.toUpperCase() })} placeholder="e.g. G5" />
+        </Field>
+        <Field label="Academic Session">
+          <Select options={SESSIONS} value={form.session} onChange={(e) => set({ session: e.target.value })} />
+        </Field>
+        <Field label="Class Teacher">
+          <select
+            value={form.teacherId}
+            onChange={(e) => set({ teacherId: e.target.value })}
+            className="h-9 w-full rounded border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 text-[14px] focus:border-[var(--theme-primary)] focus:outline-none"
+          >
+            <option value="">— Select a teacher —</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} {t.designation ? `(${t.designation})` : ""}
+              </option>
+            ))}
+          </select>
+          {teachers.length === 0 && (
+            <p className="mt-1 text-[12px] text-[var(--theme-text-muted)]">No teachers found. Add employees with a teaching designation first.</p>
+          )}
+        </Field>
         <Field label="Sections" className="sm:col-span-2">
           <div className="flex flex-wrap gap-3">
             {["A", "B", "C", "D"].map((s) => (
               <label key={s} className="flex items-center gap-2 text-[14px]">
-                <input type="checkbox" checked={sections.includes(s)} onChange={(e) => setSections((p) => (e.target.checked ? [...p, s] : p.filter((x) => x !== s)))} className="h-4 w-4 accent-[#2563EB]" /> Section {s}
+                <input
+                  type="checkbox"
+                  checked={sections.includes(s)}
+                  onChange={(e) => setSections((p) => (e.target.checked ? [...p, s] : p.filter((x) => x !== s)))}
+                  className="h-4 w-4 accent-[var(--theme-primary)]"
+                />
+                Section {s}
               </label>
             ))}
           </div>
         </Field>
-        <Field label="Description" className="sm:col-span-2"><Textarea placeholder="Short description / notes about this class" /></Field>
-        <Field label="Status"><Select options={["Active", "Inactive"]} value={form.status} onChange={(e) => set({ status: e.target.value as ClassRow["status"] })} /></Field>
-        <div className="flex items-end gap-2 text-[13px] text-[#676879]"><Users className="h-4 w-4" /> Students are added from the Students module.</div>
+        <Field label="Description" className="sm:col-span-2">
+          <Textarea value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="Short description / notes about this class" />
+        </Field>
+        <Field label="Status">
+          <Select options={["Active", "Inactive"]} value={form.status} onChange={(e) => set({ status: e.target.value as ClassFormData["status"] })} />
+        </Field>
+        <div className="flex items-end gap-2 text-[13px] text-[var(--theme-text-muted)]"><Users className="h-4 w-4" /> Students are added from the Students module.</div>
       </div>
     </Modal>
   );

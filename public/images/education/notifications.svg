@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200" role="img" aria-label="Notifications illustration">
+  <defs>
+    <linearGradient id="notBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F1EDFF"/><stop offset="1" stop-color="#E9F1FF"/>
+    </linearGradient>
+    <linearGradient id="notBell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDAB3D"/><stop offset="1" stop-color="#F08700"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="320" height="200" rx="22" fill="url(#notBg)"/>
+  <circle cx="52" cy="48" r="22" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="276" cy="152" r="24" fill="#FFFFFF" opacity="0.55"/>
+
+  <!-- bell -->
+  <path d="M160 44a42 42 0 0 1 42 42v30l12 16H106l12-16V86a42 42 0 0 1 42-42z" fill="url(#notBell)"/>
+  <circle cx="160" cy="40" r="10" fill="#F08700"/>
+  <rect x="106" y="132" width="108" height="12" rx="6" fill="#1D4ED8"/>
+  <path d="M146 150a14 14 0 0 0 28 0z" fill="#1D4ED8"/>
+
+  <!-- unread badge -->
+  <circle cx="216" cy="62" r="17" fill="#DF2F4A"/>
+  <text x="216" y="68" text-anchor="middle" font-family="Figtree, Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">3</text>
+
+  <!-- signal arcs -->
+  <g fill="none" stroke="#6C47FF" stroke-width="5" stroke-linecap="round" opacity="0.55">
+    <path d="M76 62a34 34 0 0 0 0 48"/>
+    <path d="M60 46a56 56 0 0 0 0 80" opacity="0.6"/>
+  </g>
+</svg>

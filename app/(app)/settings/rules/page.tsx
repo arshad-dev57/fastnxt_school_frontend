@@ -30,14 +30,14 @@ export default function RulesPage() {
           {filtered.map((r) => (
             <Card key={r.id}>
               <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E7DEFF] text-[#5A34D6]"><ScrollText className="h-5 w-5" /></span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-accent-soft)] text-[var(--theme-accent-strong)]"><ScrollText className="h-5 w-5" /></span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-[15px] font-semibold">{r.title}</p>
                     <Badge label={r.status} />
-                    <span className="font-mono text-[11px] text-[#9699A6]">{r.id}</span>
+                    <span className="font-mono text-[11px] text-[var(--theme-text-faint)]">{r.id}</span>
                   </div>
-                  <p className="mt-1 text-[13px] leading-relaxed text-[#676879]">{r.body}</p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-[var(--theme-text-muted)]">{r.body}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <Toggle checked={r.status === "Active"} onChange={() => toggle(r.id)} />
@@ -79,7 +79,7 @@ function RuleForm({ modal, onClose, onSave }: { modal: { mode: "add" | "edit"; r
         <Field label="Title"><Input value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="e.g. Uniform Policy" /></Field>
         <Field label="Rule / Regulation"><Textarea value={form.body} onChange={(e) => set({ body: e.target.value })} placeholder="Describe the rule in detail" /></Field>
         <div className="flex items-center gap-3">
-          <span className="text-[13px] font-medium text-[#323338]">Status</span>
+          <span className="text-[13px] font-medium text-[var(--theme-text)]">Status</span>
           <Toggle checked={form.status === "Active"} onChange={(v) => set({ status: v ? "Active" : "Inactive" })} label={form.status} />
         </div>
       </div>

@@ -5,9 +5,132 @@ body {
   height: 100%;
 }
 
+/* ---------------------------------------------------------------- theming */
+/* Token values are generated from lib/theme/themes.ts and injected by the
+   root layout (see buildThemeCss). The fallbacks below match the Default
+   theme so the very first paint is already correct. */
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: var(--theme-chrome, #292f4c);
+}
+
 body {
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  background: var(--theme-bg, #ffffff);
+  color: var(--theme-text, #323338);
+}
+
+/* ------------------------------------------------- icon micro-interactions */
+/* Subtle, premium motion. Every animation is wrapped in a
+   `prefers-reduced-motion: no-preference` guard so users who disable motion
+   get a completely static (but fully functional) interface. */
+@keyframes icon-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes icon-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes icon-shake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-12deg); }
+  45% { transform: rotate(9deg); }
+  70% { transform: rotate(-6deg); }
+  85% { transform: rotate(3deg); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* shared transition for interactive icons */
+  .ic-hover { transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.18s ease, opacity 0.18s ease; }
+  /* icon gently scales when its button is hovered / focused */
+  .ic-btn:hover .ic-hover,
+  .ic-btn:focus-visible .ic-hover { transform: scale(1.1); }
+  /* sidebar navigation — small scale, active stays slightly larger */
+  .ic-nav:hover .ic-hover { transform: scale(1.08); }
+  .ic-nav-active .ic-hover { transform: scale(1.05); }
+  /* dashboard / stat cards — icon lifts on hover */
+  .ic-card .ic-lift { transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.22s ease; }
+  .ic-card:hover .ic-lift { transform: translateY(-3px) scale(1.06); }
+  /* add / create buttons — the plus grows a touch */
+  .ic-plus { transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .ic-plus-btn:hover .ic-plus { transform: scale(1.15); }
+  /* popover triggers (e.g. theme) — nudge the icon while open */
+  .ic-open .ic-hover { transform: rotate(10deg) scale(1.06); }
+  /* one-shot feedback animations */
+  .icon-pop { animation: icon-pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+  .icon-float { animation: icon-float 3.5s ease-in-out infinite; }
+  .icon-shake { animation: icon-shake 0.7s ease-in-out both; }
+}
+
+/* -------------------------------------------------- Bisons AI assistant */
+/* Self-contained, dependency-free AI emblem. GPU-friendly only
+   (transform + opacity + gradients). Motion is opt-in via the guard below. */
+@keyframes ai-float {
+  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+  50% { transform: translateY(-4px) rotate(1.2deg); }
+}
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+@keyframes ai-glow {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.09); }
+}
+@keyframes ai-core {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+@keyframes ai-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  35% { opacity: 1; transform: scale(1) rotate(15deg); }
+  65% { opacity: 0.45; transform: scale(0.72) rotate(28deg); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ai-float { animation: ai-float 6.5s ease-in-out infinite; }
+  .ai-ring { animation: ai-spin 9s linear infinite; }
+  .ai-glow { animation: ai-glow 5.5s ease-in-out infinite; }
+  .ai-core { animation: ai-core 4.5s ease-in-out infinite; }
+  .ai-twinkle { animation: ai-twinkle 3.6s ease-in-out infinite; }
+  /* gentle intensification while hovered */
+  .ai-wrap:hover .ai-ring { animation-duration: 4.5s; }
+  .ai-wrap:hover .ai-glow { animation-duration: 3s; }
+  .ai-wrap:hover .ai-twinkle { animation-duration: 2.2s; }
+  .ai-wrap:hover .ai-core { animation-duration: 2.6s; }
+}
+
+/* ------------------------------------------------------ skeleton shimmer */
+/* Theme-aware loading placeholders. Both the base fill and the moving
+   highlight come from centralized theme tokens (--theme-skeleton /
+   --theme-skeleton-shine), so skeletons look correct in every theme. */
+@keyframes skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--theme-skeleton, #edeff3);
+  border-radius: 6px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent, var(--theme-skeleton-shine, #f9fafb), transparent);
+}
+
+/* Reduced motion: keep the placeholder, drop the travelling highlight. */
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after { animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { display: none; }
 }
 
 /* Hide scrollbars but keep scroll functionality */

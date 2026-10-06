@@ -1,129 +1,184 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus, ShieldCheck, Save, CheckCircle2, Users, Lock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ShieldCheck, Save, CheckCircle2, Eye, Building2, RefreshCw } from "lucide-react";
 import { Badge, Btn, Card, CardHead, Checkbox, Modal, PageHeader, Toggle, cn } from "@/components/ui";
-import { PERMISSION_GROUPS, USER_ROLES } from "@/lib/mock-data";
+import { useBranch } from "@/lib/branch-context";
+import { type UserRole } from "@/lib/branch";
+import { DEFAULT_ROLE_LIST, PERMISSION_ACTIONS, SCOPE_LABELS, getRoleDef, getRolePermissions, groupedModules } from "@/lib/branch-access";
+import { rolesApi, describeApiError } from "@/lib/auth/api-client";
 
 const keyOf = (m: string, a: string) => `${m}::${a}`;
+const GROUPS = groupedModules();
+const MODULE_COUNT = GROUPS.reduce((n, g) => n + g.modules.length, 0);
+
+function seed(role: UserRole): Record<string, boolean> {
+  const all: Record<string, boolean> = {};
+  for (const p of getRolePermissions(role)) all[keyOf(p.module, p.action)] = true;
+  return all;
+}
 
 export default function RolesPermissionsPage() {
-  const [role, setRole] = useState<string>(USER_ROLES[0]);
-  const [roles, setRoles] = useState<string[]>([...USER_ROLES]);
-  const [newRole, setNewRole] = useState(false);
-  const [roleName, setRoleName] = useState("");
+  const { simulateRole, roleOverride } = useBranch();
+  const [role, setRole] = useState<UserRole>(DEFAULT_ROLE_LIST[0]);
+  const [perms, setPerms] = useState<Record<string, boolean>>(() => seed(DEFAULT_ROLE_LIST[0]));
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [perms, setPerms] = useState<Record<string, boolean>>(() => {
-    const all: Record<string, boolean> = {};
-    PERMISSION_GROUPS.forEach((g) => g.actions.forEach((a) => { all[keyOf(g.module, a)] = true; }));
-    return all;
-  });
+  // Load permissions for selected role from API
+  const fetchRolePermissions = async (selectedRole: UserRole) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await rolesApi.getPermissions(selectedRole);
+      if (res.permissions && Object.keys(res.permissions).length > 0) {
+        setPerms(res.permissions as Record<string, boolean>);
+      } else {
+        setPerms(seed(selectedRole));
+      }
+    } catch {
+      // If offline or error, default to local seed
+      setPerms(seed(selectedRole));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const total = useMemo(() => PERMISSION_GROUPS.reduce((a, g) => a + g.actions.length, 0), []);
+  useEffect(() => {
+    fetchRolePermissions(role);
+  }, [role]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await rolesApi.savePermissions(role, perms);
+      setSaved(true);
+    } catch (err) {
+      const { message } = describeApiError(err);
+      setError(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const total = MODULE_COUNT * PERMISSION_ACTIONS.length;
   const granted = useMemo(() => Object.values(perms).filter(Boolean).length, [perms]);
+  const def = getRoleDef(role);
 
   const toggle = (m: string, a: string) => setPerms((p) => ({ ...p, [keyOf(m, a)]: !p[keyOf(m, a)] }));
-
   const toggleModule = (m: string, on: boolean) =>
     setPerms((p) => {
       const next = { ...p };
-      PERMISSION_GROUPS.find((g) => g.module === m)?.actions.forEach((a) => { next[keyOf(m, a)] = on; });
+      for (const a of PERMISSION_ACTIONS) next[keyOf(m, a)] = on;
       return next;
     });
-
-  const moduleAll = (m: string) => PERMISSION_GROUPS.find((g) => g.module === m)?.actions.every((a) => perms[keyOf(m, a)]) ?? false;
-
-  const addRole = () => {
-    const name = roleName.trim();
-    if (!name) return;
-    setRoles((p) => [...p, name]);
-    setRole(name);
-    setRoleName(""); setNewRole(false);
-  };
+  const moduleAll = (m: string) => PERMISSION_ACTIONS.every((a) => perms[keyOf(m, a)]);
 
   return (
     <>
-      <PageHeader title="Roles & Permissions" subtitle="Control what each role can view and manage across modules."
-        actions={<Btn variant="primary" Icon={Save} onClick={() => setSaved(true)}>Save Permissions</Btn>} />
+      <PageHeader title="Roles & Permissions" subtitle="Role × module × action × branch scope — connected to live API."
+        actions={
+          <>
+            <Btn variant="secondary" Icon={Eye} onClick={() => simulateRole(role)}>Preview this role</Btn>
+            <Btn variant="primary" Icon={Save} onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save Permissions"}
+            </Btn>
+          </>
+        } />
 
       <div className="grid grid-cols-1 gap-5 px-4 pb-24 pt-4 sm:px-6 lg:grid-cols-4">
         <Card pad={false} className="lg:col-span-1">
-          <CardHead title="Roles" subtitle={`${roles.length} roles`} Icon={ShieldCheck}
-            right={<Btn size="sm" variant="secondary" Icon={Plus} onClick={() => setNewRole(true)}>Add</Btn>} />
+          <CardHead title="Roles" subtitle={`${DEFAULT_ROLE_LIST.length} default roles`} Icon={ShieldCheck} />
           <div className="space-y-1 p-2">
-            {roles.map((r) => (
-              <button key={r} onClick={() => setRole(r)}
-                className={cn("flex w-full items-center gap-2.5 rounded px-3 py-2.5 text-left text-[14px] transition-colors",
-                  role === r ? "bg-[#CCE5FF] font-medium text-[#0060B9]" : "hover:bg-[#F5F6F8]")}>
-                <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
-                <span className="flex-1 truncate">{r}</span>
-                {role === r && <Badge label="Editing" tone="blue" />}
-              </button>
-            ))}
+            {DEFAULT_ROLE_LIST.map((r) => {
+              const d = getRoleDef(r);
+              return (
+                <button key={r} onClick={() => setRole(r)}
+                  className={cn("flex w-full items-center gap-2.5 rounded px-3 py-2.5 text-left text-[14px] transition-colors",
+                    role === r ? "bg-[var(--theme-primary-soft)] font-medium text-[var(--theme-primary-soft-text)]" : "hover:bg-[var(--theme-hover)]")}>
+                  <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{r}</span>
+                    <span className="block truncate text-[11px] text-[var(--theme-text-faint)]">{d ? SCOPE_LABELS[d.scope] : ""}</span>
+                  </span>
+                  {role === r && <Badge label="Editing" tone="blue" />}
+                </button>
+              );
+            })}
           </div>
         </Card>
 
         <div className="space-y-5 lg:col-span-3">
+          {error && (
+            <div className="rounded-lg bg-[var(--theme-danger-soft)] p-3 text-[14px] text-[var(--theme-danger-text)]">
+              {error}
+            </div>
+          )}
+
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#E7DEFF] text-[#5A34D6]"><Lock className="h-5 w-5" /></span>
+                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--theme-accent-soft)] text-[var(--theme-accent-strong)]"><Building2 className="h-5 w-5" /></span>
                 <div>
                   <p className="text-[16px] font-semibold">{role}</p>
-                  <p className="text-[13px] text-[#676879]">{granted} of {total} permissions granted</p>
+                  <p className="text-[13px] text-[var(--theme-text-muted)]">
+                    {loading ? "Loading permissions..." : `${granted} of ${total} permissions · ${def ? SCOPE_LABELS[def.scope] : ""}`}
+                  </p>
                 </div>
               </div>
-              <Toggle checked onChange={() => {}} label="Role active" />
+              <div className="flex items-center gap-2">
+                <Btn variant="secondary" Icon={RefreshCw} onClick={() => fetchRolePermissions(role)}>Reload</Btn>
+                <Toggle checked onChange={() => {}} label="Role active" />
+              </div>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#E6E9EF]">
-              <div className="h-full rounded-full bg-[#6C47FF] transition-[width]" style={{ width: `${(granted / total) * 100}%` }} />
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--theme-border)]">
+              <div className="h-full rounded-full bg-[var(--theme-accent)] transition-[width]" style={{ width: `${(granted / total) * 100}%` }} />
             </div>
+            {def && <p className="mt-3 text-[13px] text-[var(--theme-text-muted)]">{def.description}</p>}
           </Card>
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            {PERMISSION_GROUPS.map((g) => (
-              <Card key={g.module} pad={false}>
-                <div className="flex items-center justify-between gap-2 border-b border-[#E6E9EF] px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#CCE5FF] text-[#0060B9]"><Users className="h-[18px] w-[18px]" /></span>
-                    <p className="text-[15px] font-semibold">{g.module}</p>
-                  </div>
-                  <label className="flex items-center gap-2 text-[12px] text-[#676879]">
-                    <Checkbox checked={moduleAll(g.module)} onChange={(v) => toggleModule(g.module, v)} /> All
-                  </label>
-                </div>
-                <div className="space-y-1 p-3">
-                  {g.actions.map((a) => (
-                    <label key={a} className="flex items-center gap-3 rounded px-2 py-2 text-[14px] hover:bg-[#F5F6F8]">
-                      <Checkbox checked={!!perms[keyOf(g.module, a)]} onChange={() => toggle(g.module, a)} />
-                      <span className="flex-1">{a}</span>
+          {GROUPS.map((g) => (
+            <Card key={g.group} pad={false}>
+              <CardHead title={g.group} subtitle={`${g.modules.length} modules`} />
+              <div className="divide-y divide-[var(--theme-border)]">
+                {g.modules.map((m) => (
+                  <div key={m.key} className="flex flex-wrap items-center gap-2 px-4 py-2.5">
+                    <span className="min-w-[150px] flex-1 text-[14px] font-medium">{m.label}</span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {PERMISSION_ACTIONS.map((a) => {
+                        const on = !!perms[keyOf(m.key, a)];
+                        return (
+                          <button key={a} type="button" onClick={() => toggle(m.key, a)}
+                            className={cn("rounded-full px-2.5 py-1 text-[12px] font-medium capitalize transition-colors",
+                              on ? "bg-[var(--theme-primary)] text-white" : "bg-[var(--theme-subtle)] text-[var(--theme-text-muted)] hover:bg-[var(--theme-border)]")}>
+                            {a}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <label className="ml-2 flex items-center gap-1.5 text-[12px] text-[var(--theme-text-muted)]">
+                      <Checkbox checked={moduleAll(m.key)} onChange={(v) => toggleModule(m.key, v)} /> All
                     </label>
-                  ))}
-                </div>
-              </Card>
-            ))}
-          </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
         </div>
       </div>
-
-      <Modal open={newRole} onClose={() => setNewRole(false)} title="Add Role" width="max-w-md"
-        footer={<><Btn variant="secondary" onClick={() => setNewRole(false)}>Cancel</Btn><Btn variant="primary" onClick={addRole} disabled={!roleName.trim()}>Add Role</Btn></>}>
-        <label className="block">
-          <span className="mb-1.5 block text-[13px] font-medium">Role Name</span>
-          <input value={roleName} onChange={(e) => setRoleName(e.target.value)} placeholder="e.g. Vice Principal"
-            className="h-10 w-full rounded border border-[#C5C7D0] bg-white px-3 text-[14px] outline-none focus:border-[#2563EB]" />
-        </label>
-      </Modal>
 
       <Modal open={saved} onClose={() => setSaved(false)} title="Permissions saved" width="max-w-md"
         footer={<Btn variant="primary" onClick={() => setSaved(false)}>Close</Btn>}>
         <div className="flex flex-col items-center gap-3 py-2 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D6F5E3] text-[#037F4C]"><CheckCircle2 className="h-7 w-7" /></span>
-          <p className="text-[15px] font-medium">Permissions for <span className="font-semibold">{role}</span> updated.</p>
-          <p className="text-[13px] text-[#676879]">{granted} of {total} permissions are now enabled.</p>
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--theme-success-soft)] text-[var(--theme-success-text)]"><CheckCircle2 className="h-7 w-7 icon-pop" /></span>
+          <p className="text-[15px] font-medium">Permissions for <span className="font-semibold">{role}</span> saved to server.</p>
+          <p className="text-[13px] text-[var(--theme-text-muted)]">{granted} of {total} permissions are now enabled.</p>
         </div>
       </Modal>
+      {roleOverride && <p className="px-4 pb-6 text-center text-[12px] text-[var(--theme-text-faint)] sm:px-6">Previewing as “{roleOverride}” — switch any time from Settings → Branches.</p>}
     </>
   );
 }

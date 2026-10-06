@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200" role="img" aria-label="School campus illustration">
+  <defs>
+    <linearGradient id="heroSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9F1FF"/><stop offset="1" stop-color="#F7F9FF"/>
+    </linearGradient>
+    <linearGradient id="heroWall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#EDF1F9"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="320" height="200" rx="22" fill="url(#heroSky)"/>
+  <circle cx="264" cy="44" r="24" fill="#FDAB3D" opacity="0.85"/>
+  <circle cx="264" cy="44" r="16" fill="#FFCB00"/>
+
+  <!-- ground -->
+  <path d="M0 168h320v10a22 22 0 0 1-22 22H22A22 22 0 0 1 0 178z" fill="#D6F5E3"/>
+
+  <!-- main block -->
+  <rect x="72" y="76" width="176" height="94" rx="8" fill="url(#heroWall)" stroke="#E1E6F0" stroke-width="2"/>
+  <path d="M64 78l96-42 96 42z" fill="#2563EB"/>
+  <rect x="140" y="36" width="40" height="10" rx="5" fill="#1D4ED8"/>
+  <rect x="150" y="118" width="26" height="52" rx="6" fill="#6C47FF"/>
+  <circle cx="170" cy="144" r="2.6" fill="#FFFFFF"/>
+  <g fill="#BFD7FF">
+    <rect x="88" y="96" width="26" height="24" rx="5"/>
+    <rect x="124" y="96" width="26" height="24" rx="5"/>
+    <rect x="186" y="96" width="26" height="24" rx="5"/>
+    <rect x="222" y="96" width="26" height="24" rx="5"/>
+    <rect x="88" y="132" width="26" height="24" rx="5"/>
+    <rect x="222" y="132" width="26" height="24" rx="5"/>
+  </g>
+
+  <!-- flag -->
+  <rect x="250" y="34" width="4" height="48" rx="2" fill="#C5C7D0"/>
+  <path d="M254 36h30l-9 10 9 10h-30z" fill="#DF2F4A"/>
+
+  <!-- trees -->
+  <circle cx="46" cy="130" r="24" fill="#00C875" opacity="0.85"/>
+  <rect x="42" y="146" width="8" height="24" rx="4" fill="#B26A00" opacity="0.7"/>
+  <circle cx="292" cy="140" r="18" fill="#00C875" opacity="0.7"/>
+  <rect x="289" y="152" width="6" height="18" rx="3" fill="#B26A00" opacity="0.7"/>
+
+  <!-- path -->
+  <path d="M146 170h44l14 30h-72z" fill="#FFFFFF" opacity="0.9"/>
+</svg>

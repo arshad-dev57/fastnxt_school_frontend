@@ -10,19 +10,19 @@ const THEMES = [
   { k: "System", Icon: Monitor, desc: "Follows your device appearance setting" },
 ];
 const ACCENTS = [
-  { name: "Blue (default)", color: "#2563EB" },
-  { name: "Purple", color: "#6C47FF" },
-  { name: "Green", color: "#00C875" },
-  { name: "Orange", color: "#FDAB3D" },
+  { name: "Blue (default)", color: "var(--theme-primary)" },
+  { name: "Purple", color: "var(--theme-accent)" },
+  { name: "Green", color: "var(--theme-success)" },
+  { name: "Orange", color: "var(--theme-warning)" },
   { name: "Pink", color: "#FF158A" },
-  { name: "Teal", color: "#037F4C" },
+  { name: "Teal", color: "var(--theme-success-text)" },
 ];
 const LANGUAGES = ["English", "اردو (Urdu)", "العربية (Arabic)", "Français", "Español"];
 const DATE_FORMATS = ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"];
 
 export default function ThemeLanguagePage() {
   const [theme, setTheme] = useState("Light");
-  const [accent, setAccent] = useState("#2563EB");
+  const [accent, setAccent] = useState("var(--theme-primary)");
   const [language, setLanguage] = useState(LANGUAGES[0]);
   const [dateFormat, setDateFormat] = useState(DATE_FORMATS[0]);
   const [saved, setSaved] = useState(false);
@@ -40,12 +40,12 @@ export default function ThemeLanguagePage() {
               {THEMES.map(({ k, Icon, desc }) => (
                 <button key={k} type="button" onClick={() => setTheme(k)}
                   className={cn("flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors",
-                    theme === k ? "border-[#2563EB] bg-[#EFF6FF]" : "border-[#E6E9EF] hover:bg-[#F5F6F8]")}>
-                  <span className={cn("flex h-10 w-10 items-center justify-center rounded-lg", theme === k ? "bg-[#2563EB] text-white" : "bg-[#F0F1F4] text-[#676879]")}>
+                    theme === k ? "border-[var(--theme-primary)] bg-[var(--theme-info-soft)]" : "border-[var(--theme-border)] hover:bg-[var(--theme-hover)]")}>
+                  <span className={cn("flex h-10 w-10 items-center justify-center rounded-lg", theme === k ? "bg-[var(--theme-primary)] text-white" : "bg-[var(--theme-subtle)] text-[var(--theme-text-muted)]")}>
                     <Icon className="h-5 w-5" />
                   </span>
-                  <span className="flex items-center gap-2 text-[14px] font-medium">{k}{theme === k && <Check className="h-4 w-4 text-[#2563EB]" />}</span>
-                  <span className="text-[12px] text-[#676879]">{desc}</span>
+                  <span className="flex items-center gap-2 text-[14px] font-medium">{k}{theme === k && <Check className="h-4 w-4 text-[var(--theme-primary)]" />}</span>
+                  <span className="text-[12px] text-[var(--theme-text-muted)]">{desc}</span>
                 </button>
               ))}
             </div>
@@ -57,10 +57,10 @@ export default function ThemeLanguagePage() {
               {ACCENTS.map((a) => (
                 <button key={a.color} type="button" onClick={() => setAccent(a.color)} title={a.name}
                   className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] transition-colors",
-                    accent === a.color ? "border-[#2563EB] bg-[#EFF6FF]" : "border-[#E6E9EF] hover:bg-[#F5F6F8]")}>
+                    accent === a.color ? "border-[var(--theme-primary)] bg-[var(--theme-info-soft)]" : "border-[var(--theme-border)] hover:bg-[var(--theme-hover)]")}>
                   <span className="h-5 w-5 rounded-full" style={{ background: a.color }} />
                   {a.name}
-                  {accent === a.color && <Check className="h-4 w-4 text-[#2563EB]" />}
+                  {accent === a.color && <Check className="h-4 w-4 text-[var(--theme-primary)]" />}
                 </button>
               ))}
             </div>
@@ -82,21 +82,21 @@ export default function ThemeLanguagePage() {
             <CardHead title="Live preview" Icon={Palette} />
             <div className="space-y-3 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#676879]">Theme</span><Badge label={theme} tone="blue" />
+                <span className="text-[13px] text-[var(--theme-text-muted)]">Theme</span><Badge label={theme} tone="blue" />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#676879]">Accent</span>
+                <span className="text-[13px] text-[var(--theme-text-muted)]">Accent</span>
                 <span className="flex items-center gap-2 text-[13px]">{ACCENTS.find((a) => a.color === accent)?.name}<span className="h-4 w-4 rounded-full" style={{ background: accent }} /></span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#676879]">Language</span><span className="text-[13px]">{language}</span>
+                <span className="text-[13px] text-[var(--theme-text-muted)]">Language</span><span className="text-[13px]">{language}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#676879]">Date format</span><span className="text-[13px]">{dateFormat}</span>
+                <span className="text-[13px] text-[var(--theme-text-muted)]">Date format</span><span className="text-[13px]">{dateFormat}</span>
               </div>
               <div className="mt-2 flex gap-2">
                 <span className="flex h-9 flex-1 items-center justify-center rounded text-[13px] font-medium text-white" style={{ background: accent }}>Primary</span>
-                <span className="flex h-9 flex-1 items-center justify-center rounded border border-[#C5C7D0] text-[13px]">Secondary</span>
+                <span className="flex h-9 flex-1 items-center justify-center rounded border border-[var(--theme-border-strong)] text-[13px]">Secondary</span>
               </div>
             </div>
           </Card>
@@ -109,9 +109,9 @@ export default function ThemeLanguagePage() {
       <Modal open={saved} onClose={() => setSaved(false)} title="Preferences saved" width="max-w-md"
         footer={<Btn variant="primary" onClick={() => setSaved(false)}>Close</Btn>}>
         <div className="flex flex-col items-center gap-3 py-2 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D6F5E3] text-[#037F4C]"><CheckCircle2 className="h-7 w-7" /></span>
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--theme-success-soft)] text-[var(--theme-success-text)]"><CheckCircle2 className="h-7 w-7 icon-pop" /></span>
           <p className="text-[15px] font-medium">Theme &amp; language preferences updated.</p>
-          <p className="text-[13px] text-[#676879]">{theme} theme · {language}</p>
+          <p className="text-[13px] text-[var(--theme-text-muted)]">{theme} theme · {language}</p>
         </div>
       </Modal>
     </>

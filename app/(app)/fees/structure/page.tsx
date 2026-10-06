@@ -52,7 +52,7 @@ export default function FeeStructurePage() {
         title="Fee Structure" 
         subtitle="Configure the fee heads applicable to each class and section."
         actions={
-          <Link href="/fees/invoices" className="inline-flex items-center gap-2 rounded border border-[#C5C7D0] bg-white px-3.5 py-2 text-[14px] hover:bg-[#F5F6F8]">
+          <Link href="/fees/invoices" className="inline-flex items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3.5 py-2 text-[14px] hover:bg-[var(--theme-hover)]">
             <FileText className="h-[18px] w-[18px]" /> Fee Invoices
           </Link>
         }
@@ -99,45 +99,45 @@ export default function FeeStructurePage() {
               right={<Badge label={`Total ${rs(total)}`} tone="green" />} />
 
             <div className="hidden md:block">
-              <div className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white")}>
-                <Th className="border-l border-[#E6E9EF]">Fee Particular</Th>
-                <Th className="border-l border-[#E6E9EF]">Amount</Th>
-                <Th className="border-l border-[#E6E9EF]">Frequency</Th>
-                <Th className="border-l border-[#E6E9EF]">Due Date</Th>
-                <Th className="border-l border-[#E6E9EF]"><span className="sr-only">Actions</span></Th>
+              <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)]")}>
+                <Th className="border-l border-[var(--theme-border)]">Fee Particular</Th>
+                <Th className="border-l border-[var(--theme-border)]">Amount</Th>
+                <Th className="border-l border-[var(--theme-border)]">Frequency</Th>
+                <Th className="border-l border-[var(--theme-border)]">Due Date</Th>
+                <Th className="border-l border-[var(--theme-border)]"><span className="sr-only">Actions</span></Th>
               </div>
               {scoped.map((r) => (
-                <div key={r.id} className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-white text-[14px] hover:bg-[#F5F6F8]")}>
-                  <Td className="border-l border-[#E6E9EF] font-medium">{r.particular}</Td>
-                  <Td className="border-l border-[#E6E9EF] font-medium">{rs(r.amount)}</Td>
-                  <Td className="border-l border-[#E6E9EF]"><Badge label={r.frequency} tone="blue" /></Td>
-                  <Td className="border-l border-[#E6E9EF] text-[#676879]">{r.dueDate}</Td>
-                  <Td className="justify-center border-l border-[#E6E9EF]">
+                <div key={r.id} className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] text-[14px] hover:bg-[var(--theme-hover)]")}>
+                  <Td className="border-l border-[var(--theme-border)] font-medium">{r.particular}</Td>
+                  <Td className="border-l border-[var(--theme-border)] font-medium">{rs(r.amount)}</Td>
+                  <Td className="border-l border-[var(--theme-border)]"><Badge label={r.frequency} tone="blue" /></Td>
+                  <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.dueDate}</Td>
+                  <Td className="justify-center border-l border-[var(--theme-border)]">
                     <RowMenu items={[{ label: "Remove", Icon: Trash2, danger: true, onClick: () => setRows((p) => p.filter((x) => x.id !== r.id)) }]} />
                   </Td>
                 </div>
               ))}
-              <div className={cn("grid", COLS, "border-b border-[#E6E9EF] bg-[#F6F7FB] text-[14px] font-semibold")}>
-                <Td className="border-l border-[#E6E9EF]">Calculated Total</Td>
-                <Td className="border-l border-[#E6E9EF]">{rs(total)}</Td>
-                <Td className="border-l border-[#E6E9EF] text-[#676879]">Monthly {rs(monthly)}</Td>
-                <Td className="border-l border-[#E6E9EF]" />
-                <Td className="border-l border-[#E6E9EF]" />
+              <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-sidebar)] text-[14px] font-semibold")}>
+                <Td className="border-l border-[var(--theme-border)]">Calculated Total</Td>
+                <Td className="border-l border-[var(--theme-border)]">{rs(total)}</Td>
+                <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">Monthly {rs(monthly)}</Td>
+                <Td className="border-l border-[var(--theme-border)]" />
+                <Td className="border-l border-[var(--theme-border)]" />
               </div>
             </div>
 
             <div className="space-y-2 p-3 md:hidden">
               {scoped.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 rounded-lg border border-[#E6E9EF] bg-white p-3">
+                <div key={r.id} className="flex items-center gap-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-medium">{r.particular}</p>
-                    <p className="text-[12px] text-[#676879]">{r.frequency} · Due {r.dueDate}</p>
+                    <p className="text-[12px] text-[var(--theme-text-muted)]">{r.frequency} · Due {r.dueDate}</p>
                   </div>
                   <span className="text-[14px] font-semibold">{rs(r.amount)}</span>
-                  <button onClick={() => setRows((p) => p.filter((x) => x.id !== r.id))} className="text-[#DF2F4A]" aria-label="Remove"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => setRows((p) => p.filter((x) => x.id !== r.id))} className="text-[var(--theme-danger)]" aria-label="Remove"><Trash2 className="h-4 w-4" /></button>
                 </div>
               ))}
-              <div className="flex items-center justify-between rounded-lg bg-[#F6F7FB] px-3 py-2 text-[14px] font-semibold">
+              <div className="flex items-center justify-between rounded-lg bg-[var(--theme-sidebar)] px-3 py-2 text-[14px] font-semibold">
                 <span>Calculated Total</span><span>{rs(total)}</span>
               </div>
             </div>
@@ -151,11 +151,11 @@ export default function FeeStructurePage() {
 }
 
 function Calc({ label, value, Icon, tone }: { label: string; value: string; Icon: React.ElementType; tone: "blue" | "orange" | "green" }) {
-  const cls = tone === "blue" ? "bg-[#CCE5FF] text-[#0060B9]" : tone === "orange" ? "bg-[#FFEBD1] text-[#B26A00]" : "bg-[#D6F5E3] text-[#037F4C]";
+  const cls = tone === "blue" ? "bg-[var(--theme-primary-soft)] text-[var(--theme-primary-soft-text)]" : tone === "orange" ? "bg-[var(--theme-warning-soft)] text-[var(--theme-warning-text)]" : "bg-[var(--theme-success-soft)] text-[var(--theme-success-text)]";
   return (
     <Card>
       <span className={cn("flex h-10 w-10 items-center justify-center rounded-lg", cls)}><Icon className="h-5 w-5" /></span>
-      <p className="mt-2 text-[13px] text-[#676879]">{label}</p>
+      <p className="mt-2 text-[13px] text-[var(--theme-text-muted)]">{label}</p>
       <p className="text-[22px] font-bold">{value}</p>
     </Card>
   );
