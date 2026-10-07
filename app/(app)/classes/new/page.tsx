@@ -8,6 +8,8 @@ import { Btn, Card, CardHead, Checkbox, Field, Input, Modal, PageHeader, Select,
 import { SuccessIcon } from "@/components/icons";
 import { classesApi, type TeacherOption } from "@/lib/auth/api-client";
 
+import { useBranch } from "@/lib/branch-context";
+
 const SESSIONS = ["2025-2026", "2024-2025", "2026-2027"];
 const CLASS_NAMES = [
   "Nursery", "KG", "Prep", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5",
@@ -18,6 +20,7 @@ const CLASS_NAMES = [
 
 export default function NewClassPage() {
   const router = useRouter();
+  const { currentBranchId } = useBranch();
 
   // Form state
   const [name, setName] = useState("");
@@ -85,6 +88,7 @@ export default function NewClassPage() {
     setSaving(true);
     setSaveError(null);
     try {
+      const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
       const res = await classesApi.create({
         name: name.trim(),
         code: code.trim() || undefined,
@@ -94,6 +98,7 @@ export default function NewClassPage() {
         teacher: selectedTeacher?.name || undefined,
         description: desc.trim() || undefined,
         status,
+        branchId: branchScope,
       });
       setCreatedName(res.class.name);
       setDone(true);

@@ -65,7 +65,7 @@ export default function AllClassesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentBranchId]);
 
   useEffect(() => {
     fetchData();
@@ -73,12 +73,13 @@ export default function AllClassesPage() {
   }, [fetchData]);
 
   const groups = useMemo(() => {
+    const query = (q || "").trim().toLowerCase();
     const base = classes
       .filter((r) => !currentBranchId || currentBranchId === "all" || !r.branchId || r.branchId === currentBranchId)
       .filter((r) => tab === "All" || r.status === tab)
-      .filter((r) => r.name.toLowerCase().includes(q.toLowerCase()) || r.code.toLowerCase().includes(q.toLowerCase()))
-      .filter((r) => (section ? r.sections.includes(section) : true))
-      .sort((a, b) => (sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)));
+      .filter((r) => !query || (r.name || "").toLowerCase().includes(query) || (r.code || "").toLowerCase().includes(query))
+      .filter((r) => (section ? (r.sections || []).includes(section) : true))
+      .sort((a, b) => (sortAsc ? (a.name || "").localeCompare(b.name || "") : (b.name || "").localeCompare(a.name || "")));
     return STATUSES
       .map((s) => ({ status: s, color: ACTIVE_COLORS[s], items: base.filter((r) => r.status === s) }))
       .filter((g) => g.items.length > 0);

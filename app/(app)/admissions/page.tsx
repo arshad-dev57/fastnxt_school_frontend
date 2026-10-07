@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { UserPlus, DoorOpen, Plus, Pencil, Trash2 } from "lucide-react";
+import { UserPlus, DoorOpen, Plus, Pencil, Trash2, UserCheck, Users } from "lucide-react";
 import { BranchBoard } from "@/components/branch/branch-board";
 import { StatusPill } from "@/components/board-kit";
 import { useBranch } from "@/lib/branch-context";
@@ -72,11 +72,17 @@ export default function AdmissionsPage() {
         subtitleOf={(r) => `${r.cls} · Guardian: ${r.guardian}`}
         searchTextOf={(r) => `${r.applicant} ${r.guardian} ${r.phone} ${r.cls} ${r.stage}`}
         primaryAction={
-          <div className="flex items-center gap-2">
-            <Link href="/front-office" className="hidden h-9 items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] hover:bg-[var(--theme-hover)] lg:inline-flex">
-              <DoorOpen className="h-[18px] w-[18px]" /> Front Office
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/students/new" className="h-9 items-center gap-1.5 rounded bg-[var(--theme-success)] px-3 text-[13px] font-semibold text-white hover:opacity-90 inline-flex shadow-sm">
+              <UserCheck className="h-4 w-4" /> New Admission Form
             </Link>
-            <Btn variant="primary" Icon={Plus} onClick={() => setModal({ mode: "add" })}>Add Enquiry</Btn>
+            <Link href="/front-office" className="hidden h-9 items-center gap-1.5 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[13px] font-medium hover:bg-[var(--theme-hover)] lg:inline-flex">
+              <DoorOpen className="h-4 w-4" /> Front Office
+            </Link>
+            <Link href="/students" className="hidden h-9 items-center gap-1.5 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[13px] font-medium hover:bg-[var(--theme-hover)] xl:inline-flex">
+              <Users className="h-4 w-4" /> Enrolled Students
+            </Link>
+            <Btn variant="primary" Icon={Plus} onClick={() => setModal({ mode: "add" })}>Add Lead/Enquiry</Btn>
           </div>
         }
         menu={(r) => [
@@ -114,7 +120,7 @@ export default function AdmissionsPage() {
       <AdmissionForm
         modal={modal}
         onClose={() => setModal(null)}
-        onSave={(saved) => {
+        onSave={(saved: any) => {
           setRows(p => modal?.mode === "edit" ? p.map(r => r.id === saved.id ? { ...saved, branchId: saved.branchId || "" } : r) : [{ ...saved, branchId: saved.branchId || "" }, ...p]);
           setModal(null);
         }}

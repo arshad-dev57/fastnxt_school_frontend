@@ -25,112 +25,164 @@ type NavGroup = { k: string; label: string; Icon: IconType; href?: string; child
 
 const NAV: NavGroup[] = [
   { k: "dashboard", label: "Dashboard", Icon: LayoutDashboard, href: "/dashboard", children: [] },
-  { k: "classes", label: "Classes", Icon: School, children: [
-    { label: "All Classes", href: "/classes" }, { label: "New Class", href: "/classes/new" },
-  ] },
-  { k: "subjects", label: "Subjects", Icon: BookOpen, children: [
-    { label: "All Subjects", href: "/subjects" }, { label: "Classes with Subjects", href: "/subjects/classes" },
-    { label: "Assign Subjects", href: "/subjects/assign" },
-  ] },
-  { k: "students", label: "Students", Icon: Users, children: [
-    { label: "All Students", href: "/students" }, { label: "Add New Student", href: "/students/new" },
-    { label: "Admission Letters", href: "/students/admission-letters" }, { label: "Print Basic List", href: "/students/print-list" },
-    { label: "Promote Students", href: "/students/promote" }, { label: "Student ID Cards", href: "/students/id-cards" },
-    { label: "Certificates & Documents", href: "/certificates" },
-  ] },
-  { k: "employees", label: "Employees", Icon: Briefcase, children: [
-    { label: "All Employees", href: "/employees" }, { label: "Add New Employee", href: "/employees/new" },
-    { label: "Job Letters", href: "/employees/job-letters" },
-  ] },
-  { k: "accounts", label: "Accounting", Icon: Wallet, children: [
-    { label: "Dashboard", href: "/accounts" },
-    { label: "Income & Expense", href: "/accounts/income" },
-    { label: "Add Expense", href: "/accounts/expense" },
-    { label: "Journal Entries", href: "/accounts/journal-entries" },
-    { label: "Receipt Vouchers", href: "/accounts/receipt-vouchers" },
-    { label: "Payment Vouchers", href: "/accounts/payment-vouchers" },
-    { label: "Chart of Accounts", href: "/accounts/chart-of-accounts" },
-    { label: "Account Statement", href: "/accounts/statement" },
-    { label: "General Ledger", href: "/accounts/general-ledger" },
-    { label: "Cash & Bank", href: "/accounts/cash-bank" },
-    { label: "Bank Reconciliation", href: "/accounts/bank-reconciliation" },
-    { label: "Fee Receivables", href: "/accounts/fee-receivables" },
-    { label: "Trial Balance", href: "/accounts/trial-balance" },
-    { label: "Profit & Loss", href: "/accounts/profit-loss" },
-    { label: "Balance Sheet", href: "/accounts/balance-sheet" },
-    { label: "Cash Flow", href: "/accounts/cash-flow" },
-    { label: "Accounting Reports", href: "/accounts/reports" },
-    { label: "Budgets", href: "/accounts/budgets" },
-  ] },
-  { k: "fees", label: "Fees", Icon: ReceiptText, children: [
-    { label: "Fees Particulars", href: "/fees/particulars" }, { label: "Fee Structure", href: "/fees/structure" },
-    { label: "Discount Types", href: "/fees/discounts" }, { label: "Fee Invoices", href: "/fees/invoices" },
-  ] },
-  { k: "families", label: "Families", Icon: Users2, children: [
-    { label: "Manage Families", href: "/families" },
-  ] },
-  { k: "admissions", label: "Admissions", Icon: UserPlus, children: [
-    { label: "Admission Pipeline", href: "/admissions" }, { label: "Front Office / Visitors", href: "/front-office" },
-  ] },
-  { k: "attendance", label: "Attendance", Icon: CalendarCheck, children: [
-    { label: "Student Attendance", href: "/attendance" }, { label: "Staff Attendance", href: "/attendance/employees" },
-  ] },
-  { k: "timetable", label: "Timetable", Icon: CalendarClock, children: [
-    { label: "Class / Teacher / Room", href: "/timetable" },
-  ] },
-  { k: "exams", label: "Exams & Results", Icon: GraduationCap, children: [
-    { label: "All Exams", href: "/exams" }, { label: "Date Sheet", href: "/exams/schedule" },
-    { label: "Results", href: "/results" }, { label: "Homework / LMS", href: "/homework" },
-  ] },
-  { k: "recruitment", label: "Recruitment", Icon: Briefcase, children: [
-    { label: "Job Openings", href: "/recruitment" }, { label: "Candidates", href: "/recruitment/candidates" },
-  ] },
-  { k: "leave", label: "Leave", Icon: CalendarOff, children: [
-    { label: "Leave Requests", href: "/leave" },
-  ] },
-  { k: "payroll", label: "Payroll", Icon: Wallet, children: [
-    { label: "Salary Register", href: "/payroll" },
-  ] },
-  { k: "library", label: "Library", Icon: BookOpen, children: [
-    { label: "Catalogue", href: "/library" }, { label: "Issue & Return", href: "/library/issue" },
-  ] },
-  { k: "transport", label: "Transport", Icon: Bus, children: [
-    { label: "Fleet", href: "/transport" }, { label: "Routes", href: "/transport/routes" },
-  ] },
-  { k: "hostel", label: "Hostel", Icon: Building2, children: [
-    { label: "Rooms & Occupancy", href: "/hostel" },
-  ] },
-  { k: "health", label: "Health", Icon: HeartPulse, children: [
-    { label: "Medical Records", href: "/health" },
-  ] },
-  { k: "discipline", label: "Discipline", Icon: ShieldAlert, children: [
-    { label: "Incidents", href: "/discipline" },
-  ] },
-  { k: "inventory", label: "Inventory & Assets", Icon: Boxes, children: [
-    { label: "Inventory", href: "/inventory" }, { label: "Assets", href: "/assets" },
-  ] },
-  { k: "communication", label: "Communication", Icon: Megaphone, children: [
-    { label: "Notices", href: "/communication" }, { label: "Events", href: "/events" },
-    { label: "Meetings", href: "/meetings" }, { label: "Schedule Meeting", href: "/meetings/new" },
-  ] },
-  { k: "tasks", label: "Tasks", Icon: ListChecks, children: [
-    { label: "Task Board", href: "/tasks" },
-  ] },
-  { k: "complaints", label: "Complaints", Icon: MessageSquareWarning, children: [
-    { label: "Tickets", href: "/complaints" },
-  ] },
-  { k: "reports", label: "Reports", Icon: BarChart3, children: [
-    { label: "Reports Center", href: "/reports" }, { label: "Branch Performance", href: "/reports/branch-performance" },
-  ] },
-  { k: "users", label: "User Management", Icon: ShieldCheck, children: [
-    { label: "Manage Login / Accounts", href: "/users" }, { label: "Roles & Permissions", href: "/users/roles" },
-  ] },
-  { k: "settings", label: "General Settings", Icon: Settings, children: [
-    { label: "Institute Profile", href: "/settings/institute" }, { label: "Branches & Campuses", href: "/settings/branches" }, { label: "Rules & Regulations", href: "/settings/rules" },
-    { label: "Theme & Language", href: "/settings/theme" }, { label: "Account Settings", href: "/settings/account" },
-    { label: "Audit Log", href: "/audit" },
-    { label: "Logout", href: "/logout" },
-  ] },
+  {
+    k: "admissions_students", label: "Admissions & Students", Icon: UserPlus, children: [
+      { label: "Admission Pipeline (Leads)", href: "/admissions" },
+      { label: "New Student Admission", href: "/students/new" },
+      { label: "Front Office & Visitors", href: "/front-office" },
+      { label: "All Enrolled Students", href: "/students" },
+      { label: "Admission Letters", href: "/students/admission-letters" },
+      { label: "Promote & Transfer Students", href: "/students/promote" },
+      { label: "Student ID Cards", href: "/students/id-cards" },
+      { label: "Print Student List", href: "/students/print-list" },
+      { label: "Certificates & Documents", href: "/certificates" },
+    ]
+  },
+  {
+    k: "classes", label: "Classes", Icon: School, children: [
+      { label: "All Classes", href: "/classes" }, { label: "New Class", href: "/classes/new" },
+    ]
+  },
+  {
+    k: "subjects", label: "Subjects", Icon: BookOpen, children: [
+      { label: "All Subjects", href: "/subjects" }, { label: "Classes with Subjects", href: "/subjects/classes" },
+      { label: "Assign Subjects", href: "/subjects/assign" },
+    ]
+  },
+  {
+    k: "employees", label: "Employees", Icon: Briefcase, children: [
+      { label: "All Employees", href: "/employees" }, { label: "Add New Employee", href: "/employees/new" },
+      { label: "Job Letters", href: "/employees/job-letters" },
+    ]
+  },
+  {
+    k: "accounts", label: "Accounting", Icon: Wallet, children: [
+      { label: "Dashboard", href: "/accounts" },
+      { label: "Income & Expense", href: "/accounts/income" },
+      { label: "Add Expense", href: "/accounts/expense" },
+      { label: "Journal Entries", href: "/accounts/journal-entries" },
+      { label: "Receipt Vouchers", href: "/accounts/receipt-vouchers" },
+      { label: "Payment Vouchers", href: "/accounts/payment-vouchers" },
+      { label: "Chart of Accounts", href: "/accounts/chart-of-accounts" },
+      { label: "Account Statement", href: "/accounts/statement" },
+      { label: "General Ledger", href: "/accounts/general-ledger" },
+      { label: "Cash & Bank", href: "/accounts/cash-bank" },
+      { label: "Bank Reconciliation", href: "/accounts/bank-reconciliation" },
+      { label: "Fee Receivables", href: "/accounts/fee-receivables" },
+      { label: "Trial Balance", href: "/accounts/trial-balance" },
+      { label: "Profit & Loss", href: "/accounts/profit-loss" },
+      { label: "Balance Sheet", href: "/accounts/balance-sheet" },
+      { label: "Cash Flow", href: "/accounts/cash-flow" },
+      { label: "Accounting Reports", href: "/accounts/reports" },
+      { label: "Budgets", href: "/accounts/budgets" },
+    ]
+  },
+  {
+    k: "fees", label: "Fees", Icon: ReceiptText, children: [
+      { label: "Fees Particulars", href: "/fees/particulars" }, { label: "Fee Structure", href: "/fees/structure" },
+      { label: "Discount Types", href: "/fees/discounts" }, { label: "Fee Invoices", href: "/fees/invoices" },
+    ]
+  },
+  {
+    k: "families", label: "Families", Icon: Users2, children: [
+      { label: "Manage Families", href: "/families" },
+    ]
+  },
+  {
+    k: "attendance", label: "Attendance", Icon: CalendarCheck, children: [
+      { label: "Student Attendance", href: "/attendance" }, { label: "Staff Attendance", href: "/attendance/employees" },
+    ]
+  },
+  {
+    k: "timetable", label: "Timetable", Icon: CalendarClock, children: [
+      { label: "Class / Teacher / Room", href: "/timetable" },
+    ]
+  },
+  {
+    k: "exams", label: "Exams & Results", Icon: GraduationCap, children: [
+      { label: "All Exams", href: "/exams" }, { label: "Date Sheet", href: "/exams/schedule" },
+      { label: "Results", href: "/results" }, { label: "Homework / LMS", href: "/homework" },
+    ]
+  },
+  {
+    k: "recruitment", label: "Recruitment", Icon: Briefcase, children: [
+      { label: "Job Openings", href: "/recruitment" }, { label: "Candidates", href: "/recruitment/candidates" },
+    ]
+  },
+  {
+    k: "leave", label: "Leave", Icon: CalendarOff, children: [
+      { label: "Leave Requests", href: "/leave" },
+    ]
+  },
+  {
+    k: "payroll", label: "Payroll", Icon: Wallet, children: [
+      { label: "Salary Register", href: "/payroll" },
+    ]
+  },
+  {
+    k: "library", label: "Library", Icon: BookOpen, children: [
+      { label: "Catalogue", href: "/library" }, { label: "Issue & Return", href: "/library/issue" },
+    ]
+  },
+  {
+    k: "transport", label: "Transport", Icon: Bus, children: [
+      { label: "Fleet", href: "/transport" }, { label: "Routes", href: "/transport/routes" },
+    ]
+  },
+  {
+    k: "hostel", label: "Hostel", Icon: Building2, children: [
+      { label: "Rooms & Occupancy", href: "/hostel" },
+    ]
+  },
+  {
+    k: "health", label: "Health", Icon: HeartPulse, children: [
+      { label: "Medical Records", href: "/health" },
+    ]
+  },
+  {
+    k: "discipline", label: "Discipline", Icon: ShieldAlert, children: [
+      { label: "Incidents", href: "/discipline" },
+    ]
+  },
+  {
+    k: "inventory", label: "Inventory & Assets", Icon: Boxes, children: [
+      { label: "Inventory", href: "/inventory" }, { label: "Assets", href: "/assets" },
+    ]
+  },
+  {
+    k: "communication", label: "Communication", Icon: Megaphone, children: [
+      { label: "Notices", href: "/communication" }, { label: "Events", href: "/events" },
+      { label: "Meetings", href: "/meetings" }, { label: "Schedule Meeting", href: "/meetings/new" },
+    ]
+  },
+  {
+    k: "tasks", label: "Tasks", Icon: ListChecks, children: [
+      { label: "Task Board", href: "/tasks" },
+    ]
+  },
+  {
+    k: "complaints", label: "Complaints", Icon: MessageSquareWarning, children: [
+      { label: "Tickets", href: "/complaints" },
+    ]
+  },
+  {
+    k: "reports", label: "Reports", Icon: BarChart3, children: [
+      { label: "Reports Center", href: "/reports" }, { label: "Branch Performance", href: "/reports/branch-performance" },
+    ]
+  },
+  {
+    k: "users", label: "User Management", Icon: ShieldCheck, children: [
+      { label: "Manage Login / Accounts", href: "/users" }, { label: "Roles & Permissions", href: "/users/roles" },
+    ]
+  },
+  {
+    k: "settings", label: "General Settings", Icon: Settings, children: [
+      { label: "Institute Profile", href: "/settings/institute" }, { label: "Branches & Campuses", href: "/settings/branches" }, { label: "Rules & Regulations", href: "/settings/rules" },
+      { label: "Theme & Language", href: "/settings/theme" }, { label: "Account Settings", href: "/settings/account" },
+      { label: "Audit Log", href: "/audit" },
+      { label: "Logout", href: "/logout" },
+    ]
+  },
 ];
 
 const RAIL = [
@@ -147,36 +199,44 @@ type RailItem = { k: string; label: string; Icon: IconType; href: string };
 type RailGroup = { label: string; items: RailItem[] };
 
 const ICON_RAIL: RailGroup[] = [
-  { label: "Overview", items: [
-    { k: "dashboard", label: "Dashboard", Icon: Home, href: "/dashboard" },
-    { k: "students", label: "Students", Icon: Users, href: "/students" },
-    { k: "employees", label: "Employees", Icon: Briefcase, href: "/employees" },
-    { k: "fees", label: "Fees", Icon: Wallet, href: "/fees/invoices" },
-    { k: "accounts", label: "Accounts", Icon: BarChart3, href: "/accounts" },
-  ] },
-  { label: "Academics", items: [
-    { k: "admissions", label: "Admissions", Icon: UserPlus, href: "/admissions" },
-    { k: "attendance", label: "Attendance", Icon: CalendarCheck, href: "/attendance" },
-    { k: "timetable", label: "Timetable", Icon: CalendarClock, href: "/timetable" },
-    { k: "classes", label: "Classes", Icon: School, href: "/classes" },
-    { k: "exams", label: "Exams & Results", Icon: GraduationCap, href: "/exams" },
-    { k: "homework", label: "Homework / LMS", Icon: NotebookPen, href: "/homework" },
-  ] },
-  { label: "Operations", items: [
-    { k: "library", label: "Library", Icon: BookOpen, href: "/library" },
-    { k: "transport", label: "Transport", Icon: Bus, href: "/transport" },
-    { k: "hostel", label: "Hostel", Icon: BedDouble, href: "/hostel" },
-    { k: "inventory", label: "Inventory", Icon: Boxes, href: "/inventory" },
-    { k: "frontoffice", label: "Front Office", Icon: DoorOpen, href: "/front-office" },
-    { k: "health", label: "Health", Icon: HeartPulse, href: "/health" },
-  ] },
-  { label: "Manage", items: [
-    { k: "communication", label: "Communication", Icon: Megaphone, href: "/communication" },
-    { k: "meetings", label: "Meetings", Icon: Video, href: "/meetings" },
-    { k: "tasks", label: "Tasks", Icon: ListChecks, href: "/tasks" },
-    { k: "reports", label: "Reports", Icon: TrendingUp, href: "/reports" },
-    { k: "settings", label: "Settings", Icon: Settings, href: "/settings/branches" },
-  ] },
+  {
+    label: "Overview", items: [
+      { k: "dashboard", label: "Dashboard", Icon: Home, href: "/dashboard" },
+      { k: "students", label: "Students", Icon: Users, href: "/students" },
+      { k: "employees", label: "Employees", Icon: Briefcase, href: "/employees" },
+      { k: "fees", label: "Fees", Icon: Wallet, href: "/fees/invoices" },
+      { k: "accounts", label: "Accounts", Icon: BarChart3, href: "/accounts" },
+    ]
+  },
+  {
+    label: "Academics", items: [
+      { k: "admissions", label: "Admissions", Icon: UserPlus, href: "/admissions" },
+      { k: "attendance", label: "Attendance", Icon: CalendarCheck, href: "/attendance" },
+      { k: "timetable", label: "Timetable", Icon: CalendarClock, href: "/timetable" },
+      { k: "classes", label: "Classes", Icon: School, href: "/classes" },
+      { k: "exams", label: "Exams & Results", Icon: GraduationCap, href: "/exams" },
+      { k: "homework", label: "Homework / LMS", Icon: NotebookPen, href: "/homework" },
+    ]
+  },
+  {
+    label: "Operations", items: [
+      { k: "library", label: "Library", Icon: BookOpen, href: "/library" },
+      { k: "transport", label: "Transport", Icon: Bus, href: "/transport" },
+      { k: "hostel", label: "Hostel", Icon: BedDouble, href: "/hostel" },
+      { k: "inventory", label: "Inventory", Icon: Boxes, href: "/inventory" },
+      { k: "frontoffice", label: "Front Office", Icon: DoorOpen, href: "/front-office" },
+      { k: "health", label: "Health", Icon: HeartPulse, href: "/health" },
+    ]
+  },
+  {
+    label: "Manage", items: [
+      { k: "communication", label: "Communication", Icon: Megaphone, href: "/communication" },
+      { k: "meetings", label: "Meetings", Icon: Video, href: "/meetings" },
+      { k: "tasks", label: "Tasks", Icon: ListChecks, href: "/tasks" },
+      { k: "reports", label: "Reports", Icon: TrendingUp, href: "/reports" },
+      { k: "settings", label: "Settings", Icon: Settings, href: "/settings/branches" },
+    ]
+  },
 ];
 
 /* The rail keeps 8 module icons permanently visible; everything else lives
@@ -207,18 +267,17 @@ const NOTIF_ICON: Record<NotificationRow["icon"], IconType> = {
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [sideOpen, setSideOpen] = useState(true);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ students: true, fees: true });
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ admissions_students: true, students: true, fees: true });
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifs, setNotifs] = useState<NotificationRow[]>(NOTIFICATIONS);
   const unread = notifs.filter((n) => !n.read).length;
   const { currentBranchId, currentBranch, userBranches, isSuperAdmin, setCurrentBranch } = useBranch();
-  const { subscription, ready, user } = useAuth();
+  const { subscription, ready, user, school } = useAuth();
   const [branchOpen, setBranchOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
 
   const closeOnMobile = () => { if (window.innerWidth < 1024) setSideOpen(false); };
 
-  /* One rail icon row — shared by the 8 visible shortcuts and the expanded list. */
   const railLink = ({ k, Icon, label, href }: RailItem) => {
     const active = pathname === href || pathname.startsWith(href + "/");
     return (
@@ -245,9 +304,16 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <button onClick={() => setSideOpen((v) => !v)} className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 lg:hidden" aria-label="Toggle menu">
             {sideOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <img src="/logo.png" alt="BisonsEduCore360 Logo" className="h-9 w-9" />
-            <span className="text-[20px] font-bold">educore<span className="hidden font-normal text-white/80 sm:inline"> 360 school management</span></span>
+          <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0 max-w-[320px]">
+            <img src="/logo.png" alt="BisonsEduCore360 Logo" className="h-9 w-9 shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="truncate text-[15px] font-bold leading-tight text-white">
+                {school?.schoolName || user?.school?.name || "BisonsEduCore360"}
+              </span>
+              <span className="truncate text-[11px] font-medium text-white/80">
+                {currentBranch ? `${currentBranch.name}` : user?.branch?.name ? `${user.branch.name}` : "Main Campus"}
+              </span>
+            </div>
           </Link>
           {ready && subscription && (
             <div className="ml-2 hidden items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 md:flex">

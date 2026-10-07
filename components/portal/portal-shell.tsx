@@ -14,6 +14,8 @@ import PanelSwitcher from "@/components/panel-switcher";
 import FloatingAIAssistant from "@/components/ai-assistant/FloatingAIAssistant";
 import { NOTIFICATIONS, type NotificationRow } from "@/lib/mock-data";
 import type { PortalConfig, PortalNavItem } from "@/lib/portal-nav";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useBranch } from "@/lib/branch-context";
 
 /* ===========================================================================
    PortalShell — the SAME chrome as components/app-shell.tsx, parameterised for
@@ -40,6 +42,8 @@ export default function PortalShell({ config, children }: { config: PortalConfig
   const [notifs, setNotifs] = useState<NotificationRow[]>(NOTIFICATIONS);
   const [railOpen, setRailOpen] = useState(false);
   const unread = notifs.filter((n) => !n.read).length;
+  const { user, school } = useAuth();
+  const { currentBranch } = useBranch();
 
   const closeOnMobile = () => { if (window.innerWidth < 1024) setSideOpen(false); };
   const markRead = (id: number) => setNotifs((p) => p.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -68,12 +72,16 @@ export default function PortalShell({ config, children }: { config: PortalConfig
           <button onClick={() => setSideOpen((v) => !v)} className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 lg:hidden" aria-label="Toggle menu">
             {sideOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
-          <Link href={config.base} className="flex min-w-0 items-center gap-2">
+          <Link href={config.base} className="flex min-w-0 items-center gap-2.5 max-w-[320px]">
             <img src="/logo.png" alt="BisonsEduCore360 Logo" className="h-9 w-9 shrink-0" />
-            <span className="truncate text-[20px] font-bold">
-              educore
-              <span className="hidden font-normal text-white/80 sm:inline"> 360 {config.portalName.toLowerCase()}</span>
-            </span>
+            <div className="flex flex-col min-w-0">
+              <span className="truncate text-[15px] font-bold leading-tight text-white">
+                {school?.schoolName || user?.school?.name || "BisonsEduCore360"}
+              </span>
+              <span className="truncate text-[11px] font-medium text-white/80">
+                {currentBranch ? `${currentBranch.name}` : user?.branch?.name ? `${user.branch.name}` : "Main Campus"} · {config.portalName}
+              </span>
+            </div>
           </Link>
           <Link href="/dashboard"
             className="ml-2 hidden items-center gap-2 rounded-md bg-gradient-to-r from-[var(--theme-accent)] to-[var(--theme-accent-2)] px-3.5 py-2 text-[14px] font-semibold transition-opacity hover:opacity-90 md:flex">

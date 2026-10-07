@@ -53,8 +53,15 @@ export type AuthUser = {
   name: string;
   email: string;
   role: string;
-  /** Panel this admin lands on after signing in. */
+  /** Panel this user lands on after signing in. */
   panel: string;
+  branchId?: string | null;
+  branch?: {
+    id: string;
+    name: string;
+    code: string;
+    city?: string | null;
+  } | null;
   emailVerified: boolean;
   createdAt: string;
   lastLoginAt: string | null;

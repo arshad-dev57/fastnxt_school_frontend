@@ -111,7 +111,7 @@ export default function FrontOfficePage() {
       <VisitorForm
         modal={modal}
         onClose={() => setModal(null)}
-        onSave={(saved) => {
+        onSave={(saved: any) => {
           setRows(p => modal?.mode === "edit" ? p.map(r => r.id === saved.id ? { ...saved, branchId: saved.branchId || "" } : r) : [{ ...saved, branchId: saved.branchId || "" }, ...p]);
           setModal(null);
         }}

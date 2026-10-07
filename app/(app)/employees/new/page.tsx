@@ -15,7 +15,7 @@ export default function AddEmployeePage() {
   const router = useRouter();
   const { currentBranchId } = useBranch();
   const [f, setF] = useState({
-    name: "", gender: "Male", dob: "", cnic: "", phone: "", email: "", address: "", photo: "",
+    name: "", gender: "Male", dob: "", cnic: "", phone: "", email: "", password: "", address: "", photo: "",
     employeeId: `EMP-${String(Date.now()).slice(-4)}`, designation: DESIGNATIONS[0], department: DEPARTMENTS[0],
     joining: new Date().toISOString().slice(0, 10), type: "Permanent", status: "Active",
   });
@@ -65,6 +65,7 @@ export default function AddEmployeePage() {
         cnic: f.cnic,
         phone: f.phone,
         email: f.email,
+        password: f.password,
         address: f.address,
         photo: f.photo,
         employeeId: f.employeeId,
@@ -112,7 +113,8 @@ export default function AddEmployeePage() {
               <Field label="Date of Birth"><Input type="date" value={f.dob} onChange={(e) => set({ dob: e.target.value })} /></Field>
               <Field label="CNIC / National ID"><Input value={f.cnic} onChange={(e) => set({ cnic: e.target.value })} placeholder="35202-XXXXXXX-X" /></Field>
               <Field label="Phone"><Input value={f.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="03XX-XXXXXXX" /></Field>
-              <Field label="Email" className="sm:col-span-2"><Input type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} placeholder="employee@bisons.edu" /></Field>
+              <Field label="Email Address (For Teacher Login)"><Input type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} placeholder="teacher@school.com" /></Field>
+              <Field label="Login Password"><Input type="password" value={f.password} onChange={(e) => set({ password: e.target.value })} placeholder="Default: Password123" /></Field>
               <Field label="Address" className="sm:col-span-2"><Textarea value={f.address} onChange={(e) => set({ address: e.target.value })} placeholder="House, street, area, city" /></Field>
               <Field label="Photo" className="sm:col-span-2">
                 <div className="flex items-center gap-3">
@@ -202,7 +204,7 @@ export default function AddEmployeePage() {
           <Btn variant="primary" onClick={() => {
             setDone(false);
             setF({
-              name: "", gender: "Male", dob: "", cnic: "", phone: "", email: "", address: "", photo: "",
+              name: "", gender: "Male", dob: "", cnic: "", phone: "", email: "", password: "", address: "", photo: "",
               employeeId: `EMP-${String(Date.now()).slice(-4)}`, designation: DESIGNATIONS[0], department: DEPARTMENTS[0],
               joining: new Date().toISOString().slice(0, 10), type: "Permanent", status: "Active",
             });

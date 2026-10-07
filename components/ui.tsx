@@ -5,7 +5,6 @@ import { Search, ChevronLeft, ChevronRight, X, Inbox, MoreHorizontal, Plus, Load
 
 export type IconType = React.ElementType;
 
-/* ------------------------------------------------------------------ utils */
 export const cn = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
 export const OWNER_COLORS = ["var(--theme-info)", "var(--theme-accent-2)", "var(--theme-success)", "#FF158A", "var(--theme-warning)", "var(--theme-success-text)"];
@@ -15,7 +14,6 @@ export const avatarColor = (n: string) => OWNER_COLORS[n.length % OWNER_COLORS.l
 
 export const rs = (n: number) => "Rs " + n.toLocaleString("en-PK");
 
-/* ------------------------------------------------------------------- tones */
 export type Tone = "gray" | "blue" | "green" | "orange" | "red" | "purple";
 
 export const TONE: Record<Tone, { bg: string; fg: string }> = {
@@ -41,7 +39,6 @@ export function statusTone(status: string): Tone {
   return "gray";
 }
 
-/* ------------------------------------------------------------------ badges */
 export function Badge({ label, tone, className = "" }: { label: string; tone?: Tone; className?: string }) {
   const t = TONE[tone ?? statusTone(label)];
   return (
@@ -56,7 +53,6 @@ export function Dot({ color }: { color: string }) {
   return <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />;
 }
 
-/* ----------------------------------------------------------------- avatars */
 export function Avatar({ name, size = 32, ring = false }: { name: string; size?: number; ring?: boolean }) {
   return (
     <span title={name} className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
@@ -78,7 +74,6 @@ export function PersonCell({ name, sub }: { name: string; sub?: string }) {
   );
 }
 
-/* ------------------------------------------------------- selectable pill UI */
 export function PillSelect<T extends string>({ value, options, colors, onPick, className = "", menuWidth = "w-44" }: {
   value: T; options: readonly T[]; colors: Record<string, string>;
   onPick: (v: T) => void; className?: string; menuWidth?: string;
@@ -105,8 +100,6 @@ export function PillSelect<T extends string>({ value, options, colors, onPick, c
   );
 }
 
-
-/* ----------------------------------------------------------------- buttons */
 type BtnVariant = "primary" | "secondary" | "ghost" | "danger" | "subtle" | "purple";
 
 export function Btn({ children, onClick, variant = "secondary", size = "md", Icon, IconRight, className = "", type = "button", disabled, loading = false, loadingLabel }: {
@@ -191,7 +184,6 @@ export const INVOICE_COLORS: Record<string, string> = {
   Paid: "var(--theme-success)", "Partially Paid": "var(--theme-warning)", Pending: "var(--theme-pending)", Overdue: "var(--theme-danger)",
 };
 
-/* ------------------------------------------------------------------- cards */
 export function Card({ children, className = "", pad = true }: { children: ReactNode; className?: string; pad?: boolean }) {
   return <div className={cn("rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)]", pad && "p-4", className)}>{children}</div>;
 }
@@ -305,7 +297,6 @@ export function RowMenu({ items }: { items: MenuItem[] }) {
   );
 }
 
-/* ------------------------------------------------------------------- forms */
 export function Field({ label, children, hint, className = "" }: { label: string; children: ReactNode; hint?: string; className?: string }) {
   return (
     <label className={cn("block", className)}>
@@ -400,7 +391,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, message, confir
   };
 
   return (
-    <Modal open={open} onClose={pending ? () => {} : onClose} title={title} width="max-w-md"
+    <Modal open={open} onClose={pending ? () => { } : onClose} title={title} width="max-w-md"
       footer={
         <>
           <Btn variant="secondary" onClick={onClose} disabled={pending}>Cancel</Btn>

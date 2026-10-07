@@ -77,7 +77,7 @@ function apiBranchToBranch(apiBranch: ApiBranch): Branch {
 }
 
 export function BranchProvider({ children, userRole = "Super Admin", userBranchAccess = null }: BranchProviderProps) {
-  const { signedIn, ready } = useAuth();
+  const { signedIn, ready, user } = useAuth();
   const [selectedBranchId, setSelectedBranchId] = useState<string | "all">(() => {
     if (typeof window === "undefined") return "all";
     return window.localStorage.getItem("bisons:active-branch") || "all";
@@ -98,6 +98,9 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
         const converted = res.branches.map(apiBranchToBranch);
         setBranches(converted);
         setLoading(false);
+        if (user?.branchId && (user.role === "Student" || user.role === "Teacher" || user.panel === "student" || user.panel === "teacher")) {
+          setSelectedBranchId(user.branchId);
+        }
       })
       .catch((err) => {
         console.error("Failed to load branches:", describeApiError(err).message);
@@ -105,7 +108,7 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
         setBranches(BRANCHES.filter((b) => b.status === "Active"));
         setLoading(false);
       });
-  }, [ready, signedIn]);
+  }, [ready, signedIn, user]);
 
   // Use real branches if available, otherwise mock data
   const availableBranches = useMemo(() => {

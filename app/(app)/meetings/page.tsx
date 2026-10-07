@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Users, Plus, Pencil, Trash2 } from "lucide-react";
 import { BranchBoard } from "@/components/branch/branch-board";
 import { StatusPill } from "@/components/board-kit";
@@ -11,12 +13,12 @@ import { Btn, Modal, Field, Input, Select, ConfirmDialog, Textarea } from "@/com
 const COLORS: Record<string, string> = { Scheduled: "var(--theme-info)", Live: "var(--theme-warning)", Completed: "var(--theme-success)", Cancelled: "var(--theme-danger)" };
 
 export default function MeetingsPage() {
+  const router = useRouter();
   const { currentBranchId } = useBranch();
   const [rows, setRows] = useState<(MeetingItem & { branchId: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [modal, setModal] = useState<{ mode: "add" | "edit"; row?: MeetingItem } | null>(null);
   const [toDelete, setToDelete] = useState<MeetingItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -56,58 +58,115 @@ export default function MeetingsPage() {
     <>
       <BranchBoard<MeetingItem & { branchId: string }>
         title="Meetings & Appointments"
-        subtitle="Schedule and track staff meetings, PTMs and committee sessions."
+        subtitle="Schedule and track staff meetings, PTMs and academic sessions."
         Icon={Users}
         nameLabel="Meeting"
         countNoun="meetings"
         loading={loading}
         rows={rows}
-        groupBy={(r) => r.status}
-        groupColorOf={(k) => COLORS[k]}
+        groupBy={(r) => r.status || "Scheduled"}
+        groupColorOf={(k) => COLORS[k] || "var(--theme-info)"}
         nameOf={(r) => r.title}
-        subtitleOf={(r) => `${r.date} at ${r.time} · Organizer: ${r.organizer}`}
-        searchTextOf={(r) => `${r.title} ${r.organizer} ${r.venue} ${r.description}`}
+        subtitleOf={(r) => `${r.date || "—"} at ${r.time || "—"} · Organizer: ${r.organizer || "Admin"}`}
+        searchTextOf={(r) => `${r.title} ${r.organizer} ${r.venue} ${r.description} ${(r.participants || []).join(" ")}`}
         primaryAction={
-          <Btn variant="primary" Icon={Plus} onClick={() => setModal({ mode: "add" })}>Schedule Meeting</Btn>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/meetings/new"
+              className="inline-flex h-9 items-center gap-2 rounded bg-[var(--theme-primary)] px-3.5 text-[14px] font-medium text-white hover:bg-[var(--theme-primary-hover)]"
+            >
+              <Plus className="h-[16px] w-[16px]" /> Schedule Meeting
+            </Link>
+          </div>
         }
         menu={(r) => [
-          { label: "Edit", Icon: Pencil, onClick: () => setModal({ mode: "edit", row: r }) },
-          { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
+          { label: "Edit Meeting", Icon: Pencil, onClick: () => router.push(`/meetings/new?id=${r.id}`) },
+          { label: "Delete Meeting", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
         ]}
         columns={[
-          { key: "date", label: "Date", width: "120px", cell: (r) => r.date },
-          { key: "time", label: "Time", width: "100px", cell: (r) => r.time },
-          { key: "organizer", label: "Organizer", width: "140px", cell: (r) => r.organizer },
-          { key: "venue", label: "Venue", width: "minmax(140px,1fr)", cell: (r) => r.venue },
-          { key: "status", label: "Status", width: "120px", cell: (r) => <StatusPill label={r.status} /> },
+          {
+            key: "title",
+            label: "Meeting Title",
+            width: "minmax(200px, 1.5fr)",
+            cell: (r) => (
+              <div>
+                <div className="font-semibold text-[var(--theme-text)]">{r.title}</div>
+                {r.description && (
+                  <div className="line-clamp-1 text-[12px] text-[var(--theme-text-muted)]">{r.description}</div>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "date",
+            label: "Date & Time",
+            width: "150px",
+            cell: (r) => (
+              <div className="text-[13px]">
+                <div className="font-medium text-[var(--theme-text)]">{r.date || "—"}</div>
+                <div className="text-[12px] text-[var(--theme-text-muted)]">{r.time || "—"}</div>
+              </div>
+            ),
+          },
+          { key: "organizer", label: "Organizer", width: "130px", cell: (r) => r.organizer || "Admin" },
+          {
+            key: "venue",
+            label: "Location / Venue",
+            width: "minmax(160px, 1fr)",
+            cell: (r) => (
+              <div className="text-[13px]">
+                <span className="font-medium">{r.venue || "Campus"}</span>
+              </div>
+            ),
+          },
+          {
+            key: "participants",
+            label: "Participants",
+            width: "180px",
+            cell: (r) => {
+              const parts = Array.isArray(r.participants) ? r.participants : [];
+              if (parts.length === 0) return <span className="text-[12px] text-[var(--theme-text-faint)]">None listed</span>;
+              return (
+                <div className="flex flex-wrap gap-1">
+                  {parts.slice(0, 2).map((p, idx) => (
+                    <span key={idx} className="inline-block rounded-full bg-[var(--theme-subtle)] px-2 py-0.5 text-[11px] font-medium">
+                      {p}
+                    </span>
+                  ))}
+                  {parts.length > 2 && (
+                    <span className="inline-block rounded-full bg-[var(--theme-primary-soft)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--theme-primary)]">
+                      +{parts.length - 2} more
+                    </span>
+                  )}
+                </div>
+              );
+            },
+          },
+          { key: "status", label: "Status", width: "120px", cell: (r) => <StatusPill label={r.status || "Scheduled"} /> },
         ]}
         detailFields={(r) => [
           { label: "Meeting Title", value: r.title },
-          { label: "Date", value: r.date },
-          { label: "Time", value: r.time },
-          { label: "Venue", value: r.venue },
-          { label: "Organizer", value: r.organizer },
-          { label: "Status", value: r.status },
-          { label: "Description", value: r.description },
+          { label: "Date & Time", value: `${r.date || "—"} at ${r.time || "—"}` },
+          { label: "Venue / Location", value: r.venue || "Not specified" },
+          { label: "Organizer", value: r.organizer || "Admin" },
+          { label: "Status", value: r.status || "Scheduled" },
+          { label: "Description / Agenda", value: r.description || "No agenda details provided." },
+          {
+            label: "Invited Participants",
+            value: Array.isArray(r.participants) && r.participants.length > 0
+              ? r.participants.join(", ")
+              : "No specific participants listed",
+          },
         ]}
         mobileRows={(r) => [
           { label: "When", value: `${r.date} ${r.time}` },
           { label: "Venue", value: r.venue },
           { label: "Organizer", value: r.organizer },
-          { label: "Status", value: <StatusPill label={r.status} /> },
+          { label: "Participants", value: Array.isArray(r.participants) ? `${r.participants.length} invited` : "—" },
+          { label: "Status", value: <StatusPill label={r.status || "Scheduled"} /> },
         ]}
-        emptyTitle="No meetings"
+        emptyTitle="No meetings scheduled"
         emptyMessage="No meetings match the current campus scope."
-      />
-
-      <MeetingForm
-        modal={modal}
-        onClose={() => setModal(null)}
-        onSave={(saved) => {
-          setRows(p => modal?.mode === "edit" ? p.map(r => r.id === saved.id ? { ...saved, branchId: saved.branchId || "" } : r) : [{ ...saved, branchId: saved.branchId || "" }, ...p]);
-          setModal(null);
-        }}
-        currentBranchId={currentBranchId}
       />
 
       <ConfirmDialog
@@ -119,64 +178,5 @@ export default function MeetingsPage() {
         confirmLabel="Delete"
       />
     </>
-  );
-}
-
-function MeetingForm({ modal, onClose, onSave, currentBranchId }: any) {
-  const blank = { title: "", date: new Date().toISOString().slice(0,10), time: "10:00", venue: "", organizer: "", status: "Scheduled", description: "", participants: [] };
-  const [form, setForm] = useState(blank);
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const key = `${modal?.mode}-${modal?.row?.id}`;
-  const lastKey = useRef(key);
-  if (lastKey.current !== key) {
-    lastKey.current = key;
-    setForm(modal?.row ? { ...modal.row } : blank);
-    setErr(null);
-  }
-
-  const submit = async () => {
-    if (!form.title.trim()) return setErr("Title is required.");
-    setSubmitting(true);
-    setErr(null);
-    try {
-      const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
-      let res;
-      if (modal?.mode === "edit") {
-        res = await meetingsApi.update(modal.row.id, { ...form, branchId: branchScope });
-      } else {
-        res = await meetingsApi.create({ ...form, branchId: branchScope });
-      }
-      onSave(res.meeting);
-    } catch (e: any) {
-      setErr(e.message || "Failed to save.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Modal open={!!modal} onClose={onClose} title={modal?.mode === "edit" ? "Edit Meeting" : "Schedule Meeting"} footer={
-      <>
-        <Btn variant="secondary" onClick={onClose} disabled={submitting}>Cancel</Btn>
-        <Btn variant="primary" onClick={submit} disabled={submitting} loading={submitting}>Save</Btn>
-      </>
-    }>
-      {err && <div className="mb-4 text-red-500 text-sm">{err}</div>}
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Meeting Title" className="col-span-2"><Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></Field>
-        <Field label="Date"><Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></Field>
-        <Field label="Time"><Input type="time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></Field>
-        <Field label="Venue"><Input value={form.venue} onChange={e => setForm({ ...form, venue: e.target.value })} /></Field>
-        <Field label="Organizer"><Input value={form.organizer} onChange={e => setForm({ ...form, organizer: e.target.value })} /></Field>
-        <Field label="Status">
-          <Select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} options={["Scheduled", "Live", "Completed", "Cancelled"]} />
-        </Field>
-        <Field label="Description" className="col-span-2">
-          <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-        </Field>
-      </div>
-    </Modal>
   );
 }

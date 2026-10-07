@@ -81,6 +81,18 @@ export default function CommunicationPage() {
           { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
         ]}
         columns={[
+          {
+            key: "author",
+            label: "Posted By",
+            width: "150px",
+            cell: (r) => (
+              <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                r.author ? "bg-[var(--theme-success-soft)] text-[var(--theme-success-text)]" : "bg-[var(--theme-primary-soft)] text-[var(--theme-primary)]"
+              }`}>
+                {r.author ? `Teacher (${r.author})` : "Admin / School"}
+              </span>
+            ),
+          },
           { key: "audience", label: "Audience", width: "minmax(140px,1fr)", cell: (r) => r.audience },
           { key: "channel", label: "Channel", width: "140px", cell: (r) => r.channel },
           { key: "type", label: "Type", width: "130px", cell: (r) => r.type },
@@ -90,12 +102,14 @@ export default function CommunicationPage() {
         ]}
         detailFields={(r) => [
           { label: "Title", value: r.title },
+          { label: "Posted By", value: r.author ? `Teacher (${r.author})` : "Admin / Institution" },
           { label: "Audience", value: r.audience },
           { label: "Channel", value: r.channel },
           { label: "Type", value: r.type },
           { label: "Date", value: r.date },
           { label: "Reach", value: r.reach.toLocaleString() },
           { label: "Status", value: r.status },
+          { label: "Notice Message", value: r.content || "No detailed body provided." },
         ]}
         mobileRows={(r) => [
           { label: "Audience", value: r.audience },
@@ -110,7 +124,7 @@ export default function CommunicationPage() {
       <NoticeForm
         modal={modal}
         onClose={() => setModal(null)}
-        onSave={(saved) => {
+        onSave={(saved: any) => {
           setRows(p => modal?.mode === "edit" ? p.map(r => r.id === saved.id ? { ...saved, branchId: saved.branchId || "" } : r) : [{ ...saved, branchId: saved.branchId || "" }, ...p]);
           setModal(null);
         }}

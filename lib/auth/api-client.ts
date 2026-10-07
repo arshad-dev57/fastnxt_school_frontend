@@ -1,33 +1,9 @@
-/* ============================================================================
-   BisonsEduCore360 — API client for bisonseducore360_backend
-   ---------------------------------------------------------------------------
-   The API is a separate Express project (../bisonseducore360_backend). All
-   calls go over `fetch` with `credentials: "include"`, because the session
-   travels in the httpOnly `bisons_session` cookie the API sets — no token is
-   ever stored anywhere JavaScript can read it.
-
-   Every endpoint answers with the same envelope (backend src/utils/response.js):
-
-     success → { success: true,  message, data, meta? }
-     failure → { success: false, message, errors?, code? }
-
-   `request()` unwraps `data` on success and throws a typed `ApiError` on
-   failure, so components never have to inspect the envelope themselves.
-   ========================================================================== */
 
 import type { ApiResult, AuthResponse, MeResponse, RegisterSchoolInput } from "./types";
 
-/**
- * Base URL of the API, including the `/api` prefix. Configure it in
- * `.env.local` (see `.env.example`):
- *
- *   NEXT_PUBLIC_API_URL=http://localhost:5000/api
- */
 export const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+  process.env.API_URL || "http://localhost:5000/api"
 ).replace(/\/+$/, "");
-
-/** The backend's shared response envelope. */
 type Envelope<T> = {
   success: boolean;
   message?: string;
@@ -36,12 +12,9 @@ type Envelope<T> = {
   code?: string | null;
 };
 
-/** A failed (or unreachable) API call, normalised for the UI. */
 export class ApiError extends Error {
-  /** Machine-readable code from the API, e.g. `INVALID_CREDENTIALS`. */
   readonly code: string;
   readonly status: number;
-  /** Per-field validation messages (HTTP 400 responses only). */
   readonly errors: string[];
 
   constructor(message: string, code: string, status: number, errors: string[] = []) {
@@ -100,8 +73,6 @@ async function request<T>(path: string, { method = "GET", body, signal }: Reques
 
   return (payload.data ?? null) as T;
 }
-
-/** Normalise anything thrown by this client into a message + field errors. */
 export function describeApiError(error: unknown): { message: string; code: string; errors: string[] } {
   if (error instanceof ApiError) {
     return { message: error.message, code: error.code, errors: error.errors };
@@ -343,6 +314,7 @@ export type EmployeeItem = {
   cnic?: string;
   phone?: string;
   email?: string;
+  password?: string;
   address?: string;
   photo?: string;
   designation: string;
@@ -450,7 +422,6 @@ export type CreateClassInput = {
 };
 
 export const classesApi = {
-  /** GET /api/classes — list all classes (with optional filters). */
   list: (params?: { q?: string; section?: string; status?: string; branchId?: string }, signal?: AbortSignal) => {
     const query = new URLSearchParams();
     if (params?.q) query.set("q", params.q);
@@ -461,21 +432,17 @@ export const classesApi = {
     return request<{ classes: ClassItem[] }>(`/classes${qs}`, { signal });
   },
 
-  /** GET /api/classes/teachers — active employees that can be class teachers. */
   listTeachers: (branchId?: string, signal?: AbortSignal) => {
     const qs = branchId ? `?branchId=${encodeURIComponent(branchId)}` : "";
     return request<{ teachers: TeacherOption[] }>(`/classes/teachers${qs}`, { signal });
   },
 
-  /** GET /api/classes/:id — single class details. */
   get: (id: string, signal?: AbortSignal) =>
     request<{ class: ClassItem }>(`/classes/${id}`, { signal }),
 
-  /** POST /api/classes — create a new class. */
   create: (data: CreateClassInput) =>
     request<{ class: ClassItem }>("/classes", { method: "POST", body: data }),
 
-  /** PATCH /api/classes/:id — update a class (partial). */
   update: (id: string, data: Partial<CreateClassInput>) =>
     request<{ class: ClassItem }>(`/classes/${id}`, { method: "PATCH", body: data }),
 
@@ -584,13 +551,14 @@ export const subjectsApi = {
     request<{ deleted: boolean }>(`/subjects/${id}`, { method: "DELETE" }),
 
   /** GET /api/subjects/assignments — list subject assignments */
-  listAssignments: (params?: { q?: string; cls?: string; section?: string; status?: string; branchId?: string }, signal?: AbortSignal) => {
+  listAssignments: (params?: { q?: string; cls?: string; section?: string; status?: string; branchId?: string; teacher?: string }, signal?: AbortSignal) => {
     const query = new URLSearchParams();
     if (params?.q) query.set("q", params.q);
     if (params?.cls) query.set("cls", params.cls);
     if (params?.section) query.set("section", params.section);
     if (params?.status) query.set("status", params.status);
     if (params?.branchId) query.set("branchId", params.branchId);
+    if (params?.teacher) query.set("teacher", params.teacher);
     const qs = query.toString() ? `?${query.toString()}` : "";
     return request<{ assignments: SubjectAssignmentItem[] }>(`/subjects/assignments${qs}`, { signal });
   },
@@ -666,6 +634,7 @@ export type CreateStudentInput = {
   phone?: string;
   contact?: string;
   email?: string;
+  password?: string;
   address?: string;
   prevSchool?: string;
   medical?: string;
@@ -733,7 +702,6 @@ export const studentsApi = {
   promote: (data: { studentIds: string[]; newSession: string; newClass: string; newSection: string }) =>
     request<{ count: number; promoted: boolean }>("/students/promote", { method: "POST", body: data }),
 
-  /** GET /api/students/admission-letters — list admission letters */
   listAdmissionLetters: (params?: { q?: string; status?: string; branchId?: string }, signal?: AbortSignal) => {
     const query = new URLSearchParams();
     if (params?.q) query.set("q", params.q);
@@ -850,8 +818,6 @@ export const admissionsApi = {
   delete: (id: string) => request<{ deleted: boolean }>(`/admissions/${id}`, { method: "DELETE" }),
 };
 
-// ─── VISITORS ──────────────────────────────────────────────────────────────
-
 export type VisitorItem = {
   id: string;
   visitor: string;
@@ -883,26 +849,34 @@ export const visitorsApi = {
   delete: (id: string) => request<{ deleted: boolean }>(`/visitors/${id}`, { method: "DELETE" }),
 };
 
-// ─── NOTICES ───────────────────────────────────────────────────────────────
 
 export type NoticeItem = {
   id: string;
   title: string;
+  content?: string | null;
   audience: string;
   channel: string;
   type: string;
   date: string;
   reach: number;
   status: string;
+  author?: string | null;
+  authorId?: string | null;
+  cls?: string | null;
+  section?: string | null;
   branchId: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 export const noticesApi = {
-  list: (params?: { branchId?: string }, signal?: AbortSignal) => {
+  list: (params?: { branchId?: string; author?: string; audience?: string; cls?: string; section?: string }, signal?: AbortSignal) => {
     const query = new URLSearchParams();
-    if (params?.branchId) query.set("branchId", params.branchId);
+    if (params?.branchId && params.branchId !== "all") query.set("branchId", params.branchId);
+    if (params?.author) query.set("author", params.author);
+    if (params?.audience) query.set("audience", params.audience);
+    if (params?.cls) query.set("cls", params.cls);
+    if (params?.section) query.set("section", params.section);
     const qs = query.toString() ? `?${query.toString()}` : "";
     return request<{ notices: NoticeItem[] }>(`/notices${qs}`, { signal });
   },
@@ -970,4 +944,192 @@ export const meetingsApi = {
   update: (id: string, data: Partial<MeetingItem>) => request<{ meeting: MeetingItem }>(`/meetings/${id}`, { method: "PATCH", body: data }),
   delete: (id: string) => request<{ deleted: boolean }>(`/meetings/${id}`, { method: "DELETE" }),
 };
+
+/** Homework item attachment */
+export type HomeworkAttachment = {
+  name: string;
+  type?: string;
+  size?: number;
+  data: string;
+};
+
+/** Homework / Assignment item from API */
+export type HomeworkItem = {
+  id: string;
+  title: string;
+  subject: string;
+  cls: string;
+  section: string;
+  teacher: string;
+  teacherId?: string | null;
+  assigned: string;
+  due: string;
+  instructions?: string | null;
+  status: string;
+  submitted: number;
+  total: number;
+  attachments?: HomeworkAttachment[];
+  branchId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const homeworkApi = {
+  list: (params?: { branchId?: string; teacher?: string; cls?: string; section?: string; status?: string }, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (params?.branchId && params.branchId !== "all") query.set("branchId", params.branchId);
+    if (params?.teacher) query.set("teacher", params.teacher);
+    if (params?.cls) query.set("cls", params.cls);
+    if (params?.section) query.set("section", params.section);
+    if (params?.status) query.set("status", params.status);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ homework: HomeworkItem[] }>(`/homework${qs}`, { signal });
+  },
+  get: (id: string, signal?: AbortSignal) => request<{ homework: HomeworkItem }>(`/homework/${id}`, { signal }),
+  create: (data: Omit<Partial<HomeworkItem>, "id"> & { title: string; subject: string; cls: string; section: string; due: string }) =>
+    request<{ homework: HomeworkItem }>("/homework", { method: "POST", body: data }),
+  update: (id: string, data: Partial<HomeworkItem>) =>
+    request<{ homework: HomeworkItem }>(`/homework/${id}`, { method: "PATCH", body: data }),
+  delete: (id: string) => request<{ deleted: boolean; id: string }>(`/homework/${id}`, { method: "DELETE" }),
+};
+
+/** Vehicle item from API */
+export type VehicleItem = {
+  id: string;
+  number: string;
+  type: string;
+  capacity: number;
+  driver: string;
+  driverPhone?: string | null;
+  route?: string | null;
+  fitness?: string | null;
+  status: string;
+  branchId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export const vehiclesApi = {
+  list: (params?: { q?: string; status?: string; branchId?: string }, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.status) query.set("status", params.status);
+    if (params?.branchId) query.set("branchId", params.branchId);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ vehicles: VehicleItem[] }>(`/transport/vehicles${qs}`, { signal });
+  },
+  listForSelect: (branchId?: string, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (branchId && branchId !== "all") query.set("branchId", branchId);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ vehicles: Pick<VehicleItem, "id" | "number" | "type" | "driver" | "capacity">[] }>(`/transport/vehicles/select${qs}`, { signal });
+  },
+  get: (id: string, signal?: AbortSignal) => request<{ vehicle: VehicleItem }>(`/transport/vehicles/${id}`, { signal }),
+  create: (data: Partial<VehicleItem> & { number: string; driver: string }) => request<{ vehicle: VehicleItem }>("/transport/vehicles", { method: "POST", body: data }),
+  update: (id: string, data: Partial<VehicleItem>) => request<{ vehicle: VehicleItem }>(`/transport/vehicles/${id}`, { method: "PATCH", body: data }),
+  delete: (id: string) => request<{ deleted: boolean }>(`/transport/vehicles/${id}`, { method: "DELETE" }),
+};
+
+/** Transport route item from API */
+export type TransportRouteItem = {
+  id: string;
+  name: string;
+  stops: number;
+  distance?: string | null;
+  students: number;
+  monthlyFee: number;
+  vehicleId?: string | null;
+  status: string;
+  branchId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export const transportRoutesApi = {
+  list: (params?: { q?: string; status?: string; branchId?: string }, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.status) query.set("status", params.status);
+    if (params?.branchId) query.set("branchId", params.branchId);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ routes: TransportRouteItem[] }>(`/transport/routes${qs}`, { signal });
+  },
+  get: (id: string, signal?: AbortSignal) => request<{ route: TransportRouteItem }>(`/transport/routes/${id}`, { signal }),
+  create: (data: Partial<TransportRouteItem> & { name: string }) => request<{ route: TransportRouteItem }>("/transport/routes", { method: "POST", body: data }),
+  update: (id: string, data: Partial<TransportRouteItem>) => request<{ route: TransportRouteItem }>(`/transport/routes/${id}`, { method: "PATCH", body: data }),
+  delete: (id: string) => request<{ deleted: boolean }>(`/transport/routes/${id}`, { method: "DELETE" }),
+};
+
+/** Hostel room item from API */
+export type HostelRoomItem = {
+  id: string;
+  hostel: string;
+  room: string;
+  type: string;
+  beds: number;
+  occupied: number;
+  warden?: string | null;
+  monthlyFee: number;
+  status: string;
+  residents?: string[];
+  branchId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export const hostelRoomsApi = {
+  list: (params?: { q?: string; status?: string; hostel?: string; branchId?: string }, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.status) query.set("status", params.status);
+    if (params?.hostel) query.set("hostel", params.hostel);
+    if (params?.branchId) query.set("branchId", params.branchId);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ rooms: HostelRoomItem[] }>(`/hostel/rooms${qs}`, { signal });
+  },
+  get: (id: string, signal?: AbortSignal) => request<{ room: HostelRoomItem }>(`/hostel/rooms/${id}`, { signal }),
+  create: (data: Partial<HostelRoomItem> & { hostel: string; room: string }) => request<{ room: HostelRoomItem }>("/hostel/rooms", { method: "POST", body: data }),
+  update: (id: string, data: Partial<HostelRoomItem>) => request<{ room: HostelRoomItem }>(`/hostel/rooms/${id}`, { method: "PATCH", body: data }),
+  delete: (id: string) => request<{ deleted: boolean }>(`/hostel/rooms/${id}`, { method: "DELETE" }),
+};
+
+/** Timetable slot item from API */
+export type TimetableSlotItem = {
+  id: string;
+  branchId?: string | null;
+  cls: string;
+  section: string;
+  day: string;
+  period: number;
+  startTime?: string | null;
+  endTime?: string | null;
+  subject: string;
+  teacher: string;
+  teacherId?: string | null;
+  room?: string | null;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export const timetableApi = {
+  list: (params?: { q?: string; branchId?: string; cls?: string; section?: string; teacher?: string; day?: string; period?: number }, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.branchId) query.set("branchId", params.branchId);
+    if (params?.cls) query.set("cls", params.cls);
+    if (params?.section) query.set("section", params.section);
+    if (params?.teacher) query.set("teacher", params.teacher);
+    if (params?.day) query.set("day", params.day);
+    if (params?.period) query.set("period", String(params.period));
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ slots: TimetableSlotItem[] }>(`/timetable/slots${qs}`, { signal });
+  },
+  get: (id: string, signal?: AbortSignal) => request<{ slot: TimetableSlotItem }>(`/timetable/slots/${id}`, { signal }),
+  create: (data: Partial<TimetableSlotItem> & { cls: string; section: string; day: string; period: number; subject: string; teacher: string }) =>
+    request<{ slot: TimetableSlotItem }>("/timetable/slots", { method: "POST", body: data }),
+  update: (id: string, data: Partial<TimetableSlotItem>) => request<{ slot: TimetableSlotItem }>(`/timetable/slots/${id}`, { method: "PATCH", body: data }),
+  delete: (id: string) => request<{ deleted: boolean }>(`/timetable/slots/${id}`, { method: "DELETE" }),
+};
+
 

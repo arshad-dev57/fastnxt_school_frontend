@@ -183,12 +183,8 @@ export default function AllStudentsPage() {
           }
         />
 
-        <BoardToolbarBar
-          views={["table", "kanban", "calendar"]}
-          activeView={view}
-          onViewChange={setView}
-          search={<BoardInlineSearch value={q} onChange={setQ} placeholder="Search students, ID or guardian…" />}
-        >
+        <BoardToolbarBar>
+          <BoardInlineSearch value={q} onChange={setQ} placeholder="Search students, ID or guardian…" />
           <ToolDropdown Icon={Filter} label="Class" options={classNames} value={cls} onChange={setCls} allLabel="All Classes" />
           <ToolDropdown Icon={ArrowUpDown} label="Sort" options={SORTS} value={sort} onChange={(v) => { setSort((v || "Name") as SortLabel); setSortAsc(true); }} allLabel="Name" />
           <ColumnsDropdown columns={COL_META} hidden={hidden} onToggle={(k) => setHidden((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]))} />

@@ -38,6 +38,7 @@ export default function AddStudentPage() {
     guardian: "",
     phone: "",
     email: "",
+    password: "",
     address: "",
     prevSchool: "",
     medical: "",
@@ -119,6 +120,7 @@ export default function AddStudentPage() {
         guardian: (f.guardian || f.father).trim() || undefined,
         phone: f.phone.trim() || undefined,
         email: f.email.trim() || undefined,
+        password: f.password.trim() || undefined,
         address: f.address.trim() || undefined,
         prevSchool: f.prevSchool.trim() || undefined,
         medical: f.medical.trim() || undefined,
@@ -240,8 +242,11 @@ export default function AddStudentPage() {
               <Field label="Phone / Mobile">
                 <Input value={f.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="03XX-XXXXXXX" />
               </Field>
-              <Field label="Email" className="sm:col-span-2">
-                <Input type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} placeholder="guardian@email.com" />
+              <Field label="Email Address (For Student Login)">
+                <Input type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} placeholder="student@email.com" />
+              </Field>
+              <Field label="Login Password">
+                <Input type="password" value={f.password} onChange={(e) => set({ password: e.target.value })} placeholder="Default: Password123" />
               </Field>
               <Field label="Address" className="sm:col-span-2">
                 <Textarea value={f.address} onChange={(e) => set({ address: e.target.value })} placeholder="House, street, area, city" />
