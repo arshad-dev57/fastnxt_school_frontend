@@ -221,7 +221,7 @@ const bySchedule = (a: Meeting, b: Meeting) =>
   a.date === b.date ? a.start.localeCompare(b.start) : a.date.localeCompare(b.date);
 
 export function MeetingsProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, signedIn } = useAuth();
   const { currentBranchId } = useBranch();
 
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -230,6 +230,9 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   const seq = useRef(2000);
 
   const refreshMeetings = useCallback(async () => {
+    // Login and other public pages mount this provider too. Meetings require a
+    // session, so skip the request until one exists.
+    if (!signedIn) return;
     try {
       const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
       const res = await meetingsApi.list({ branchId: branchScope });
@@ -240,20 +243,13 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("Failed to fetch meetings from API", err);
     }
-  }, [currentBranchId]);
+  }, [currentBranchId, signedIn]);
 
-  /* Hydration from API */
+  /* Load meetings once a session exists, and again when the branch changes. */
   useEffect(() => {
     setReady(true);
     refreshMeetings();
   }, [refreshMeetings]);
-
-  /* Refresh meetings when branch changes */
-  useEffect(() => {
-    if (ready) {
-      refreshMeetings();
-    }
-  }, [currentBranchId, ready, refreshMeetings]);
 
   /* Persist on change */
   useEffect(() => {

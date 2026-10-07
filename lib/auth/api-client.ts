@@ -1,9 +1,26 @@
 
 import type { ApiResult, AuthResponse, MeResponse, RegisterSchoolInput } from "./types";
 
-export const API_BASE_URL = (
-  process.env.API_URL || "http://localhost:5000/api"
-).replace(/\/+$/, "");
+/**
+ * Browser calls use this same-origin path. `app/backend-api/[...path]` forwards
+ * them to the real API, so a new host (localhost, a LAN IP, production) never
+ * needs a CORS allow-list entry.
+ */
+export const API_PROXY_PATH = "/backend-api";
+
+function upstreamBase(): string {
+  return (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api").replace(
+    /\/+$/,
+    ""
+  );
+}
+
+/** Absolute upstream URL. Server-side calls skip the proxy; the browser never uses this. */
+export function resolveApiUrl(path: string): string {
+  if (typeof window !== "undefined") return `${API_PROXY_PATH}${path}`;
+  return `${upstreamBase()}${path}`;
+}
+
 type Envelope<T> = {
   success: boolean;
   message?: string;
@@ -37,7 +54,7 @@ async function request<T>(path: string, { method = "GET", body, signal }: Reques
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(resolveApiUrl(path), {
       method,
       // Send the session cookie and accept the one the API may set back.
       credentials: "include",
@@ -47,9 +64,9 @@ async function request<T>(path: string, { method = "GET", body, signal }: Reques
       signal,
     });
   } catch {
-    // Network failure or a CORS rejection — the API never answered.
+    // The proxy or the API never answered.
     throw new ApiError(
-      `Cannot reach the API at ${API_BASE_URL}. Please make sure the backend is running.`,
+      "Cannot reach the API. Please make sure the backend is running.",
       "NETWORK_ERROR",
       0
     );
