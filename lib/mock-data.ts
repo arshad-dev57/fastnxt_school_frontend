@@ -208,9 +208,10 @@ export const TRANSACTIONS: TxRow[] = [
 ];
 
 /* ------------------------------------------------------- User Accounts */
-export type UserRole = "Super Admin" | "Administrator" | "Principal" | "Teacher" | "Accountant" | "Receptionist";
+/** @deprecated Prefer `UserRole` from `@/lib/branch` — kept for mock seed rows. */
+export type UserRole = import("@/lib/branch").UserRole | "Administrator";
 export type UserRow = {
-  id: string; name: string; email: string; role: UserRole;
+  id: string; name: string; email: string; role: string;
   lastLogin: string; status: ActiveStatus;
 };
 

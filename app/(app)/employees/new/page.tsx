@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Save, CheckCircle2, User, Briefcase, FileText, Plus, Trash2, ImagePlus } from "lucide-react";
 import { Avatar, Btn, Card, CardHead, Field, Input, Modal, PageHeader, Select, Textarea, type IconType } from "@/components/ui";
 import { DESIGNATIONS, DEPARTMENTS, EMPLOYMENT_TYPES, GENDERS } from "@/lib/mock-data";
-import { employeesApi, describeApiError, type EmployeeDocItem } from "@/lib/auth/api-client";
+import { employeesApi, describeApiError, uploadsApi, type EmployeeDocItem } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
 
 const DOC_TYPES = ["CNIC / National ID", "Degree / Certificate", "Employment Contract", "Experience Letter", "Other"];
@@ -20,11 +20,11 @@ export default function AddEmployeePage() {
     joining: new Date().toISOString().slice(0, 10), type: "Permanent", status: "Active",
   });
 
-  const [documents, setDocuments] = useState<Array<{ name: string; type: string; url?: string }>>([
-    { name: "CNIC Card Copy", type: "CNIC / National ID" },
-  ]);
+  const [documents, setDocuments] = useState<Array<{ name: string; type: string; url?: string }>>([]);
   const [newDocName, setNewDocName] = useState("");
   const [newDocType, setNewDocType] = useState(DOC_TYPES[0]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -32,10 +32,26 @@ export default function AddEmployeePage() {
 
   const set = (patch: Partial<typeof f>) => setF((p) => ({ ...p, ...patch }));
 
-  const addDocument = () => {
-    if (!newDocName.trim()) return;
-    setDocuments((prev) => [...prev, { name: newDocName.trim(), type: newDocType }]);
-    setNewDocName("");
+  const addDocument = async (file?: File | null) => {
+    if (!newDocName.trim() && !file) return;
+    setUploadingDoc(true);
+    setError(null);
+    try {
+      let url = "";
+      if (file) {
+        const res = await uploadsApi.upload(file, { purpose: "employee-doc", folder: "employees/docs" });
+        url = res.upload.url;
+      }
+      setDocuments((prev) => [
+        ...prev,
+        { name: newDocName.trim() || file?.name || "Document", type: newDocType, url },
+      ]);
+      setNewDocName("");
+    } catch (err) {
+      setError(describeApiError(err).message);
+    } finally {
+      setUploadingDoc(false);
+    }
   };
 
   const removeDocument = (index: number) => {
@@ -118,10 +134,34 @@ export default function AddEmployeePage() {
               <Field label="Address" className="sm:col-span-2"><Textarea value={f.address} onChange={(e) => set({ address: e.target.value })} placeholder="House, street, area, city" /></Field>
               <Field label="Photo" className="sm:col-span-2">
                 <div className="flex items-center gap-3">
-                  <Avatar name={f.name || "New Employee"} size={44} />
-                  <label className="flex h-10 flex-1 cursor-pointer items-center gap-2 rounded border border-dashed border-[var(--theme-border-strong)] px-3 text-[13px] text-[var(--theme-text-muted)] hover:bg-[var(--theme-hover)]">
-                    <ImagePlus className="h-4 w-4" /> {f.photo ? f.photo : "Upload photo"}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => set({ photo: e.target.files?.[0]?.name ?? "" })} />
+                  {f.photo ? (
+                    <img src={f.photo} alt="" className="h-11 w-11 rounded-full object-cover border border-[var(--theme-border)]" />
+                  ) : (
+                    <Avatar name={f.name || "New Employee"} size={44} />
+                  )}
+                  <label className={`flex h-10 flex-1 cursor-pointer items-center gap-2 rounded border border-dashed border-[var(--theme-border-strong)] px-3 text-[13px] text-[var(--theme-text-muted)] hover:bg-[var(--theme-hover)] ${uploadingPhoto ? "opacity-60 pointer-events-none" : ""}`}>
+                    <ImagePlus className="h-4 w-4" /> {uploadingPhoto ? "Uploading…" : f.photo ? "Change photo" : "Upload photo"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingPhoto}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        setUploadingPhoto(true);
+                        setError(null);
+                        try {
+                          const res = await uploadsApi.upload(file, { purpose: "employee-photo", folder: "employees/photos" });
+                          set({ photo: res.upload.url });
+                        } catch (err) {
+                          setError(describeApiError(err).message);
+                        } finally {
+                          setUploadingPhoto(false);
+                        }
+                      }}
+                    />
                   </label>
                 </div>
               </Field>
@@ -148,7 +188,20 @@ export default function AddEmployeePage() {
                 <Field label="Type" className="w-48">
                   <Select options={DOC_TYPES} value={newDocType} onChange={(e) => setNewDocType(e.target.value)} />
                 </Field>
-                <Btn type="button" variant="secondary" Icon={Plus} onClick={addDocument}>Add Document</Btn>
+                <label className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded border border-[var(--theme-border)] px-3 text-[13px] hover:bg-[var(--theme-hover)] ${uploadingDoc ? "opacity-60 pointer-events-none" : ""}`}>
+                  <Plus className="h-4 w-4" /> {uploadingDoc ? "Uploading…" : "Upload file"}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx"
+                    className="hidden"
+                    disabled={uploadingDoc}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      e.target.value = "";
+                      void addDocument(file);
+                    }}
+                  />
+                </label>
               </div>
 
               {documents.length === 0 ? (

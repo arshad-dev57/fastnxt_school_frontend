@@ -1,14 +1,12 @@
 /* ============================================================================
    BisonsEduCore360 — Panel registry (single source of truth)
    ---------------------------------------------------------------------------
-   The three workspaces a signed-in user can open. These definitions are shared
-   by BOTH the authenticated Panel Switcher (components/panel-switcher.tsx) and
-   the authentication UI (login panel selector), so the panel list and the
-   landing route for each panel live in exactly one place.
+   The three workspaces a signed-in user can open. Shared by the Panel Switcher
+   and post-login redirects, so the panel list and landing route live in one place.
 
    SCOPE: pure front-end routing — no authentication, permissions or API.
    Adding a Parent / Accountant / HR panel later means pushing one more entry
-   into PANELS; the switcher and the login selector both pick it up for free.
+   into PANELS; the switcher picks it up for free.
    ========================================================================== */
 
 import { GraduationCap, LayoutDashboard, User, type LucideIcon } from "lucide-react";
@@ -19,7 +17,7 @@ export type PanelOption = {
   id: PanelId;
   /** Full name, e.g. "Admin Panel" (used by the switcher). */
   label: string;
-  /** One-word name, e.g. "Admin" (used by the login selector / compact UI). */
+  /** One-word name, e.g. "Admin" (compact UI / switcher). */
   short: string;
   /** One-line description of what the panel is for. */
   blurb: string;

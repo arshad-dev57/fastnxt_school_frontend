@@ -53,11 +53,17 @@ export function Dot({ color }: { color: string }) {
   return <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />;
 }
 
-export function Avatar({ name, size = 32, ring = false }: { name: string; size?: number; ring?: boolean }) {
+export function Avatar({ name, src, size = 32, ring = false }: { name: string; src?: string | null; size?: number; ring?: boolean }) {
+  const photo = typeof src === "string" && src.trim() ? src.trim() : "";
   return (
-    <span title={name} className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
-      style={{ width: size, height: size, fontSize: size <= 28 ? 10 : 11, background: avatarColor(name), boxShadow: ring ? "0 0 0 2px #fff" : undefined }}>
-      {initials(name)}
+    <span title={name} className="flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold text-white"
+      style={{ width: size, height: size, fontSize: size <= 28 ? 10 : 11, background: photo ? undefined : avatarColor(name), boxShadow: ring ? "0 0 0 2px #fff" : undefined }}>
+      {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photo} alt={name} className="h-full w-full object-cover" />
+      ) : (
+        initials(name)
+      )}
     </span>
   );
 }

@@ -14,7 +14,8 @@
      • register form → POST /api/auth/register  (school + admin + 5-day trial)
      • Logout page   → POST /api/auth/logout    (cookie cleared by the API)
 
-   Only the panel choice is persisted locally, and that is a pure UI preference.
+   The active panel is taken from `user.panel` on the API session (and mirrored
+   in localStorage so the UI preference stays in sync after sign-in).
    ========================================================================== */
 
 import {
@@ -42,11 +43,13 @@ export type AuthStatus = "loading" | "authenticated" | "anonymous";
 export type SchoolSnapshot = {
   id: string | null;
   schoolName: string;
+  shortName?: string | null;
   ownerName: string;
   email: string;
   phone: string;
   country: string;
   city: string;
+  logoUrl?: string | null;
 };
 
 const PANEL_STORAGE_KEY = "bisons:panel";
@@ -63,7 +66,7 @@ export type AuthContextValue = {
   school: SchoolSnapshot | null;
   subscription: AuthSubscription | null;
   emailVerified: boolean;
-  /** Panel chosen on the login screen — UI preference, persisted locally. */
+  /** Workspace panel from the account (`user.panel`), mirrored in localStorage. */
   panel: PanelId;
   /** Email of the current session, handy for prefilling the login form. */
   accountEmail: string | null;
@@ -98,11 +101,13 @@ function toSchoolSnapshot(user: AuthUser | null): SchoolSnapshot | null {
   return {
     id: user.school.id,
     schoolName: user.school.name,
+    shortName: user.school.shortName || null,
     ownerName: user.school.ownerName,
     email: user.school.email,
     phone: user.school.phone,
     country: user.school.country,
     city: user.school.city,
+    logoUrl: user.school.logoUrl || null,
   };
 }
 
@@ -177,6 +182,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const adopt = useCallback((nextUser: AuthUser | null) => {
     setUser(nextUser);
     setStatus(nextUser ? "authenticated" : "anonymous");
+    // Keep the stored panel aligned with the account so refresh / deep links
+    // open the workspace the server assigned (admin / teacher / student).
+    if (nextUser && isPanelId(nextUser.panel)) {
+      writeStoredPanel(nextUser.panel);
+    }
   }, []);
 
   /** Apply the outcome of a session read. Only ever called from a callback. */

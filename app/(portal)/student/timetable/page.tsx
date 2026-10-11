@@ -1,43 +1,88 @@
 "use client";
 
-import { CalendarClock, Download, Printer } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, Printer } from "lucide-react";
 import { Btn, PageHeader } from "@/components/ui";
 import { PortalTimetable } from "@/components/portal/portal-timetable";
 import { PortalScopeBar } from "@/components/portal/portal-ui";
-import { PORTAL_STUDENT, STUDENT_META, studentTimetable } from "@/lib/portal-data";
-import { PERIOD_TIMES } from "@/lib/school-mock-data";
+import { describeApiError, timetableApi, type TimetableSlotItem } from "@/lib/auth/api-client";
+import { useMyStudent } from "@/lib/hooks/use-my-student";
 
-/* Student Timetable = the Admin /timetable module viewed in "Class" mode,
-   scoped to the signed-in student's own class-section. */
 export default function StudentTimetablePage() {
+  const { student, loading: profileLoading, error: profileError, scopeLabel } = useMyStudent();
+  const [slots, setSlots] = useState<TimetableSlotItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!student) {
+      setSlots([]);
+      setLoading(profileLoading);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await timetableApi.list({
+          cls: student.cls,
+          section: student.section,
+          branchId: student.branchId || undefined,
+        });
+        if (!cancelled) setSlots(res.slots ?? []);
+      } catch (err) {
+        if (!cancelled) {
+          setError(describeApiError(err).message);
+          setSlots([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [student, profileLoading]);
+
+  const today = useMemo(() => {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    return days[new Date().getDay()] || "Monday";
+  }, []);
+
   return (
     <>
       <PageHeader
         title="My Timetable"
-        subtitle={`Weekly period-wise schedule for ${PORTAL_STUDENT.cls}-${PORTAL_STUDENT.section}.`}
-        actions={
-          <>
-            <Btn variant="secondary" Icon={Download}>Download</Btn>
-            <Btn variant="primary" Icon={Printer}>Print</Btn>
-          </>
-        }
+        subtitle={student ? `Weekly period-wise schedule for ${scopeLabel}.` : "Your class timetable"}
+        actions={<Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print</Btn>}
       />
 
       <div className="px-4 pb-24 sm:px-6">
-        <PortalScopeBar count={studentTimetable.length} noun="period slots" label={PORTAL_STUDENT.cls + "-" + PORTAL_STUDENT.section} Icon={CalendarClock} />
+        {(error || profileError) && (
+          <p className="mb-3 text-[13px] text-[var(--theme-danger)]">{error || profileError}</p>
+        )}
+        <PortalScopeBar
+          count={slots.length}
+          noun="period slots"
+          label={scopeLabel}
+          Icon={CalendarClock}
+        />
         <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-[var(--theme-text-muted)]">
-          <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">{STUDENT_META.campus}</span>
-          <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">Session {PORTAL_STUDENT.session}</span>
-          <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">
-            Day starts {PERIOD_TIMES[1].start}
-          </span>
+          {student?.session ? (
+            <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">
+              Session {student.session}
+            </span>
+          ) : null}
+          {loading ? (
+            <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">Loading…</span>
+          ) : null}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 print-area">
           <PortalTimetable
-            slots={studentTimetable}
-            title={`${PORTAL_STUDENT.cls}-${PORTAL_STUDENT.section} weekly timetable`}
+            slots={slots}
+            title={`${scopeLabel} weekly timetable`}
             subtitle="Subjects, teachers and rooms for every period."
+            highlightDay={today}
           />
         </div>
       </div>

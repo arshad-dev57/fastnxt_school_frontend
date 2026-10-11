@@ -8,11 +8,18 @@ import {
 import {
   studentsApi,
   schoolApi,
+  lettersApi,
+  describeApiError,
+  DEFAULT_ADMISSION_LETTER_TEMPLATE,
   type AdmissionLetterItem,
   type StudentItem,
   type SchoolProfile,
+  type LetterTemplate,
+  type LetterSchoolInfo,
 } from "@/lib/auth/api-client";
+import { OfficialLetterDocument, letterHtmlForEmail } from "@/components/letters/official-letter";
 import { useBranch } from "@/lib/branch-context";
+import Link from "next/link";
 
 const COLS = "grid-cols-[minmax(170px,1.3fr)_150px_120px_120px_120px_150px_64px]";
 
@@ -21,8 +28,12 @@ export default function AdmissionLettersPage() {
   const [rows, setRows] = useState<AdmissionLetterItem[]>([]);
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [school, setSchool] = useState<SchoolProfile | null>(null);
+  const [template, setTemplate] = useState<LetterTemplate>(DEFAULT_ADMISSION_LETTER_TEMPLATE);
+  const [letterSchool, setLetterSchool] = useState<LetterSchoolInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailing, setEmailing] = useState(false);
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
@@ -37,14 +48,17 @@ export default function AdmissionLettersPage() {
       setLoading(true);
       setError(null);
       const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
-      const [lettersRes, studentsRes, schoolRes] = await Promise.all([
+      const [lettersRes, studentsRes, schoolRes, tmplRes] = await Promise.all([
         studentsApi.listAdmissionLetters({ branchId: branchScope }),
         studentsApi.list({ branchId: branchScope }),
         schoolApi.getProfile().catch(() => null),
+        lettersApi.getAdmissionTemplate().catch(() => null),
       ]);
       setRows(lettersRes.letters || []);
       setStudents(studentsRes.students || []);
       if (schoolRes?.school) setSchool(schoolRes.school);
+      if (tmplRes?.template) setTemplate({ ...DEFAULT_ADMISSION_LETTER_TEMPLATE, ...tmplRes.template });
+      if (tmplRes?.school) setLetterSchool(tmplRes.school);
     } catch (err: unknown) {
       console.error("Failed to load admission letters:", err);
       setError(err instanceof Error ? err.message : "Failed to load admission letters.");
@@ -197,7 +211,12 @@ export default function AdmissionLettersPage() {
                         <RowMenu items={[
                           { label: "Preview", Icon: Eye, onClick: () => setPreview(r) },
                           { label: "Print", Icon: Printer, onClick: () => { setPreview(r); setTimeout(doPrint, 300); } },
-                          { label: "Mark as Printed", Icon: Mail, onClick: () => handleMarkPrinted(r) },
+                          { label: "Email letter", Icon: Mail, onClick: () => {
+                            const stu = students.find((s) => s.name === r.student || s.admissionNo === r.admissionNo);
+                            setEmailTo(stu?.email || "");
+                            setPreview(r);
+                          } },
+                          { label: "Mark as Printed", Icon: Printer, onClick: () => handleMarkPrinted(r) },
                           { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
                         ]} />
                       </Td>
@@ -216,7 +235,11 @@ export default function AdmissionLettersPage() {
                         <RowMenu items={[
                           { label: "Preview", Icon: Eye, onClick: () => setPreview(r) },
                           { label: "Print", Icon: Printer, onClick: () => { setPreview(r); setTimeout(doPrint, 300); } },
-                          { label: "Mark as Printed", Icon: Mail, onClick: () => handleMarkPrinted(r) },
+                          { label: "Email letter", Icon: Mail, onClick: () => {
+                            const stu = students.find((s) => s.name === r.student || s.admissionNo === r.admissionNo);
+                            setEmailTo(stu?.email || "");
+                            setPreview(r);
+                          } },
                           { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
                         ]} />
                       </div>
@@ -235,9 +258,101 @@ export default function AdmissionLettersPage() {
 
       {/* LETTER PREVIEW & PRINT MODAL */}
       <Modal open={!!preview} onClose={() => setPreview(null)} title="Admission Letter Preview" subtitle={preview?.admissionNo} width="max-w-3xl"
-        footer={<><Btn variant="secondary" onClick={() => setPreview(null)}>Close</Btn>
-          <Btn variant="primary" Icon={Printer} onClick={doPrint}>Print Letter</Btn></>}>
-        {preview && <AdmissionLetterDoc letter={preview} school={school} />}
+        footer={
+          <>
+            <Btn variant="secondary" onClick={() => setPreview(null)}>Close</Btn>
+            <Btn
+              variant="secondary"
+              Icon={Mail}
+              disabled={emailing || !emailTo.trim()}
+              loading={emailing}
+              loadingLabel="Sending…"
+              onClick={async () => {
+                if (!preview || !emailTo.trim()) return;
+                setEmailing(true);
+                try {
+                  const res = await lettersApi.sendEmail({
+                    to: emailTo.trim(),
+                    title: `${template.title} — ${preview.student}`,
+                    template: "admission_letter",
+                    messageHtml: letterHtmlForEmail({
+                      title: template.title,
+                      paragraphs: [
+                        template.salutation,
+                        template.bodyIntro
+                          .replace(/\{studentName\}/g, preview.student)
+                          .replace(/\{schoolName\}/g, letterSchool?.name || school?.name || "School")
+                          .replace(/\{classSection\}/g, `${preview.cls} (Section ${preview.section})`),
+                        template.bodyClosing,
+                      ],
+                      details: [
+                        ["Student", preview.student],
+                        ["Admission No", preview.admissionNo],
+                        ["Class / Section", `${preview.cls} - ${preview.section}`],
+                        ["Date", preview.date],
+                      ],
+                    }),
+                  });
+                  alert(res.delivered ? "Email sent successfully." : `Email not delivered (${res.reason || "check Resend config"}).`);
+                } catch (err) {
+                  alert(describeApiError(err).message);
+                } finally {
+                  setEmailing(false);
+                }
+              }}
+            >
+              Send email
+            </Btn>
+            <Btn variant="primary" Icon={Printer} onClick={doPrint}>Print Letter</Btn>
+          </>
+        }>
+        {preview && (
+          <div className="space-y-3">
+            <div className="no-print flex flex-wrap items-end gap-2 rounded-lg border border-[var(--theme-border)] p-3">
+              <Field label="Email to (parent / guardian)" className="min-w-[220px] flex-1">
+                <input
+                  type="email"
+                  value={emailTo}
+                  onChange={(e) => setEmailTo(e.target.value)}
+                  placeholder="parent@email.com"
+                  className="h-10 w-full rounded border border-[var(--theme-border)] bg-transparent px-3 text-[13px]"
+                />
+              </Field>
+              <Link href="/settings/admission-letter" className="text-[12px] text-[var(--theme-primary)] hover:underline">
+                Customize layout
+              </Link>
+            </div>
+            <OfficialLetterDocument
+              template={template}
+              school={letterSchool || (school ? {
+                id: school.id || "",
+                name: school.name,
+                shortName: school.shortName,
+                address: school.address,
+                phone: school.phone,
+                email: school.email,
+                website: school.website,
+                principal: school.principal,
+                logoUrl: school.logoUrl,
+                academicSession: school.academicSession,
+              } : null)}
+              refNo={preview.admissionNo}
+              date={preview.date}
+              vars={{
+                studentName: preview.student,
+                classSection: `${preview.cls} (Section ${preview.section})`,
+              }}
+              detailRows={[
+                ["Student Name", preview.student],
+                ["Admission Number", preview.admissionNo],
+                ["Class / Section", `${preview.cls} - ${preview.section}`],
+                ["Academic Session", letterSchool?.academicSession || school?.academicSession || "2025-2026"],
+                ["Admission Date", preview.date],
+                ["Status", preview.status],
+              ]}
+            />
+          </div>
+        )}
       </Modal>
 
       {/* GENERATE LETTER MODAL */}
@@ -285,85 +400,5 @@ export default function AdmissionLettersPage() {
         message={`Delete admission letter for "${toDelete?.student}" (${toDelete?.admissionNo})?`}
       />
     </>
-  );
-}
-
-function AdmissionLetterDoc({
-  letter,
-  school,
-}: {
-  letter: AdmissionLetterItem;
-  school: SchoolProfile | null;
-}) {
-  const schoolName = school?.name || "BisonsEduCore360 Academy";
-  const schoolAddress = school?.address || "Main Campus, Education City";
-  const schoolPhone = school?.phone || "0300-1234567";
-  const schoolEmail = school?.email || "info@bisonseducore.edu";
-
-  const info: [string, string][] = [
-    ["Student Name", letter.student],
-    ["Admission Number", letter.admissionNo],
-    ["Class / Section", `${letter.cls} - ${letter.section}`],
-    ["Academic Session", "2025-2026"],
-    ["Admission Date", letter.date],
-    ["Status", letter.status],
-  ];
-
-  return (
-    <div className="print-area mx-auto max-w-[720px] bg-[var(--theme-surface)] p-6 text-[var(--theme-text)] sm:p-8">
-      <div className="flex items-start justify-between gap-4 border-b-2 border-[var(--theme-primary)] pb-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--theme-accent)] text-[22px] font-extrabold text-white">
-            {schoolName.charAt(0)}
-          </span>
-          <div>
-            <h1 className="text-[20px] font-bold leading-tight">{schoolName}</h1>
-            <p className="text-[12px] text-[var(--theme-text-muted)]">{schoolAddress}</p>
-            <p className="text-[12px] text-[var(--theme-text-muted)]">{schoolPhone} · {schoolEmail}</p>
-          </div>
-        </div>
-        <div className="hidden text-right text-[12px] text-[var(--theme-text-muted)] sm:block">
-          <p>Institution Letter</p>
-          <p className="font-semibold text-[var(--theme-text)]">OFFICIAL</p>
-        </div>
-      </div>
-
-      <div className="mt-6 flex items-center justify-between">
-        <p className="text-[13px]"><span className="text-[var(--theme-text-muted)]">Ref:</span> <span className="font-mono">{letter.admissionNo}</span></p>
-        <p className="text-[13px]"><span className="text-[var(--theme-text-muted)]">Date:</span> {letter.date}</p>
-      </div>
-
-      <h2 className="mt-6 text-center text-[17px] font-bold underline">ADMISSION LETTER</h2>
-
-      <p className="mt-6 text-[14px] leading-relaxed">Dear Parent / Guardian,</p>
-      <p className="mt-2 text-[14px] leading-relaxed">
-        We are pleased to inform you that your child <span className="font-semibold">{letter.student}</span> has been
-        granted admission to <span className="font-semibold">{schoolName}</span> in <span className="font-semibold">{letter.cls} (Section {letter.section})</span>.
-        Please find the admission details below.
-      </p>
-
-      <table className="mt-5 w-full border-collapse text-[13px]">
-        <tbody>
-          {info.map(([k, v]) => (
-            <tr key={k} className="border-b border-[var(--theme-border)]">
-              <td className="w-1/2 bg-[var(--theme-sidebar)] px-3 py-2 font-medium">{k}</td>
-              <td className="px-3 py-2">{v}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <p className="mt-5 text-[14px] leading-relaxed">
-        Kindly report to the school office on or before the first day of the academic session to complete the remaining
-        formalities and documentation. We look forward to welcoming your child to our school community.
-      </p>
-      <p className="mt-6 text-[14px]">Yours sincerely,</p>
-      <p className="mt-10 text-[14px] font-semibold">Principal / Administration</p>
-      <p className="text-[13px] text-[var(--theme-text-muted)]">{schoolName}</p>
-
-      <p className="mt-8 border-t border-dashed border-[var(--theme-border-strong)] pt-3 text-center text-[11px] text-[var(--theme-text-faint)]">
-        This is a computer-generated document from {schoolName}
-      </p>
-    </div>
   );
 }

@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bell, Briefcase, CalendarCheck, CheckCheck, ChevronRight, CircleHelp, ExternalLink,
-  MessageSquare, ReceiptText, UserPlus, Wallet, LogOut, Menu, PanelLeftClose, Plus, Search, X,
+  ChevronRight, CircleHelp, ExternalLink, LogOut, Menu, PanelLeftClose, Plus, Search, X,
 } from "lucide-react";
-import { Avatar, Tooltip, TONE, type IconType } from "@/components/ui";
+import { Avatar, Tooltip } from "@/components/ui";
 import { IconButton } from "@/components/icons";
 import ThemeSwitcher from "@/components/theme-switcher";
-import PanelSwitcher from "@/components/panel-switcher";
 import FloatingAIAssistant from "@/components/ai-assistant/FloatingAIAssistant";
-import { NOTIFICATIONS, type NotificationRow } from "@/lib/mock-data";
+import { HeaderPageSearch } from "@/components/page-search";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import type { PortalConfig, PortalNavItem } from "@/lib/portal-nav";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useBranch } from "@/lib/branch-context";
@@ -20,17 +19,7 @@ import { useBranch } from "@/lib/branch-context";
 /* ===========================================================================
    PortalShell — the SAME chrome as components/app-shell.tsx, parameterised for
    the Student / Teacher portals.
-
-   It reuses the Admin's structure, spacing scale, theme tokens, font stack and
-   motion classes (ic-nav / ic-hover / ic-btn), so the portals look like they
-   were designed with the Admin Panel. The Admin's own AppShell is untouched —
-   this is an additional shell, not a replacement.
    ========================================================================== */
-
-const NOTIF_ICON: Record<NotificationRow["icon"], IconType> = {
-  user: UserPlus, fee: Wallet, invoice: ReceiptText, calendar: CalendarCheck,
-  staff: Briefcase, chat: MessageSquare,
-};
 
 const isActive = (pathname: string, item: PortalNavItem) =>
   item.href === pathname || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/"));
@@ -39,15 +28,18 @@ export default function PortalShell({ config, children }: { config: PortalConfig
   const pathname = usePathname();
   const [sideOpen, setSideOpen] = useState(true);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifs, setNotifs] = useState<NotificationRow[]>(NOTIFICATIONS);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchAnchorRef = useRef<HTMLSpanElement>(null);
   const [railOpen, setRailOpen] = useState(false);
-  const unread = notifs.filter((n) => !n.read).length;
   const { user, school } = useAuth();
   const { currentBranch } = useBranch();
+  const searchablePages = useMemo(
+    () => config.items.map((it) => ({ label: it.label, href: it.href, group: config.portalName })),
+    [config.items, config.portalName]
+  );
 
   const closeOnMobile = () => { if (window.innerWidth < 1024) setSideOpen(false); };
-  const markRead = (id: number) => setNotifs((p) => p.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  const markAllRead = () => setNotifs((p) => p.map((n) => ({ ...n, read: true })));
+  const expandHref = config.base.startsWith("/teacher") ? "/teacher/notifications" : config.base.startsWith("/student") ? "/student/notifications" : "/notifications";
 
   const railLink = (item: PortalNavItem, key: string) => {
     const active = isActive(pathname, item);
@@ -73,10 +65,22 @@ export default function PortalShell({ config, children }: { config: PortalConfig
             {sideOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
           <Link href={config.base} className="flex min-w-0 items-center gap-2.5 max-w-[320px]">
-            <img src="/logo.png" alt="BisonsEduCore360 Logo" className="h-9 w-9 shrink-0" />
+            {school?.logoUrl || user?.school?.logoUrl ? (
+              <img
+                src={school?.logoUrl || user?.school?.logoUrl || ""}
+                alt={school?.schoolName || user?.school?.name || "School"}
+                className="h-9 w-9 shrink-0 rounded-md bg-white/10 object-contain p-0.5"
+              />
+            ) : (
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/15 text-[15px] font-bold text-white">
+                {(school?.shortName || school?.schoolName || user?.school?.shortName || user?.school?.name || "S")
+                  .charAt(0)
+                  .toUpperCase()}
+              </span>
+            )}
             <div className="flex flex-col min-w-0">
               <span className="truncate text-[15px] font-bold leading-tight text-white">
-                {school?.schoolName || user?.school?.name || "BisonsEduCore360"}
+                {school?.schoolName || user?.school?.name || "School"}
               </span>
               <span className="truncate text-[11px] font-medium text-white/80">
                 {currentBranch ? `${currentBranch.name}` : user?.branch?.name ? `${user.branch.name}` : "Main Campus"} · {config.portalName}
@@ -89,73 +93,36 @@ export default function PortalShell({ config, children }: { config: PortalConfig
           </Link>
           <div className="flex-1" />
 
-          {/* PANEL SWITCHER — same dropdown the Admin header uses */}
-          <PanelSwitcher />
-
-          {/* NOTIFICATIONS — same popover as the Admin header */}
-          <div className="relative">
-            <button onClick={() => setNotifOpen((o) => !o)} aria-label="Notifications" aria-expanded={notifOpen}
-              className="ic-btn relative flex h-10 w-10 items-center justify-center rounded-md text-white/85 transition-colors hover:bg-white/10 hover:text-white">
-              <Bell className="ic-hover h-[22px] w-[22px]" strokeWidth={1.8} />
-              {unread > 0 && (
-                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--theme-badge)] px-1 text-[10px] font-bold text-white">{unread}</span>
-              )}
-            </button>
-
-            {notifOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-                <div className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-xl bg-[var(--theme-surface)] shadow-2xl ring-1 ring-[var(--theme-border)]">
-                  <div className="flex items-center justify-between gap-2 border-b border-[var(--theme-border)] px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-[15px] font-semibold">Notifications</p>
-                      <p className="text-[12px] text-[var(--theme-text-muted)]">{unread > 0 ? `${unread} unread` : "You're all caught up"}</p>
-                    </div>
-                    <button onClick={markAllRead} disabled={unread === 0}
-                      className="flex shrink-0 items-center gap-1.5 rounded px-2 py-1 text-[13px] font-medium text-[var(--theme-primary)] hover:bg-[var(--theme-hover)] disabled:cursor-not-allowed disabled:text-[var(--theme-text-faint)] disabled:hover:bg-transparent">
-                      <CheckCheck className="h-4 w-4" /> Mark all read
-                    </button>
-                  </div>
-                  <div className="max-h-[400px] overflow-y-auto">
-                    {notifs.length === 0 && (
-                      <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--theme-subtle)] text-[var(--theme-text-faint)]"><Bell className="h-6 w-6" /></span>
-                        <p className="text-[15px] font-semibold">No notifications</p>
-                      </div>
-                    )}
-                    {notifs.map((n) => {
-                      const NIcon = NOTIF_ICON[n.icon];
-                      const t = TONE[n.tone];
-                      return (
-                        <button key={n.id} onClick={() => markRead(n.id)}
-                          className={`flex w-full items-start gap-3 border-b border-[var(--theme-border)] px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-[var(--theme-hover)] ${!n.read ? "bg-[var(--theme-info-soft)]" : ""}`}>
-                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: t.bg, color: t.fg }}>
-                            <NIcon className="h-[18px] w-[18px]" />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-start gap-2">
-                              <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{n.title}</span>
-                              {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--theme-primary)]" />}
-                            </span>
-                            <span className="mt-0.5 block text-[13px] leading-snug text-[var(--theme-text-muted)]">{n.message}</span>
-                            <span className="mt-1 block text-[12px] text-[var(--theme-text-faint)]">{n.time}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          <NotificationBell
+            open={notifOpen}
+            onOpenChange={setNotifOpen}
+            expandHref={expandHref}
+            settingsHref={config.userHref}
+          />
 
           <ThemeSwitcher />
-          <IconButton Icon={Search} label="Search" />
+          <span ref={searchAnchorRef} className="relative inline-flex">
+            <IconButton
+              Icon={Search}
+              label="Search"
+              onClick={() => setSearchOpen((v) => !v)}
+              active={searchOpen}
+              ariaExpanded={searchOpen}
+            />
+          </span>
           <IconButton Icon={CircleHelp} label="Help" className="max-sm:hidden" />
           <Link href={config.userHref} className="ml-1 sm:ml-2" aria-label="Account">
             <Avatar name={config.userName} size={36} />
           </Link>
         </header>
+
+        <HeaderPageSearch
+          pages={searchablePages}
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+          anchorRef={searchAnchorRef}
+          placeholder="Search pages…"
+        />
 
         <div className="relative flex min-h-0 flex-1">
           {/* ICON RAIL — same 64px rail as the Admin shell */}

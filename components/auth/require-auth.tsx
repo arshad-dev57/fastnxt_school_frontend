@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
+import { hasActiveSubscription, SUBSCRIPTION_PATH } from "@/lib/auth/subscription";
 
 /* ============================================================================
    RequireAuth — session gate for the signed-in areas
@@ -13,12 +14,11 @@ import { useAuth } from "@/lib/auth/auth-context";
 
      • loading       → full-page splash, so protected content never flashes
      • anonymous     → redirect to /login
-     • authenticated → the page
+     • authenticated + expired subscription → /subscription (unless allowExpired)
+     • authenticated + active subscription → the page
 
-   A Next.js Proxy (the v16 name for middleware) could do a first-pass check,
-   but the httpOnly session cookie belongs to the API's own origin and the Next
-   docs are explicit that Proxy is for *optimistic* checks rather than session
-   management — so the authoritative check goes through the API instead.
+   Subscription status comes from the existing session payload — no extra API
+   calls on every shell navigation.
    ========================================================================== */
 
 function Splash({ label }: { label: string }) {
@@ -33,15 +33,32 @@ function Splash({ label }: { label: string }) {
   );
 }
 
-export default function RequireAuth({ children }: { children: ReactNode }) {
-  const { ready, signedIn } = useAuth();
+export default function RequireAuth({
+  children,
+  allowExpired = false,
+}: {
+  children: ReactNode;
+  /** Set on the /subscription lock screen so expired schools can still open it. */
+  allowExpired?: boolean;
+}) {
+  const { ready, signedIn, subscription } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const active = hasActiveSubscription(subscription);
 
   useEffect(() => {
-    if (ready && !signedIn) router.replace("/login");
-  }, [ready, signedIn, router]);
+    if (!ready) return;
+    if (!signedIn) {
+      router.replace("/login");
+      return;
+    }
+    if (!allowExpired && !active && pathname !== SUBSCRIPTION_PATH) {
+      router.replace(SUBSCRIPTION_PATH);
+    }
+  }, [ready, signedIn, allowExpired, active, pathname, router]);
 
   if (!ready) return <Splash label="Restoring your session…" />;
   if (!signedIn) return <Splash label="Redirecting to sign in…" />;
+  if (!allowExpired && !active) return <Splash label="Checking your subscription…" />;
   return <>{children}</>;
 }

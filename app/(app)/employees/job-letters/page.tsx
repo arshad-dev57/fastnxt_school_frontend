@@ -1,12 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Printer, Eye, FileSignature, Briefcase, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Plus, Printer, Eye, FileSignature, Briefcase, RefreshCw, Mail } from "lucide-react";
 import {
   Badge, Btn, Card, EmptyState, Field, Modal, PageHeader, RowMenu, SearchBox, Select, Th, Td, cn,
 } from "@/components/ui";
-import { SCHOOL } from "@/lib/mock-data";
-import { jobLettersApi, employeesApi, describeApiError, type JobLetterItem, type EmployeeItem } from "@/lib/auth/api-client";
+import {
+  jobLettersApi,
+  employeesApi,
+  lettersApi,
+  describeApiError,
+  DEFAULT_JOB_LETTER_TEMPLATE,
+  type JobLetterItem,
+  type EmployeeItem,
+  type LetterTemplate,
+  type LetterSchoolInfo,
+} from "@/lib/auth/api-client";
+import { OfficialLetterDocument, letterHtmlForEmail } from "@/components/letters/official-letter";
 
 const COLS = "grid-cols-[minmax(170px,1.3fr)_140px_140px_130px_120px_150px_64px]";
 
@@ -15,6 +26,8 @@ export default function JobLettersPage() {
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [template, setTemplate] = useState<LetterTemplate>(DEFAULT_JOB_LETTER_TEMPLATE);
+  const [letterSchool, setLetterSchool] = useState<LetterSchoolInfo | null>(null);
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
@@ -22,17 +35,22 @@ export default function JobLettersPage() {
   const [gen, setGen] = useState(false);
   const [selectedEmpId, setSelectedEmpId] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailing, setEmailing] = useState(false);
 
   const fetchJobLetters = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [jlRes, empRes] = await Promise.all([
+      const [jlRes, empRes, tmplRes] = await Promise.all([
         jobLettersApi.list({ q, status }),
         employeesApi.list(),
+        lettersApi.getJobTemplate().catch(() => null),
       ]);
       setRows(jlRes.jobLetters);
       setEmployees(empRes.employees);
+      if (tmplRes?.template) setTemplate({ ...DEFAULT_JOB_LETTER_TEMPLATE, ...tmplRes.template });
+      if (tmplRes?.school) setLetterSchool(tmplRes.school);
     } catch (err) {
       const { message } = describeApiError(err);
       setError(message);
@@ -46,6 +64,12 @@ export default function JobLettersPage() {
   }, [q, status]);
 
   const filtered = useMemo(() => rows, [rows]);
+
+  const openPreview = (r: JobLetterItem) => {
+    const emp = employees.find((e) => e.name === r.employee || e.employeeId === r.employeeId);
+    setEmailTo(emp?.email || "");
+    setPreview(r);
+  };
 
   const handleGenerate = async () => {
     if (!selectedEmpId) return;
@@ -66,6 +90,7 @@ export default function JobLettersPage() {
       setRows((p) => [res.jobLetter, ...p]);
       setGen(false);
       setSelectedEmpId("");
+      setEmailTo(emp.email || "");
       setPreview(res.jobLetter);
     } catch (err) {
       alert(describeApiError(err).message);
@@ -86,13 +111,19 @@ export default function JobLettersPage() {
   return (
     <>
       <div className="no-print">
-        <PageHeader title="Job Letters" subtitle="Generate and print employment / appointment letters for staff."
+        <PageHeader
+          title="Job Letters"
+          subtitle="Generate, customize, print and email employment / appointment letters."
           actions={
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Link href="/settings/job-letter" className="inline-flex h-10 items-center rounded border border-[var(--theme-border)] px-3 text-[13px] hover:bg-[var(--theme-hover)]">
+                Customize layout
+              </Link>
               <Btn variant="secondary" Icon={RefreshCw} onClick={fetchJobLetters}>Refresh</Btn>
               <Btn variant="primary" Icon={Plus} onClick={() => setGen(true)}>Generate Letter</Btn>
             </div>
-          } />
+          }
+        />
 
         <div className="px-4 pb-24 sm:px-6">
           <div className="flex flex-wrap items-center gap-2 py-3">
@@ -108,9 +139,7 @@ export default function JobLettersPage() {
 
           <Card pad={false}>
             {loading ? (
-              <div className="p-8 text-center text-[var(--theme-text-muted)]">
-                Loading job letters from backend...
-              </div>
+              <div className="p-8 text-center text-[var(--theme-text-muted)]">Loading job letters…</div>
             ) : (
               <>
                 <div className="hidden md:block">
@@ -131,13 +160,13 @@ export default function JobLettersPage() {
                       <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.date}</Td>
                       <Td className="border-l border-[var(--theme-border)]"><Badge label={r.status} /></Td>
                       <Td className="gap-2 border-l border-[var(--theme-border)]">
-                        <Btn size="sm" variant="secondary" Icon={Eye} onClick={() => setPreview(r)}>Preview</Btn>
-                        <Btn size="sm" variant="primary" Icon={Printer} onClick={() => { setPreview(r); setTimeout(() => window.print(), 300); }}>Print</Btn>
+                        <Btn size="sm" variant="secondary" Icon={Eye} onClick={() => openPreview(r)}>Preview</Btn>
+                        <Btn size="sm" variant="primary" Icon={Printer} onClick={() => { openPreview(r); setTimeout(() => window.print(), 300); }}>Print</Btn>
                       </Td>
                       <Td className="justify-center border-l border-[var(--theme-border)]">
                         <RowMenu items={[
-                          { label: "Preview", Icon: Eye, onClick: () => setPreview(r) },
-                          { label: "Print", Icon: Printer, onClick: () => { setPreview(r); setTimeout(() => window.print(), 300); } },
+                          { label: "Preview", Icon: Eye, onClick: () => openPreview(r) },
+                          { label: "Email letter", Icon: Mail, onClick: () => openPreview(r) },
                           { label: "Mark as Printed", Icon: Briefcase, onClick: () => handleMarkAsPrinted(r.id) },
                         ]} />
                       </Td>
@@ -157,90 +186,146 @@ export default function JobLettersPage() {
                       </div>
                       <p className="mt-2 text-[13px] text-[var(--theme-text-muted)]">{r.date}</p>
                       <div className="mt-3 flex gap-2">
-                        <Btn size="sm" variant="secondary" Icon={Eye} onClick={() => setPreview(r)}>Preview</Btn>
-                        <Btn size="sm" variant="primary" Icon={Printer} onClick={() => { setPreview(r); setTimeout(() => window.print(), 300); }}>Print</Btn>
+                        <Btn size="sm" variant="secondary" Icon={Eye} onClick={() => openPreview(r)}>Preview</Btn>
+                        <Btn size="sm" variant="primary" Icon={Printer} onClick={() => { openPreview(r); setTimeout(() => window.print(), 300); }}>Print</Btn>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {filtered.length === 0 && <EmptyState Icon={FileSignature} title="No job letters" message="Generate an employment letter for a staff member." action={<Btn variant="primary" Icon={Plus} onClick={() => setGen(true)}>Generate Letter</Btn>} />}
+                {filtered.length === 0 && (
+                  <EmptyState
+                    Icon={FileSignature}
+                    title="No job letters"
+                    message="Generate an employment letter for a staff member."
+                    action={<Btn variant="primary" Icon={Plus} onClick={() => setGen(true)}>Generate Letter</Btn>}
+                  />
+                )}
               </>
             )}
           </Card>
         </div>
       </div>
 
-      <Modal open={!!preview} onClose={() => setPreview(null)} title="Job Letter Preview" subtitle={preview?.employee} width="max-w-3xl"
-        footer={<><Btn variant="secondary" onClick={() => setPreview(null)}>Close</Btn>
-          <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print Letter</Btn></>}>
-        {preview && <JobLetterDoc letter={preview} />}
+      <Modal
+        open={!!preview}
+        onClose={() => setPreview(null)}
+        title="Job Letter Preview"
+        subtitle={preview?.employee}
+        width="max-w-3xl"
+        footer={
+          <>
+            <Btn variant="secondary" onClick={() => setPreview(null)}>Close</Btn>
+            <Btn
+              variant="secondary"
+              Icon={Mail}
+              disabled={emailing || !emailTo.trim()}
+              loading={emailing}
+              loadingLabel="Sending…"
+              onClick={async () => {
+                if (!preview || !emailTo.trim()) return;
+                setEmailing(true);
+                try {
+                  const res = await lettersApi.sendEmail({
+                    to: emailTo.trim(),
+                    title: `${template.title} — ${preview.employee}`,
+                    template: "job_letter",
+                    messageHtml: letterHtmlForEmail({
+                      title: template.title,
+                      paragraphs: [
+                        template.salutation.replace(/\{employeeName\}/g, preview.employee),
+                        template.bodyIntro
+                          .replace(/\{employeeName\}/g, preview.employee)
+                          .replace(/\{designation\}/g, preview.designation)
+                          .replace(/\{department\}/g, preview.department)
+                          .replace(/\{schoolName\}/g, letterSchool?.name || "School"),
+                        template.bodyClosing,
+                      ],
+                      details: [
+                        ["Employee", preview.employee],
+                        ["Designation", preview.designation],
+                        ["Department", preview.department],
+                        ["Date", preview.date],
+                      ],
+                    }),
+                  });
+                  alert(res.delivered ? "Email sent successfully." : `Email not delivered (${res.reason || "check Resend config"}).`);
+                } catch (err) {
+                  alert(describeApiError(err).message);
+                } finally {
+                  setEmailing(false);
+                }
+              }}
+            >
+              Send email
+            </Btn>
+            <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print Letter</Btn>
+          </>
+        }
+      >
+        {preview && (
+          <div className="space-y-3">
+            <div className="no-print flex flex-wrap items-end gap-2 rounded-lg border border-[var(--theme-border)] p-3">
+              <Field label="Email to employee" className="min-w-[220px] flex-1">
+                <input
+                  type="email"
+                  value={emailTo}
+                  onChange={(e) => setEmailTo(e.target.value)}
+                  placeholder="employee@email.com"
+                  className="h-10 w-full rounded border border-[var(--theme-border)] bg-transparent px-3 text-[13px]"
+                />
+              </Field>
+            </div>
+            <OfficialLetterDocument
+              template={template}
+              school={letterSchool}
+              refNo={preview.id}
+              date={preview.date}
+              vars={{
+                employeeName: preview.employee,
+                designation: preview.designation,
+                department: preview.department,
+              }}
+              detailRows={[
+                ["Employee", preview.employee],
+                ["Designation", preview.designation],
+                ["Department", preview.department],
+                ["Letter date", preview.date],
+                ["Status", preview.status],
+              ]}
+            />
+          </div>
+        )}
       </Modal>
 
-      <Modal open={gen} onClose={() => setGen(false)} title="Generate Job Letter" subtitle="Select an employee from backend" width="max-w-md"
-        footer={<><Btn variant="secondary" onClick={() => setGen(false)}>Cancel</Btn><Btn variant="primary" onClick={handleGenerate} disabled={!selectedEmpId || isGenerating}>{isGenerating ? "Generating..." : "Generate"}</Btn></>}>
+      <Modal
+        open={gen}
+        onClose={() => setGen(false)}
+        title="Generate Job Letter"
+        subtitle="Select an employee from backend"
+        width="max-w-md"
+        footer={
+          <>
+            <Btn variant="secondary" onClick={() => setGen(false)}>Cancel</Btn>
+            <Btn variant="primary" onClick={handleGenerate} disabled={!selectedEmpId || isGenerating}>
+              {isGenerating ? "Generating..." : "Generate"}
+            </Btn>
+          </>
+        }
+      >
         <Field label="Select Employee">
-          <select value={selectedEmpId} onChange={(e) => setSelectedEmpId(e.target.value)} className="w-full rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-[14px]">
+          <select
+            value={selectedEmpId}
+            onChange={(e) => setSelectedEmpId(e.target.value)}
+            className="w-full rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-[14px]"
+          >
             <option value="">-- Select Employee --</option>
             {employees.map((e) => (
               <option key={e.id} value={e.id}>{e.name} ({e.designation} · {e.department})</option>
             ))}
           </select>
         </Field>
-        <p className="mt-3 text-[13px] text-[var(--theme-text-muted)]">The job letter will automatically extract designation, department and today&apos;s date from the employee&apos;s record.</p>
       </Modal>
     </>
-  );
-}
-
-function JobLetterDoc({ letter }: { letter: JobLetterItem }) {
-  return (
-    <div className="print-area mx-auto max-w-[720px] bg-[var(--theme-surface)] p-6 text-[var(--theme-text)] sm:p-8">
-      <div className="flex items-start justify-between gap-4 border-b-2 border-[var(--theme-primary)] pb-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--theme-accent)] text-[22px] font-extrabold text-white">B</span>
-          <div>
-            <h1 className="text-[20px] font-bold leading-tight">{SCHOOL.name}</h1>
-            <p className="text-[12px] text-[var(--theme-text-muted)]">{SCHOOL.address}</p>
-            <p className="text-[12px] text-[var(--theme-text-muted)]">{SCHOOL.phone} · {SCHOOL.email}</p>
-          </div>
-        </div>
-        <div className="hidden text-right text-[12px] text-[var(--theme-text-muted)] sm:block">
-          <p>Ref</p>
-          <p className="font-mono font-semibold text-[var(--theme-text)]">{letter.id}</p>
-        </div>
-      </div>
-
-      <p className="mt-6 text-right text-[13px]"><span className="text-[var(--theme-text-muted)]">Date:</span> {letter.date}</p>
-      <h2 className="mt-4 text-center text-[17px] font-bold underline">JOB OFFER / APPOINTMENT LETTER</h2>
-
-      <p className="mt-6 text-[14px]">Dear <span className="font-semibold">{letter.employee}</span>,</p>
-      <p className="mt-2 text-[14px] leading-relaxed">
-        We are pleased to offer you the position of <span className="font-semibold">{letter.designation}</span> in the
-        <span className="font-semibold"> {letter.department}</span> department at {SCHOOL.name}. Your appointment is
-        effective from the date of joining mentioned in your employment record.
-      </p>
-
-      <ul className="mt-4 list-disc space-y-1 pl-6 text-[14px] leading-relaxed">
-        <li>The position is offered subject to satisfactory completion of required formalities.</li>
-        <li>You will be entitled to the salary and benefits as per school policy.</li>
-        <li>Working hours and leave policy are governed by the institution&apos;s rules &amp; regulations.</li>
-        <li>This letter is confidential and for your records only.</li>
-      </ul>
-
-      <p className="mt-4 text-[14px] leading-relaxed">
-        We look forward to your valuable contribution to our institution. Please sign and return a copy of this letter
-        as a token of your acceptance.
-      </p>
-
-      <p className="mt-6 text-[14px]">Sincerely,</p>
-      <p className="mt-10 text-[14px] font-semibold">{SCHOOL.principal}</p>
-      <p className="text-[13px] text-[var(--theme-text-muted)]">Principal, {SCHOOL.shortName}</p>
-
-      <div className="mt-8 flex items-start justify-between gap-6 border-t border-dashed border-[var(--theme-border-strong)] pt-3 text-[12px] text-[var(--theme-text-faint)]">
-        <span>Employee Signature: ______________________</span>
-        <span>{SCHOOL.website}</span>
-      </div>
-    </div>
   );
 }

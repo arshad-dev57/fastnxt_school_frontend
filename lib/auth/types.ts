@@ -21,11 +21,13 @@ export type SubscriptionStatus = "TRIAL" | "ACTIVE" | "EXPIRED";
 export type AuthSchool = {
   id: string;
   name: string;
+  shortName?: string | null;
   ownerName: string;
   email: string;
   phone: string;
   country: string;
   city: string;
+  logoUrl?: string | null;
 };
 
 /** School subscription, with the day counts computed server-side. */
@@ -67,6 +69,11 @@ export type AuthUser = {
   lastLoginAt: string | null;
   school: AuthSchool | null;
   subscription: AuthSubscription;
+  /**
+   * Flat role matrix from Roles & Permissions (`"fees::view": true`).
+   * Null/empty means the client should fall back to ROLE_DEFS defaults for `role`.
+   */
+  permissions?: Record<string, boolean> | null;
 };
 
 /** `data` payload of POST /api/auth/register and POST /api/auth/login. */
@@ -98,8 +105,6 @@ export type RegisterSchoolInput = {
 export type LoginInput = {
   email: string;
   password: string;
-  /** Panel the admin chose on the login screen. */
-  panel?: string;
   /** Persist the session cookie across browser restarts ("Remember me"). */
   remember?: boolean;
 };

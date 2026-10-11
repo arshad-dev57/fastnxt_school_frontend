@@ -1,16 +1,39 @@
 "use client";
 
+import { useMemo } from "react";
 import PortalShell from "@/components/portal/portal-shell";
 import RequireAuth from "@/components/auth/require-auth";
-import { STUDENT_PORTAL } from "@/lib/portal-nav";
+import { useBranch } from "@/lib/branch-context";
+import { NotificationsProvider } from "@/lib/notifications-context";
+import { STUDENT_NAV, STUDENT_PORTAL, visibleNav, type PortalConfig } from "@/lib/portal-nav";
+import type { AccessModule } from "@/lib/branch-access";
 
-/* The Student Portal reuses the same chrome, theme and providers as the Admin
-   Panel (ThemeProvider + BranchProvider live in the root layout), and sits
-   behind the same API session check. */
+function pickNav(items: PortalConfig["items"], hrefs: string[]) {
+  return hrefs
+    .map((h) => items.find((i) => i.href === h))
+    .filter((i): i is NonNullable<typeof i> => Boolean(i));
+}
+
 export default function StudentPortalLayout({ children }: { children: React.ReactNode }) {
+  const { can } = useBranch();
+
+  const config = useMemo(() => {
+    const allowed = (STUDENT_NAV.map((i) => i.module) as AccessModule[]).filter(
+      (m, idx, arr) => arr.indexOf(m) === idx && can(m, "view"),
+    );
+    const items = visibleNav(STUDENT_NAV, allowed);
+    return {
+      ...STUDENT_PORTAL,
+      items,
+      bottom: pickNav(items, ["/student", "/student/timetable", "/student/attendance", "/student/homework", "/student/exams"]),
+    } satisfies PortalConfig;
+  }, [can]);
+
   return (
     <RequireAuth>
-      <PortalShell config={STUDENT_PORTAL}>{children}</PortalShell>
+      <NotificationsProvider>
+        <PortalShell config={config}>{children}</PortalShell>
+      </NotificationsProvider>
     </RequireAuth>
   );
 }

@@ -7,6 +7,7 @@ import { useBranch } from "@/lib/branch-context";
 import { type UserRole } from "@/lib/branch";
 import { DEFAULT_ROLE_LIST, PERMISSION_ACTIONS, SCOPE_LABELS, getRoleDef, getRolePermissions, groupedModules } from "@/lib/branch-access";
 import { rolesApi, describeApiError } from "@/lib/auth/api-client";
+import { useAuth } from "@/lib/auth/auth-context";
 
 const keyOf = (m: string, a: string) => `${m}::${a}`;
 const GROUPS = groupedModules();
@@ -19,7 +20,8 @@ function seed(role: UserRole): Record<string, boolean> {
 }
 
 export default function RolesPermissionsPage() {
-  const { simulateRole, roleOverride } = useBranch();
+  const { simulateRole, roleOverride, userRole, applyPermissionMap } = useBranch();
+  const { refresh } = useAuth();
   const [role, setRole] = useState<UserRole>(DEFAULT_ROLE_LIST[0]);
   const [perms, setPerms] = useState<Record<string, boolean>>(() => seed(DEFAULT_ROLE_LIST[0]));
   const [loading, setLoading] = useState(false);
@@ -55,6 +57,11 @@ export default function RolesPermissionsPage() {
     setError(null);
     try {
       await rolesApi.savePermissions(role, perms);
+      // If we just edited the signed-in role (or its preview), refresh live gating.
+      if (role === userRole || roleOverride === role) {
+        applyPermissionMap(perms);
+      }
+      await refresh().catch(() => null);
       setSaved(true);
     } catch (err) {
       const { message } = describeApiError(err);

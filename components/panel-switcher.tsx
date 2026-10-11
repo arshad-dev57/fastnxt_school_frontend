@@ -16,8 +16,7 @@ import { PANELS, panelFromPath } from "@/lib/auth/panels";
    panel is derived from the URL, so a refresh or a directly-typed link keeps the
    trigger in sync with the screen you are on.
 
-   The panel list itself lives in `lib/auth/panels.ts`, which the Login screen's
-   panel selector also reads from — so both stay in step automatically. To add a
+   The panel list itself lives in `lib/auth/panels.ts`. To add a
    Parent / Accountant / HR panel later, push one more entry into PANELS.
 
    DESIGN: the markup is the same popover anatomy the header already uses in

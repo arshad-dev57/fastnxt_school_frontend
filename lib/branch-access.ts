@@ -144,7 +144,14 @@ export const ROLE_DEFS: RoleDef[] = [
   {
     role: "Teacher", label: "Teacher", scope: "own",
     description: "Own classes only: attendance, homework, marks and lesson plans.",
-    modules: ["dashboard", "timetable", "attendance", "homework", "exams", "results", "communication", "meetings", "tasks"],
+    modules: ["dashboard", "classes", "students", "timetable", "attendance", "homework", "exams", "results", "communication", "meetings", "tasks", "leave", "payroll", "settings"],
+    actions: {
+      leave: ["view", "create", "edit", "approve"],
+      payroll: ["view"],
+      settings: ["view"],
+      students: ["view"],
+      classes: ["view"],
+    },
     defaultActions: ["view", "create", "edit"],
   },
   {
@@ -193,7 +200,8 @@ export const ROLE_DEFS: RoleDef[] = [
   {
     role: "Student", label: "Student", scope: "own",
     description: "Student portal — own timetable, homework, results and library.",
-    modules: ["timetable", "attendance", "exams", "results", "homework", "library", "events", "communication", "meetings", "certificates"],
+    modules: ["dashboard", "timetable", "attendance", "exams", "results", "homework", "library", "events", "communication", "meetings", "certificates", "leave", "settings"],
+    actions: { leave: ["view", "create"], settings: ["view"] },
     defaultActions: ["view"],
   },
 ];
@@ -225,6 +233,13 @@ export function roleHasPermission(role: UserRole, module: AccessModule, action: 
   return getRolePermissions(role).some((p) => p.module === module && p.action === action);
 }
 
+/** Flat map key used by the Roles UI and the session payload. */
+export function permissionKey(module: string, action: string) {
+  return `${module}::${action}`;
+}
+
+export type PermissionMap = Record<string, boolean>;
+
 /** Modules a role can see at all (used to softly filter navigation). */
 export function accessibleModules(role: UserRole): Set<string> {
   return new Set(getRolePermissions(role).filter((p) => p.action === "view").map((p) => p.module));
@@ -235,6 +250,60 @@ export function roleScope(role: UserRole): BranchScope {
 }
 
 export const DEFAULT_ROLE_LIST: UserRole[] = ROLE_DEFS.map((r) => r.role);
+
+/** Normalize legacy / alternate role labels onto the catalog. */
+export function normalizeUserRole(role: string | null | undefined): UserRole {
+  const raw = String(role || "").trim();
+  if (raw === "Admin" || raw === "Administrator") return "Super Admin";
+  if ((DEFAULT_ROLE_LIST as string[]).includes(raw)) return raw as UserRole;
+  return "Receptionist";
+}
+
+/** Seed a boolean map from ROLE_DEFS (used when the API has no custom matrix). */
+export function permissionMapFromRole(role: UserRole): PermissionMap {
+  const all: PermissionMap = {};
+  for (const p of getRolePermissions(role)) {
+    all[permissionKey(p.module, p.action)] = true;
+  }
+  return all;
+}
+
+export function mapHasPermission(
+  map: PermissionMap | null | undefined,
+  module: AccessModule,
+  action: PermissionAction = "view",
+): boolean {
+  if (!map) return false;
+  return map[permissionKey(module, action)] === true;
+}
+
+/** Prefer a non-empty API map; otherwise fall back to ROLE_DEFS for the role. */
+export function resolvePermissionMap(
+  role: UserRole,
+  apiMap: PermissionMap | null | undefined,
+): PermissionMap {
+  if (apiMap && Object.keys(apiMap).length > 0) return apiMap;
+  return permissionMapFromRole(role);
+}
+
+export function permissionsFromMap(map: PermissionMap, scope: BranchScope = "branch"): Permission[] {
+  const out: Permission[] = [];
+  for (const [key, on] of Object.entries(map)) {
+    if (!on) continue;
+    const [module, action] = key.split("::");
+    if (!module || !action) continue;
+    out.push({ module, action: action as PermissionAction, branchScope: scope });
+  }
+  return out;
+}
+
+export function accessibleModulesFromMap(map: PermissionMap): Set<string> {
+  return new Set(
+    Object.entries(map)
+      .filter(([key, on]) => on && key.endsWith("::view"))
+      .map(([key]) => key.replace(/::view$/, "")),
+  );
+}
 
 /** Grouped module matrix used by the Roles & Permissions screen. */
 export function groupedModules(): { group: string; modules: ModuleMeta[] }[] {

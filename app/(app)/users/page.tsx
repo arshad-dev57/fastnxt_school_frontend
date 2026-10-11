@@ -7,7 +7,11 @@ import {
   Avatar, Badge, Btn, Card, ConfirmDialog, EmptyState, Field, Input, Modal, PageHeader,
   Pagination, RowMenu, SearchBox, Select, SplitButton, Th, Td, cn,
 } from "@/components/ui";
-import { USER_ROLES, type UserRow } from "@/lib/mock-data";
+import { type UserRow } from "@/lib/mock-data";
+import { DEFAULT_ROLE_LIST } from "@/lib/branch-access";
+import type { UserRole } from "@/lib/branch";
+
+const ROLE_OPTIONS = DEFAULT_ROLE_LIST as UserRole[];
 import { useBranch } from "@/lib/branch-context";
 import { BranchScopeBar } from "@/components/branch/branch-ui";
 import { usersApi, describeApiError } from "@/lib/auth/api-client";
@@ -163,7 +167,7 @@ export default function ManageLoginPage() {
         <div className="flex flex-wrap items-center gap-2 py-3">
           <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search name or email" className="w-full sm:w-72" />
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }} options={USER_ROLES} placeholder="All Roles" className="w-40" />
+            <Select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }} options={ROLE_OPTIONS} placeholder="All Roles" className="w-40" />
             <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} options={["Active", "Inactive"]} placeholder="All Status" className="w-36" />
             <Btn variant="secondary" Icon={RefreshCw} onClick={fetchUsers}>Refresh</Btn>
           </div>
@@ -199,7 +203,7 @@ export default function ManageLoginPage() {
                       <div className="flex min-w-0 items-center gap-2.5"><Avatar name={r.name} /><span className="truncate font-medium">{r.name}</span></div>
                     </Td>
                     <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]"><span className="truncate">{r.email}</span></Td>
-                    <Td className="border-l border-[var(--theme-border)]"><Badge label={r.role} tone={r.role === "Super Admin" ? "purple" : r.role === "Administrator" ? "blue" : "gray"} /></Td>
+                    <Td className="border-l border-[var(--theme-border)]"><Badge label={r.role} tone={r.role === "Super Admin" || r.role === "Owner" ? "purple" : "gray"} /></Td>
                     <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.lastLogin}</Td>
                     <Td className="border-l border-[var(--theme-border)]"><Badge label={r.status} /></Td>
                     <Td className="justify-center border-l border-[var(--theme-border)]"><RowMenu items={rowMenu(r)} /></Td>
@@ -219,7 +223,7 @@ export default function ManageLoginPage() {
                       <RowMenu items={rowMenu(r)} />
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Badge label={r.role} tone={r.role === "Super Admin" ? "purple" : r.role === "Administrator" ? "blue" : "gray"} />
+                      <Badge label={r.role} tone={r.role === "Super Admin" || r.role === "Owner" ? "purple" : "gray"} />
                       <Badge label={r.status} />
                     </div>
                     <p className="mt-2 text-[12px] text-[var(--theme-text-faint)]">Last login {r.lastLogin}</p>
@@ -287,7 +291,7 @@ function UserForm({ modal, onClose, onSave, isSubmitting }: { modal: { mode: "ad
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Full Name" className="sm:col-span-2"><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></Field>
         <Field label="Email" className="sm:col-span-2"><Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} /></Field>
-        <Field label="Role"><Select options={USER_ROLES} value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as UserRow["role"] }))} /></Field>
+        <Field label="Role"><Select options={ROLE_OPTIONS} value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as UserRow["role"] }))} /></Field>
         <Field label="Status"><Select options={["Active", "Inactive"]} value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as UserRow["status"] }))} /></Field>
         {modal?.mode === "add" && (
           <Field label="Password" className="sm:col-span-2"><Input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} placeholder="Set initial password (default: Password123)" /></Field>

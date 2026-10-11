@@ -152,7 +152,7 @@ export default function StudentIdCardsPage() {
                     )}
                   >
                     <Checkbox checked={selected.includes(s.id)} onChange={() => toggle(s.id)} />
-                    <Avatar name={s.name} size={34} />
+                    <Avatar name={s.name} src={s.photo} size={34} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-medium">{s.name}</p>
                       <p className="text-[12px] text-[var(--theme-text-muted)] font-mono">
@@ -183,6 +183,7 @@ export default function StudentIdCardsPage() {
               schoolName={schoolName}
               schoolShortName={schoolShortName}
               schoolPhone={schoolPhone}
+              schoolLogoUrl={school?.logoUrl || ""}
             />
           ))}
           {selectedStudents.length === 0 && (
@@ -196,56 +197,86 @@ export default function StudentIdCardsPage() {
   );
 }
 
+function IdCardPhoto({ name, photo, initials }: { name: string; photo?: string; initials: string }) {
+  const [broken, setBroken] = useState(false);
+  const src = typeof photo === "string" ? photo.trim() : "";
+  if (!src || broken) {
+    return (
+      <span className="flex h-[88px] w-[72px] shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-[22px] font-bold text-neutral-500">
+        {initials}
+      </span>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={name}
+      referrerPolicy="no-referrer"
+      onError={() => setBroken(true)}
+      className="h-[88px] w-[72px] shrink-0 rounded-lg border border-black/10 object-cover print:block"
+      style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}
+    />
+  );
+}
+
 function IdCardView({
   s,
   schoolName,
   schoolShortName,
   schoolPhone,
+  schoolLogoUrl,
 }: {
   s: StudentItem;
   schoolName: string;
   schoolShortName: string;
   schoolPhone: string;
+  schoolLogoUrl?: string;
 }) {
+  const initials = s.name
+    .split(" ")
+    .map((x) => x[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <div className="print-break w-[330px] max-w-full overflow-hidden rounded-xl bg-[var(--theme-surface)] shadow-md ring-1 ring-[var(--theme-border)]">
-      <div className="flex items-center gap-2 bg-gradient-to-r from-[var(--theme-accent)] to-[var(--theme-accent-2)] px-3 py-2.5 text-white">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-[15px] font-extrabold">
-          {schoolShortName.charAt(0)}
-        </span>
+    <div className="print-break print-document w-[330px] max-w-full overflow-hidden rounded-xl bg-white text-black shadow-md ring-1 ring-black/10">
+      <div className="flex items-center gap-2 bg-[#0f4c81] px-3 py-2.5 text-white">
+        {schoolLogoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={schoolLogoUrl} alt="" className="h-9 w-9 rounded-lg bg-white object-contain p-0.5" />
+        ) : (
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-[15px] font-extrabold">
+            {schoolShortName.charAt(0)}
+          </span>
+        )}
         <div className="min-w-0">
           <p className="truncate text-[13px] font-bold leading-tight">{schoolName}</p>
           <p className="text-[10px] text-white/80">{s.session || "2025-2026"} · Student ID Card</p>
         </div>
       </div>
       <div className="flex gap-3 p-3">
-        <span className="flex h-[88px] w-[72px] shrink-0 items-center justify-center rounded-lg bg-[var(--theme-subtle)] text-[22px] font-bold text-[var(--theme-text-muted)]">
-          {s.name
-            .split(" ")
-            .map((x) => x[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase()}
-        </span>
+        <IdCardPhoto name={s.name} photo={s.photo} initials={initials} />
         <div className="min-w-0 flex-1 space-y-1 text-[11px]">
-          <p className="text-[15px] font-bold leading-tight truncate">{s.name}</p>
-          <p className="text-[var(--theme-text-muted)]">
-            <span className="font-medium text-[var(--theme-text)]">ID:</span> <span className="font-mono">{s.studentId}</span>
+          <p className="truncate text-[15px] font-bold leading-tight">{s.name}</p>
+          <p className="text-neutral-600">
+            <span className="font-medium text-black">ID:</span> <span className="font-mono">{s.studentId}</span>
           </p>
-          <p className="text-[var(--theme-text-muted)]">
-            <span className="font-medium text-[var(--theme-text)]">Class:</span> {s.cls} (Sec {s.section})
+          <p className="text-neutral-600">
+            <span className="font-medium text-black">Class:</span> {s.cls} (Sec {s.section})
           </p>
-          <p className="text-[var(--theme-text-muted)]">
-            <span className="font-medium text-[var(--theme-text)]">Gender:</span> {s.gender || 'Male'}
+          <p className="text-neutral-600">
+            <span className="font-medium text-black">Gender:</span> {s.gender || "Male"}
           </p>
-          <p className="text-[var(--theme-text-muted)]">
-            <span className="font-medium text-[var(--theme-text)]">Contact:</span> {s.phone || s.guardian || '—'}
+          <p className="text-neutral-600">
+            <span className="font-medium text-black">Contact:</span> {s.phone || s.guardian || "—"}
           </p>
         </div>
       </div>
-      <div className="flex items-center justify-between border-t border-[var(--theme-border)] px-3 py-1.5 text-[9px] text-[var(--theme-text-faint)]">
+      <div className="flex items-center justify-between border-t border-neutral-200 px-3 py-1.5 text-[9px] text-neutral-500">
         <span>{schoolPhone}</span>
-        <span className="font-mono">ADM: {s.admissionDate || '2026'}</span>
+        <span className="font-mono">ADM: {s.admissionDate || "—"}</span>
       </div>
     </div>
   );

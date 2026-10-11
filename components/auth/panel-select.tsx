@@ -4,10 +4,10 @@ import { cn } from "@/components/ui";
 import { PANELS, type PanelId } from "@/lib/auth/panels";
 
 /* ============================================================================
-   Login panel selector — Admin / Teacher / Student.
+   Panel selector — Admin / Teacher / Student.
    ---------------------------------------------------------------------------
-   Front-end selection only. The chosen panel decides which dashboard the user
-   lands on after signing in (see app/(auth)/login/page.tsx).
+   Optional UI for picking a workspace. Login no longer uses this: after sign-in
+   the account's `user.panel` from the API decides the landing route.
    ========================================================================== */
 
 export default function PanelSelect({ value, onChange, disabled }: {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Printer, SlidersHorizontal, RefreshCw } from "lucide-react";
-import { Badge, Btn, Card, CardHead, PageHeader, Select, Th, Td, cn } from "@/components/ui";
+import { Badge, Btn, Card, CardHead, PageHeader, Select, cn } from "@/components/ui";
 import {
   studentsApi,
   classesApi,
@@ -13,7 +13,6 @@ import {
 } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
 
-const COLS = "grid-cols-[50px_120px_minmax(160px,1.4fr)_80px_100px_70px_130px]";
 const GENDERS = ["Male", "Female"];
 
 export default function PrintBasicListPage() {
@@ -73,17 +72,19 @@ export default function PrintBasicListPage() {
     status && `Status: ${status}`,
   ].filter(Boolean) as string[];
 
-  const schoolName = school?.name || "BisonsEduCore360 Academy";
-  const schoolAddress = school?.address || "Main Campus, Education City";
-  const schoolPhone = school?.phone || "0300-1234567";
-  const schoolEmail = school?.email || "info@bisonseducore.edu";
+  const schoolName = school?.name || "School";
+  const schoolAddress = school?.address || school?.city || "";
+  const schoolPhone = school?.phone || "";
+  const schoolEmail = school?.email || "";
+  const session = school?.academicSession || "2025-2026";
+  const printedOn = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
   return (
     <>
       <div className="no-print">
         <PageHeader
           title="Print Basic List"
-          subtitle="Generate a printable student list filtered by class, section, gender and status."
+          subtitle="Generate a printable student directory — formatted as an official school document."
           actions={
             <div className="flex items-center gap-2">
               <button
@@ -102,7 +103,7 @@ export default function PrintBasicListPage() {
           }
         />
 
-        <div className="px-4 pb-24 sm:px-6">
+        <div className="px-4 pb-6 sm:px-6">
           <Card pad={false}>
             <CardHead title="Filters" subtitle="Choose the criteria for the printed list" Icon={SlidersHorizontal} />
             <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -125,93 +126,112 @@ export default function PrintBasicListPage() {
                   activeFilters.map((f) => <Badge key={f} label={f} tone="blue" />)
                 ) : (
                   <span className="text-[13px] text-[var(--theme-text-faint)]">
-                    No filters applied — showing all {students.length} student(s)
+                    No filters — {students.length} student(s)
                   </span>
                 )}
               </div>
-              <label className="flex items-center gap-2 text-[13px] text-[var(--theme-text-muted)] cursor-pointer">
+              <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[var(--theme-text-muted)]">
                 <input
                   type="checkbox"
                   checked={showMeta}
                   onChange={(e) => setShowMeta(e.target.checked)}
                   className="h-4 w-4 accent-[var(--theme-primary)]"
                 />
-                Include institution header &amp; filters
+                Include institution header
               </label>
             </div>
           </Card>
-
-          <p className="mt-4 text-[13px] text-[var(--theme-text-muted)]">
-            {list.length} student(s) match the current filters. Use &ldquo;Print List&rdquo; to print or save as PDF.
+          <p className="mt-3 text-[13px] text-[var(--theme-text-muted)]">
+            {list.length} student(s) will print. Use Print List (or Ctrl+P) for a clean A4 document / PDF.
           </p>
         </div>
       </div>
 
-      {/* PRINTABLE DOCUMENT */}
       <div className="px-4 pb-24 sm:px-6">
-        <div className="print-area mx-auto max-w-[900px] rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6 shadow-sm">
+        <div className="print-area print-document mx-auto max-w-[210mm] bg-white p-8 text-black shadow-sm ring-1 ring-black/10 print:max-w-none print:p-0 print:shadow-none print:ring-0">
           {showMeta && (
-            <div className="mb-4 flex items-start justify-between gap-4 border-b-2 border-[var(--theme-primary)] pb-4">
+            <header className="mb-5 flex items-start justify-between gap-4 border-b-2 border-black pb-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--theme-accent)] text-[22px] font-extrabold text-white">
-                  {schoolName.charAt(0)}
-                </span>
+                {school?.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={school.logoUrl} alt="" className="h-14 w-14 object-contain" />
+                ) : (
+                  <span className="flex h-14 w-14 items-center justify-center rounded border-2 border-black text-[20px] font-extrabold">
+                    {schoolName.charAt(0)}
+                  </span>
+                )}
                 <div>
-                  <h1 className="text-[19px] font-bold leading-tight">{schoolName}</h1>
-                  <p className="text-[12px] text-[var(--theme-text-muted)]">{schoolAddress}</p>
-                  <p className="text-[12px] text-[var(--theme-text-muted)]">{schoolPhone} · {schoolEmail}</p>
+                  <h1 className="text-[20px] font-bold leading-tight tracking-tight">{schoolName}</h1>
+                  {schoolAddress ? <p className="text-[11px] text-neutral-700">{schoolAddress}</p> : null}
+                  <p className="text-[11px] text-neutral-700">
+                    {[schoolPhone, schoolEmail].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
               </div>
-              <div className="text-right text-[12px] text-[var(--theme-text-muted)]">
-                <p>Printed Date</p>
-                <p className="font-semibold text-[var(--theme-text)]">{new Date().toISOString().slice(0, 10)}</p>
+              <div className="text-right text-[11px] text-neutral-700">
+                <p className="font-semibold uppercase tracking-wide text-black">Student Directory</p>
+                <p>Printed: {printedOn}</p>
+                <p>Session: {session}</p>
               </div>
-            </div>
+            </header>
           )}
 
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[16px] font-bold">Student Basic Directory List</h2>
-            <span className="text-[12px] text-[var(--theme-text-muted)]">Academic Session 2025-2026</span>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-[16px] font-bold">Student Basic List</h2>
+              {activeFilters.length > 0 && (
+                <p className="mt-0.5 text-[11px] text-neutral-600">Filters: {activeFilters.join(" · ")}</p>
+              )}
+            </div>
+            <p className="text-[11px] text-neutral-600">Total: <strong className="text-black">{list.length}</strong></p>
           </div>
-          {showMeta && activeFilters.length > 0 && (
-            <p className="mb-3 text-[12px] text-[var(--theme-text-muted)]">Active Criteria — {activeFilters.join(" · ")}</p>
-          )}
 
           {list.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[var(--theme-text-muted)]">
-              No students match the selected filters.
-            </div>
+            <p className="py-12 text-center text-sm text-neutral-500">No students match the selected filters.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <div className={cn("grid", COLS, "border-y border-[var(--theme-border)] bg-[var(--theme-sidebar)] font-medium text-[13px]")}>
-                <Th className="border-l border-[var(--theme-border)]">#</Th>
-                <Th className="border-l border-[var(--theme-border)]">Student ID</Th>
-                <Th className="border-l border-[var(--theme-border)]">Student Name</Th>
-                <Th className="border-l border-[var(--theme-border)]">Gender</Th>
-                <Th className="border-l border-[var(--theme-border)]">Class</Th>
-                <Th className="border-l border-[var(--theme-border)]">Sec</Th>
-                <Th className="border-l border-[var(--theme-border)]">Contact</Th>
-              </div>
-              {list.map((s, i) => (
-                <div key={s.id} className={cn("grid", COLS, "border-b border-[var(--theme-border)] text-[13px] hover:bg-[var(--theme-hover)]")}>
-                  <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{i + 1}</Td>
-                  <Td className="border-l border-[var(--theme-border)] font-mono text-[12px] text-[var(--theme-text-muted)]">{s.studentId}</Td>
-                  <Td className="border-l border-[var(--theme-border)] font-medium">{s.name}</Td>
-                  <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{s.gender}</Td>
-                  <Td className="border-l border-[var(--theme-border)]">{s.cls}</Td>
-                  <Td className="border-l border-[var(--theme-border)]">
-                    <Badge label={s.section} tone="gray" />
-                  </Td>
-                  <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{s.phone || '—'}</Td>
-                </div>
-              ))}
-            </div>
+            <table className="w-full border-collapse text-[12px]">
+              <thead>
+                <tr className="border-y-2 border-black bg-neutral-100 text-left">
+                  <th className="px-2 py-2 font-semibold w-10">#</th>
+                  <th className="px-2 py-2 font-semibold">Student ID</th>
+                  <th className="px-2 py-2 font-semibold">Student Name</th>
+                  <th className="px-2 py-2 font-semibold">Gender</th>
+                  <th className="px-2 py-2 font-semibold">Class</th>
+                  <th className="px-2 py-2 font-semibold">Sec</th>
+                  <th className="px-2 py-2 font-semibold">Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((s, i) => (
+                  <tr key={s.id} className="border-b border-neutral-300">
+                    <td className="px-2 py-1.5 text-neutral-600">{i + 1}</td>
+                    <td className="px-2 py-1.5 font-mono text-[11px]">{s.studentId}</td>
+                    <td className="px-2 py-1.5 font-medium">{s.name}</td>
+                    <td className="px-2 py-1.5">{s.gender || "—"}</td>
+                    <td className="px-2 py-1.5">{s.cls}</td>
+                    <td className="px-2 py-1.5">{s.section}</td>
+                    <td className="px-2 py-1.5">{s.phone || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
 
-          <div className="mt-6 flex items-center justify-between border-t border-[var(--theme-border)] pt-3 text-[11px] text-[var(--theme-text-faint)]">
-            <span>Total Students: {list.length}</span>
-            <span>Generated from BisonsEduCore360 Official Platform</span>
-          </div>
+          <footer className="mt-8 flex items-end justify-between gap-6 border-t border-neutral-400 pt-6 text-[11px] text-neutral-600">
+            <div>
+              <div className="mb-8 h-px w-36 bg-black" />
+              <p className="font-semibold text-black">Prepared by</p>
+              <p>Administration Office</p>
+            </div>
+            <div className="text-right">
+              <div className="mb-8 ml-auto h-px w-36 bg-black" />
+              <p className="font-semibold text-black">Verified by</p>
+              <p>{school?.principal || "Principal"}</p>
+            </div>
+          </footer>
+          <p className="mt-6 text-center text-[10px] text-neutral-500">
+            Computer-generated document · {schoolName} · BisonsEduCore360
+          </p>
         </div>
       </div>
     </>

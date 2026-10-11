@@ -33,10 +33,6 @@ export function ReportPage({ title, subtitle, Icon, filters, actions, children }
       <div className="px-4 pb-24 sm:px-6">
         {filters && <div className="flex flex-wrap items-center gap-3 py-3">{filters}</div>}
         <div className="space-y-5">{children}</div>
-        <p className="mt-4 flex items-center gap-2 text-[12px] text-[var(--theme-text-faint)]">
-          {Icon && <Icon className="h-3.5 w-3.5" />}
-          Demo figures for the current prototype — connect the accounting backend later.
-        </p>
       </div>
     </>
   );
@@ -95,11 +91,11 @@ export function RRow({ children, className = "" }: { children: ReactNode; classN
 }
 
 /** Report cell. */
-export function RC({ children, align = "left", bold, muted, danger, className = "" }: {
-  children: ReactNode; align?: "left" | "right"; bold?: boolean; muted?: boolean; danger?: boolean; className?: string;
+export function RC({ children, align = "left", bold, muted, danger, className = "", colSpan }: {
+  children: ReactNode; align?: "left" | "right"; bold?: boolean; muted?: boolean; danger?: boolean; className?: string; colSpan?: number;
 }) {
   return (
-    <td className={cn("px-3 py-2.5",
+    <td colSpan={colSpan} className={cn("px-3 py-2.5",
       align === "right" && "text-right tabular-nums",
       bold && "font-semibold",
       muted && "text-[var(--theme-text-muted)]",

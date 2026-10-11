@@ -8,7 +8,15 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { BRANCHES, demoAccessForRole } from "@/lib/branch-mock-data";
 import { type Branch, type UserBranchAccess, type UserRole, type Permission, type PermissionAction } from "@/lib/branch";
-import { getRolePermissions, roleHasPermission, type AccessModule } from "@/lib/branch-access";
+import {
+  mapHasPermission,
+  normalizeUserRole,
+  permissionsFromMap,
+  resolvePermissionMap,
+  roleScope,
+  type AccessModule,
+  type PermissionMap,
+} from "@/lib/branch-access";
 import { nextDocumentNumber, type NumberingModule } from "@/lib/document-numbering";
 import { useAuth } from "@/lib/auth/auth-context";
 import { branchApi, describeApiError, type Branch as ApiBranch } from "@/lib/auth/api-client";
@@ -25,6 +33,8 @@ interface BranchContextValue {
   userBranchAccess: UserBranchAccess | null;
   /** Effective permission list for the active (possibly previewed) role. */
   permissions: Permission[];
+  /** Live boolean matrix used by `can()` (session + Roles page saves). */
+  permissionMap: PermissionMap;
   /** Human label for the active data scope, e.g. "All Branches" / "Main Campus". */
   activeScopeLabel: string;
   setCurrentBranch: (branchId: string | "all") => void;
@@ -34,6 +44,8 @@ interface BranchContextValue {
   canAccessBranch: (branchId: string) => boolean;
   /** True when the active role may perform `action` (default "view") on a module. */
   can: (module: AccessModule, action?: PermissionAction) => boolean;
+  /** Replace the session permission map (e.g. after saving Roles & Permissions). */
+  applyPermissionMap: (map: PermissionMap | null) => void;
   /** Branch-prefixed document number, e.g. MAIN-STU-0001. */
   documentNumber: (module: NumberingModule) => string;
   branchNameFor: (branchId: string) => string;
@@ -76,15 +88,31 @@ function apiBranchToBranch(apiBranch: ApiBranch): Branch {
   };
 }
 
-export function BranchProvider({ children, userRole = "Super Admin", userBranchAccess = null }: BranchProviderProps) {
+export function BranchProvider({ children, userRole: userRoleProp, userBranchAccess = null }: BranchProviderProps) {
   const { signedIn, ready, user } = useAuth();
+  const sessionRole = useMemo(
+    () => normalizeUserRole(user?.role || userRoleProp || "Super Admin"),
+    [user?.role, userRoleProp],
+  );
   const [selectedBranchId, setSelectedBranchId] = useState<string | "all">(() => {
     if (typeof window === "undefined") return "all";
-    return window.localStorage.getItem("bisons:active-branch") || "all";
+    const stored = window.localStorage.getItem("bisons:active-branch");
+    // "all" is no longer a selectable scope — treat it as unset.
+    return stored && stored !== "all" ? stored : "all";
   });
   const [roleOverride, setRoleOverride] = useState<UserRole | null>(null);
+  const [sessionPermissionMap, setSessionPermissionMap] = useState<PermissionMap | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Hydrate the live permission matrix from /me (or ROLE_DEFS defaults).
+  useEffect(() => {
+    if (!signedIn || !user) {
+      setSessionPermissionMap(null);
+      return;
+    }
+    setSessionPermissionMap(resolvePermissionMap(sessionRole, user.permissions ?? null));
+  }, [signedIn, user, sessionRole]);
 
   // Fetch real branches from API when signed in
   useEffect(() => {
@@ -100,28 +128,46 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
         setLoading(false);
         if (user?.branchId && (user.role === "Student" || user.role === "Teacher" || user.panel === "student" || user.panel === "teacher")) {
           setSelectedBranchId(user.branchId);
+          return;
         }
+        // Always pin to a real campus — "All Branches" is not offered in the UI.
+        setSelectedBranchId((prev) => {
+          if (prev !== "all" && converted.some((b) => b.id === prev)) return prev;
+          return user?.branchId || converted[0]?.id || prev;
+        });
       })
       .catch((err) => {
         console.error("Failed to load branches:", describeApiError(err).message);
         // Fall back to mock data if API fails
-        setBranches(BRANCHES.filter((b) => b.status === "Active"));
+        const fallback = BRANCHES.filter((b) => b.status === "Active");
+        setBranches(fallback);
         setLoading(false);
+        setSelectedBranchId((prev) => {
+          if (prev !== "all" && fallback.some((b) => b.id === prev)) return prev;
+          return fallback[0]?.id || prev;
+        });
       });
   }, [ready, signedIn, user]);
 
-  // Use real branches if available, otherwise mock data
+  // Prefer API campuses. Avoid mock BR-* ids while signed in — those break
+  // accounting and other branch-scoped API queries.
   const availableBranches = useMemo(() => {
     if (branches.length > 0) {
       return branches.filter((b) => b.status === "Active");
     }
+    if (signedIn) return [];
     return BRANCHES.filter((b) => b.status === "Active");
-  }, [branches]);
+  }, [branches, signedIn]);
 
   // "View as role" preview keeps the UI honest about branch + permission scope.
-  const effectiveRole: UserRole = roleOverride ?? userRole;
+  const effectiveRole: UserRole = roleOverride ?? sessionRole;
   const effectiveAccess = roleOverride ? demoAccessForRole(roleOverride) : userBranchAccess;
   const isSuperScope = effectiveRole === "Super Admin" || effectiveRole === "Owner";
+
+  const permissionMap = useMemo(() => {
+    if (roleOverride) return resolvePermissionMap(roleOverride, null);
+    return resolvePermissionMap(sessionRole, sessionPermissionMap);
+  }, [roleOverride, sessionRole, sessionPermissionMap]);
 
   const userBranches = useMemo(() => {
     if (!effectiveAccess || isSuperScope) {
@@ -142,11 +188,21 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
   // Derive the effective scope (no effect needed): a previewed role automatically
   // falls back to a campus it is actually allowed to see.
   const currentBranchId: string | "all" = useMemo(() => {
-    if (isSuperScope) return selectedBranchId;
+    const firstAllowed = () => {
+      if (isSuperScope) return availableBranches[0]?.id ?? "all";
+      return effectiveAccess?.branchIds?.[0] ?? availableBranches[0]?.id ?? "all";
+    };
+
+    if (isSuperScope) {
+      if (selectedBranchId === "all") return firstAllowed();
+      if (availableBranches.some((b) => b.id === selectedBranchId)) return selectedBranchId;
+      return firstAllowed();
+    }
+
     const allowed = effectiveAccess?.branchIds ?? [];
     if (selectedBranchId !== "all" && allowed.includes(selectedBranchId)) return selectedBranchId;
-    return allowed[0] ?? "all";
-  }, [selectedBranchId, isSuperScope, effectiveAccess]);
+    return firstAllowed();
+  }, [selectedBranchId, isSuperScope, effectiveAccess, availableBranches]);
 
   const branchMode: BranchMode = currentBranchId === "all" ? "all" : "single";
 
@@ -164,11 +220,24 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
 
   const isSuperAdmin = useCallback(() => effectiveRole === "Super Admin" || effectiveRole === "Owner", [effectiveRole]);
 
-  const permissions = useMemo(() => getRolePermissions(effectiveRole), [effectiveRole]);
-  const can = useCallback(
-    (module: AccessModule, action: PermissionAction = "view") => roleHasPermission(effectiveRole, module, action),
-    [effectiveRole]
+  const permissions = useMemo(
+    () => permissionsFromMap(permissionMap, roleScope(effectiveRole)),
+    [permissionMap, effectiveRole],
   );
+
+  const can = useCallback(
+    (module: AccessModule, action: PermissionAction = "view") => {
+      // Owner / Super Admin stay unrestricted unless previewing another role.
+      if (!roleOverride && (sessionRole === "Super Admin" || sessionRole === "Owner")) return true;
+      if (roleOverride === "Super Admin" || roleOverride === "Owner") return true;
+      return mapHasPermission(permissionMap, module, action);
+    },
+    [roleOverride, sessionRole, permissionMap],
+  );
+
+  const applyPermissionMap = useCallback((map: PermissionMap | null) => {
+    setSessionPermissionMap(map && Object.keys(map).length > 0 ? map : null);
+  }, []);
 
   const branchNameFor = useCallback(
     (branchId: string) => availableBranches.find((b) => b.id === branchId)?.name ?? "—",
@@ -183,13 +252,19 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
     [currentBranchId, userBranches, availableBranches]
   );
 
-  const activeScopeLabel = currentBranch ? `${currentBranch.name} (${currentBranch.code})` : "All Branches";
+  const activeScopeLabel = currentBranch
+    ? `${currentBranch.name} (${currentBranch.code})`
+    : userBranches[0]
+      ? `${userBranches[0].name} (${userBranches[0].code})`
+      : "—";
 
   const getAvailableBranches = useCallback(() => availableBranches, [availableBranches]);
   const getCurrentBranch = useCallback(() => currentBranch, [currentBranch]);
 
   const handleSetCurrentBranch = useCallback((branchId: string | "all") => {
-    if (branchId === "all" || canAccessBranch(branchId)) {
+    // Ignore "all" — campus scope is always a single branch.
+    if (branchId === "all") return;
+    if (canAccessBranch(branchId)) {
       setSelectedBranchId(branchId);
     }
   }, [canAccessBranch]);
@@ -201,7 +276,8 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
   }, [currentBranchId]);
 
   const handleSetBranchMode = useCallback((mode: BranchMode) => {
-    if (mode === "all") setSelectedBranchId("all");
+    // "all" mode is disabled — keep the current campus (or first available).
+    if (mode === "all") return;
   }, []);
 
   const simulateRole = useCallback((role: UserRole | null) => setRoleOverride(role), []);
@@ -216,6 +292,7 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
       userRole: effectiveRole,
       userBranchAccess: effectiveAccess,
       permissions,
+      permissionMap,
       activeScopeLabel,
       setCurrentBranch: handleSetCurrentBranch,
       setBranchMode: handleSetBranchMode,
@@ -223,6 +300,7 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
       getCurrentBranch,
       canAccessBranch,
       can,
+      applyPermissionMap,
       documentNumber,
       branchNameFor,
       isAllBranchesMode,
@@ -241,6 +319,7 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
       effectiveRole,
       effectiveAccess,
       permissions,
+      permissionMap,
       activeScopeLabel,
       handleSetCurrentBranch,
       handleSetBranchMode,
@@ -248,6 +327,7 @@ export function BranchProvider({ children, userRole = "Super Admin", userBranchA
       getCurrentBranch,
       canAccessBranch,
       can,
+      applyPermissionMap,
       documentNumber,
       branchNameFor,
       isAllBranchesMode,

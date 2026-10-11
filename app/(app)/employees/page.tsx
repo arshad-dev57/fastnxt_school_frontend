@@ -15,7 +15,7 @@ import { CalendarBoard, KanbanBoard, MobileItem } from "@/components/board-views
 import { TablePageSkeleton } from "@/components/skeleton";
 import { DESIGNATIONS, DEPARTMENTS, EMPLOYMENT_TYPES, type EmployeeRow } from "@/lib/mock-data";
 import { useBranch } from "@/lib/branch-context";
-import { employeesApi, describeApiError, type EmployeeItem, type EmployeeDocItem } from "@/lib/auth/api-client";
+import { employeesApi, describeApiError, uploadsApi, type EmployeeItem, type EmployeeDocItem } from "@/lib/auth/api-client";
 
 export type ExtendedEmployeeRow = EmployeeRow & {
   employeeId?: string;
@@ -24,6 +24,7 @@ export type ExtendedEmployeeRow = EmployeeRow & {
   cnic?: string;
   address?: string;
   type?: string;
+  photo?: string;
   documents?: EmployeeDocItem[];
 };
 
@@ -68,6 +69,7 @@ export default function AllEmployeesPage() {
   // New doc form inside detail modal
   const [docName, setDocName] = useState("");
   const [docType, setDocType] = useState("CNIC / National ID");
+  const [docFile, setDocFile] = useState<File | null>(null);
   const [addingDoc, setAddingDoc] = useState(false);
 
   const fetchEmployees = async () => {
@@ -97,6 +99,7 @@ export default function AllEmployeesPage() {
         cnic: e.cnic,
         address: e.address,
         type: e.type,
+        photo: e.photo || "",
         documents: e.documents || [],
       }));
 
@@ -175,15 +178,25 @@ export default function AllEmployeesPage() {
     }
   };
 
-  const handleAddDocumentToDetail = async () => {
+  const handleAddDocumentToDetail = async (file?: File | null) => {
     if (!detail || !docName.trim()) return;
+    if (!file) {
+      alert("Choose a file to upload to Cloudinary.");
+      return;
+    }
     setAddingDoc(true);
     try {
-      const res = await employeesApi.addDocument(detail.id, { name: docName.trim(), type: docType });
+      const uploaded = await uploadsApi.upload(file, { purpose: "employee-doc", folder: "employees/docs" });
+      const res = await employeesApi.addDocument(detail.id, {
+        name: docName.trim() || uploaded.upload.name,
+        type: docType,
+        url: uploaded.upload.url,
+      });
       const updatedDocs = res.employee.documents;
       setDetail((prev) => prev ? { ...prev, documents: updatedDocs } : null);
       setRows((p) => p.map((r) => (r.id === detail.id ? { ...r, documents: updatedDocs } : r)));
       setDocName("");
+      setDocFile(null);
     } catch (err) {
       alert(describeApiError(err).message);
     } finally {
@@ -264,7 +277,7 @@ export default function AllEmployeesPage() {
                               <div key={r.id} onClick={() => setDetail(r)}
                                 className="row grid cursor-pointer border-b border-[var(--theme-border)] text-[15px] transition-colors last:border-b-0 hover:bg-[var(--theme-hover)]"
                                 style={{ gridTemplateColumns: tmpl }}>
-                                <BarCell color={g.color} className="py-2.5"><Avatar name={r.name} size={30} /></BarCell>
+                                <BarCell color={g.color} className="py-2.5"><Avatar name={r.name} src={r.photo} size={30} /></BarCell>
                                 <Td className="min-w-0"><span className="truncate font-medium">{r.name}</span></Td>
                                 {visibleCols.map((c) => (
                                   <Td key={c.key} className="min-w-0 border-l border-[var(--theme-border)]">
@@ -309,7 +322,7 @@ export default function AllEmployeesPage() {
               <button type="button" onClick={() => setDetail(r)}
                 className="w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3 text-left shadow-sm transition-colors hover:bg-[var(--theme-hover)]">
                 <span className="flex items-start gap-2">
-                  <Avatar name={r.name} size={30} />
+                  <Avatar name={r.name} src={r.photo} size={30} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-medium">{r.name}</span>
                     <span className="block truncate text-[12px] text-[var(--theme-text-muted)]">{r.designation} · {r.id}</span>
@@ -342,7 +355,7 @@ export default function AllEmployeesPage() {
         {detail && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <Avatar name={detail.name} size={52} />
+              <Avatar name={detail.name} src={detail.photo} size={52} />
               <div className="min-w-0">
                 <p className="truncate text-[16px] font-semibold">{detail.name}</p>
                 <p className="truncate text-[13px] text-[var(--theme-text-muted)]">{detail.designation} · {detail.department}</p>
@@ -371,22 +384,53 @@ export default function AllEmployeesPage() {
                 <div className="space-y-1.5">
                   {detail.documents.map((doc) => (
                     <div key={doc.id} className="flex items-center justify-between rounded border border-[var(--theme-border)] p-2 text-[13px]">
-                      <div>
-                        <p className="font-medium">{doc.name}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{doc.name}</p>
                         <p className="text-[11px] text-[var(--theme-text-muted)]">{doc.type} · {doc.uploadDate}</p>
                       </div>
-                      <span className="text-[12px] font-medium text-[var(--theme-primary-soft-text)]">Verified</span>
+                      {doc.url ? (
+                        <a
+                          href={uploadsApi.downloadHref({
+                            url: doc.url,
+                            filename: doc.name || "document",
+                            resourceType: doc.url.includes("/raw/") ? "raw" : "image",
+                          })}
+                          className="shrink-0 text-[12px] font-medium text-[var(--theme-primary-soft-text)] hover:underline"
+                        >
+                          Download
+                        </a>
+                      ) : (
+                        <span className="text-[12px] text-[var(--theme-text-muted)]">No file</span>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="mt-3 flex gap-2">
-                <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Attach document name..." className="flex-1 text-[13px]" />
-                <Select value={docType} onChange={(e) => setDocType(e.target.value)} options={["CNIC / National ID", "Degree / Certificate", "Employment Contract", "Experience Letter", "Other"]} className="w-40 text-[13px]" />
-                <Btn size="sm" variant="primary" Icon={Upload} onClick={handleAddDocumentToDetail} disabled={addingDoc}>
-                  {addingDoc ? "..." : "Add"}
-                </Btn>
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Document name..." className="min-w-[140px] flex-1 text-[13px]" />
+                  <Select value={docType} onChange={(e) => setDocType(e.target.value)} options={["CNIC / National ID", "Degree / Certificate", "Employment Contract", "Experience Letter", "Other"]} className="w-40 text-[13px]" />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex h-9 flex-1 cursor-pointer items-center gap-2 rounded border border-dashed border-[var(--theme-border-strong)] px-3 text-[12px] text-[var(--theme-text-muted)] hover:bg-[var(--theme-hover)]">
+                    <Upload className="h-3.5 w-3.5" />
+                    <span className="truncate">{docFile ? docFile.name : "Choose file (Cloudinary)"}</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] || null;
+                        e.target.value = "";
+                        setDocFile(f);
+                        if (f && !docName.trim()) setDocName(f.name);
+                      }}
+                    />
+                  </label>
+                  <Btn size="sm" variant="primary" Icon={Upload} onClick={() => handleAddDocumentToDetail(docFile)} disabled={addingDoc || !docFile}>
+                    {addingDoc ? "..." : "Upload"}
+                  </Btn>
+                </div>
               </div>
             </div>
           </div>

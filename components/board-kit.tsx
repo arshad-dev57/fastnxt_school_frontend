@@ -134,9 +134,9 @@ export function BoardInlineSearch({ value, onChange, placeholder = "Search" }: {
 export function statusColor(value: string): string {
   const v = value.toLowerCase();
   if (["active", "approved", "generated", "printed", "completed", "done", "present", "paid", "sent"].includes(v)) return "var(--theme-success)";
-  if (["inactive", "pending", "draft", "new"].includes(v)) return "var(--theme-pending)";
+  if (["inactive", "pending", "draft", "new", "unpaid"].includes(v)) return "var(--theme-pending)";
   if (["rejected", "absent", "overdue", "failed"].includes(v)) return "var(--theme-danger)";
-  if (["under review", "review", "working on it", "partially paid"].includes(v)) return "var(--theme-warning)";
+  if (["under review", "review", "working on it", "partially paid", "approved · unpaid"].includes(v)) return "var(--theme-warning)";
   if (["assigned", "in progress"].includes(v)) return "var(--theme-info)";
   return "var(--theme-text-muted)";
 }

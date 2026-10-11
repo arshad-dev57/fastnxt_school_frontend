@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, Pencil, Trash2, IdCard, UserPlus, Plus, ArrowUpDown, Layers, Filter, User, RefreshCw } from "lucide-react";
 import {
-  Avatar, Btn, ConfirmDialog, EmptyState, Field, Input, Modal, RowMenu, Select, Td, Th, cn,
+  Avatar, Btn, ConfirmDialog, EmptyState, Modal, RowMenu, Td, Th, cn,
 } from "@/components/ui";
 import { Board, BoardBar, BoardBody, BoardHead, GroupHead, GroupTable, BarCell } from "@/components/board";
 import {
@@ -14,9 +15,8 @@ import {
 import { CalendarBoard, KanbanBoard, MobileItem } from "@/components/board-views";
 import { BoardPageSkeleton } from "@/components/skeleton";
 import { useBranch } from "@/lib/branch-context";
-import { studentsApi, classesApi, type StudentItem, type ClassItem, type CreateStudentInput } from "@/lib/auth/api-client";
+import { studentsApi, classesApi, type StudentItem, type ClassItem } from "@/lib/auth/api-client";
 
-const GENDERS = ["Male", "Female"];
 const COL_META: { key: string; label: string; width: string }[] = [
   { key: "studentId", label: "Student ID", width: "120px" },
   { key: "cls", label: "Class", width: "120px" },
@@ -38,6 +38,7 @@ type SortLabel = (typeof SORTS)[number];
 type GroupLabel = (typeof GROUP_BY)[number];
 
 export default function AllStudentsPage() {
+  const router = useRouter();
   const { currentBranchId } = useBranch();
   const [rows, setRows] = useState<StudentItem[]>([]);
   const [classes, setClasses] = useState<ClassItem[]>([]);
@@ -56,7 +57,6 @@ export default function AllStudentsPage() {
   const [view, setView] = useState<BoardView>("table");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [detail, setDetail] = useState<StudentItem | null>(null);
-  const [editing, setEditing] = useState<StudentItem | null>(null);
   const [toDelete, setToDelete] = useState<StudentItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -122,22 +122,9 @@ export default function AllStudentsPage() {
 
   const rowMenu = (r: StudentItem) => [
     { label: "View Details", Icon: Eye, onClick: () => setDetail(r) },
-    { label: "Edit Student", Icon: Pencil, onClick: () => setEditing(r) },
+    { label: "Edit Student", Icon: Pencil, onClick: () => router.push(`/students/${r.id}/edit`) },
     { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
   ];
-
-  const handleSaveEdit = async (id: string, patch: Partial<CreateStudentInput>) => {
-    try {
-      setActionLoading(true);
-      const res = await studentsApi.update(id, patch);
-      setRows((p) => p.map((r) => (r.id === id ? res.student : r)));
-      setEditing(null);
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to update student.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!toDelete) return;
@@ -238,7 +225,7 @@ export default function AllStudentsPage() {
                               <div key={r.id} onClick={() => setDetail(r)}
                                 className="row grid cursor-pointer border-b border-[var(--theme-border)] text-[15px] transition-colors last:border-b-0 hover:bg-[var(--theme-hover)]"
                                 style={{ gridTemplateColumns: tmpl }}>
-                                <BarCell color={g.color} className="py-2.5"><Avatar name={r.name} size={30} /></BarCell>
+                                <BarCell color={g.color} className="py-2.5"><Avatar name={r.name} src={r.photo} size={30} /></BarCell>
                                 <Td className="min-w-0"><span className="truncate font-medium">{r.name}</span></Td>
                                 {visibleCols.map((c) => (
                                   <Td key={c.key} className="min-w-0 border-l border-[var(--theme-border)]">
@@ -283,7 +270,7 @@ export default function AllStudentsPage() {
               <button type="button" onClick={() => setDetail(r)}
                 className="w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3 text-left shadow-sm transition-colors hover:bg-[var(--theme-hover)]">
                 <span className="flex items-start gap-2">
-                  <Avatar name={r.name} size={30} />
+                  <Avatar name={r.name} src={r.photo} size={30} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-medium">{r.name}</span>
                     <span className="block truncate text-[12px] text-[var(--theme-text-muted)]">{r.studentId} · {r.cls}-{r.section}</span>
@@ -313,11 +300,28 @@ export default function AllStudentsPage() {
 
       {/* VIEW DETAIL MODAL */}
       <Modal open={!!detail} onClose={() => setDetail(null)} title={detail?.name ?? ""} subtitle="Student profile & details"
-        footer={<Btn variant="secondary" onClick={() => setDetail(null)}>Close</Btn>}>
+        footer={
+          <>
+            <Btn variant="secondary" onClick={() => setDetail(null)}>Close</Btn>
+            {detail && (
+              <Btn
+                variant="primary"
+                Icon={Pencil}
+                onClick={() => {
+                  const id = detail.id;
+                  setDetail(null);
+                  router.push(`/students/${id}/edit`);
+                }}
+              >
+                Edit Student
+              </Btn>
+            )}
+          </>
+        }>
         {detail && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <Avatar name={detail.name} size={52} />
+              <Avatar name={detail.name} src={detail.photo} size={52} />
               <div className="min-w-0">
                 <p className="truncate text-[16px] font-semibold">{detail.name}</p>
                 <p className="truncate text-[13px] text-[var(--theme-text-muted)]">{detail.cls}-{detail.section} · {detail.gender}</p>
@@ -342,15 +346,6 @@ export default function AllStudentsPage() {
         )}
       </Modal>
 
-      {/* EDIT STUDENT MODAL */}
-      <EditStudentModal
-        student={editing}
-        classes={classes}
-        loading={actionLoading}
-        onClose={() => setEditing(null)}
-        onSave={handleSaveEdit}
-      />
-
       {/* CONFIRM DELETE DIALOG */}
       <ConfirmDialog
         open={!!toDelete}
@@ -373,114 +368,3 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EditStudentModal({
-  student,
-  classes,
-  loading,
-  onClose,
-  onSave,
-}: {
-  student: StudentItem | null;
-  classes: ClassItem[];
-  loading: boolean;
-  onClose: () => void;
-  onSave: (id: string, data: Partial<CreateStudentInput>) => void;
-}) {
-  const [name, setName] = useState("");
-  const [gender, setGender] = useState("Male");
-  const [status, setStatus] = useState("Active");
-  const [cls, setCls] = useState("");
-  const [section, setSection] = useState("A");
-  const [guardian, setGuardian] = useState("");
-  const [phone, setPhone] = useState("");
-  const [admissionDate, setAdmissionDate] = useState("");
-
-  useEffect(() => {
-    if (student) {
-      setName(student.name || "");
-      setGender(student.gender || "Male");
-      setStatus(student.status || "Active");
-      setCls(student.cls || (classes[0]?.name ?? "Grade 1"));
-      setSection(student.section || "A");
-      setGuardian(student.guardian || student.father || "");
-      setPhone(student.phone || "");
-      setAdmissionDate(student.admissionDate || "");
-    }
-  }, [student, classes]);
-
-  const classNames = classes.map((c) => c.name);
-  const currentClassObj = classes.find((c) => c.name === cls);
-  const availableSections = currentClassObj?.sections?.length ? currentClassObj.sections : ["A", "B", "C", "D"];
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!student) return;
-    if (!name.trim()) {
-      alert("Student name is required.");
-      return;
-    }
-    onSave(student.id, {
-      name: name.trim(),
-      gender,
-      status,
-      cls,
-      section,
-      guardian: guardian.trim() || undefined,
-      phone: phone.trim() || undefined,
-      admissionDate: admissionDate || undefined,
-    });
-  };
-
-  return (
-    <Modal
-      open={!!student}
-      onClose={onClose}
-      width="max-w-xl"
-      title="Edit Student"
-      subtitle={student?.studentId}
-      footer={
-        <>
-          <Btn variant="secondary" onClick={onClose} disabled={loading}>Cancel</Btn>
-          <Btn variant="primary" onClick={handleSubmit} disabled={loading}>
-            {loading ? "Saving…" : "Save Changes"}
-          </Btn>
-        </>
-      }
-    >
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Full Name *" className="sm:col-span-2">
-          <Input value={name} onChange={(e) => setName(e.target.value)} required />
-        </Field>
-        <Field label="Gender">
-          <Select options={GENDERS} value={gender} onChange={(e) => setGender(e.target.value)} />
-        </Field>
-        <Field label="Status">
-          <Select options={["Active", "Inactive"]} value={status} onChange={(e) => setStatus(e.target.value)} />
-        </Field>
-        <Field label="Class">
-          <Select
-            options={classNames.length ? classNames : [cls || "Grade 1"]}
-            value={cls}
-            onChange={(e) => {
-              setCls(e.target.value);
-              const found = classes.find((c) => c.name === e.target.value);
-              if (found?.sections?.length) setSection(found.sections[0]);
-            }}
-          />
-        </Field>
-        <Field label="Section">
-          <Select options={availableSections} value={section} onChange={(e) => setSection(e.target.value)} />
-        </Field>
-        <Field label="Guardian">
-          <Input value={guardian} onChange={(e) => setGuardian(e.target.value)} placeholder="Guardian name" />
-        </Field>
-        <Field label="Phone / Contact">
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="03XX-XXXXXXX" />
-        </Field>
-        <Field label="Admission Date" className="sm:col-span-2">
-          <Input type="date" value={admissionDate} onChange={(e) => setAdmissionDate(e.target.value)} />
-        </Field>
-      </form>
-    </Modal>
-  );
-}

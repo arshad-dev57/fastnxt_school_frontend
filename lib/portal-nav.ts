@@ -1,7 +1,7 @@
 
 import {
-  Award, BookOpen, CalendarCheck, CalendarClock, CalendarDays, GraduationCap, LayoutDashboard,
-  ListChecks, Megaphone, NotebookPen, School, ShieldCheck, User, UserCog, Video, type LucideIcon,
+  Award, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarOff, GraduationCap, LayoutDashboard,
+  ListChecks, Megaphone, NotebookPen, School, ScrollText, ShieldCheck, User, UserCog, Video, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { AccessModule } from "@/lib/branch-access";
 import { STUDENT_VIEW_MODULES, TEACHER_VIEW_MODULES } from "@/lib/portal-data";
@@ -30,6 +30,7 @@ export const STUDENT_NAV: PortalNavItem[] = [
   { label: "My Dashboard", href: "/student", Icon: LayoutDashboard, module: "dashboard", blurb: "Attendance, results, fees and today's classes at a glance" },
   { label: "My Timetable", href: "/student/timetable", Icon: CalendarClock, module: "timetable", blurb: "Weekly period-wise class schedule" },
   { label: "My Attendance", href: "/student/attendance", Icon: CalendarCheck, module: "attendance", blurb: "Daily register with present, absent, late and leave" },
+  { label: "Leave", href: "/student/leave", Icon: CalendarOff, module: "leave", blurb: "Apply for leave — class teacher and admin both review" },
   { label: "My Homework", href: "/student/homework", Icon: NotebookPen, module: "homework", blurb: "Assignments, due dates and submission progress" },
   { label: "Examinations", href: "/student/exams", Icon: GraduationCap, module: "exams", blurb: "Exam schedule and the class date sheet" },
   { label: "My Meetings", href: "/student/meetings", Icon: Video, module: "meetings", blurb: "Class sessions, doubt clearing and reviews you are invited to" },
@@ -37,6 +38,7 @@ export const STUDENT_NAV: PortalNavItem[] = [
   { label: "Library", href: "/student/library", Icon: BookOpen, module: "library", blurb: "Borrowed books, due dates and fines" },
   { label: "Notices", href: "/student/notices", Icon: Megaphone, module: "communication", blurb: "Circulars and announcements for students" },
   { label: "Events", href: "/student/events", Icon: CalendarDays, module: "events", blurb: "Sports day, exhibitions and school calendar" },
+  { label: "Rules", href: "/student/rules", Icon: ScrollText, module: "settings", blurb: "School rules and regulations for students" },
   { label: "Certificates", href: "/student/certificates", Icon: ShieldCheck, module: "certificates", blurb: "Bonafide, transfer and character certificates" },
   { label: "My Profile", href: "/student/profile", Icon: User, module: "settings", blurb: "Personal, academic and guardian details" },
 ];
@@ -47,11 +49,14 @@ export const TEACHER_NAV: PortalNavItem[] = [
   { label: "My Classes", href: "/teacher/classes", Icon: School, module: "classes", blurb: "Sections you teach and their roster size" },
   { label: "My Students", href: "/teacher/students", Icon: User, module: "students", blurb: "Students in your own sections only" },
   { label: "Mark Attendance", href: "/teacher/attendance", Icon: CalendarCheck, module: "attendance", blurb: "Mark present, absent, late or leave per section" },
+  { label: "Leave", href: "/teacher/leave", Icon: CalendarOff, module: "leave", blurb: "Apply your leave (admin) and review class student requests" },
+  { label: "My Salary", href: "/teacher/salary", Icon: Wallet, module: "payroll", blurb: "Month-wise salary, payslips and paid status" },
   { label: "My Timetable", href: "/teacher/timetable", Icon: CalendarClock, module: "timetable", blurb: "Your weekly teaching schedule" },
   { label: "Homework", href: "/teacher/homework", Icon: NotebookPen, module: "homework", blurb: "Create assignments and track submissions" },
   { label: "Exams & Results", href: "/teacher/exams", Icon: GraduationCap, module: "exams", blurb: "Exam status, date sheet and marks entry" },
   { label: "My Meetings", href: "/teacher/meetings", Icon: Video, module: "meetings", blurb: "Meet your students — class sessions, reviews and PTMs" },
   { label: "Notices", href: "/teacher/notices", Icon: Megaphone, module: "communication", blurb: "Publish circulars to students and parents" },
+  { label: "Rules", href: "/teacher/rules", Icon: ScrollText, module: "settings", blurb: "School rules and regulations for teachers" },
   { label: "My Tasks", href: "/teacher/tasks", Icon: ListChecks, module: "tasks", blurb: "Academic work items assigned to you" },
   { label: "My Profile", href: "/teacher/profile", Icon: UserCog, module: "settings", blurb: "Employment and contact details" },
 ];

@@ -8,24 +8,22 @@ import { Btn, Checkbox, Field } from "@/components/ui";
 import AuthCard from "@/components/auth/auth-card";
 import DemoNote from "@/components/auth/demo-note";
 import IconInput from "@/components/auth/icon-input";
-import PanelSelect from "@/components/auth/panel-select";
 import PasswordInput from "@/components/auth/password-input";
-import { isPanelId, panelById } from "@/lib/auth/panels";
 import { useAuth } from "@/lib/auth/auth-context";
 import { describeApiError } from "@/lib/auth/api-client";
+import { postAuthRoute } from "@/lib/auth/subscription";
 
 /* ============================================================================
-   Sign in — panel-aware login backed by POST /api/auth/login.
+   Sign in — role comes from the account, not from a login selector.
    ---------------------------------------------------------------------------
-   Credentials are checked by the API (bisonseducore360_backend); on success the
-   API sets the httpOnly `bisons_session` cookie and returns the session, so the
-   panel the user actually lands on comes from the server (`user.panel`) rather
-   than from the client selector.
+   Credentials are checked by POST /api/auth/login; on success the API sets the
+   httpOnly `bisons_session` cookie and returns `user` (including subscription).
+   An active plan opens the workspace; an expired plan opens /subscription.
    ========================================================================== */
 
 export default function LoginPage() {
   const router = useRouter();
-  const { panel, setPanel, accountEmail, signIn, ready, signedIn, user } = useAuth();
+  const { accountEmail, signIn, ready, signedIn, user } = useAuth();
 
   /* `null` means "the user hasn't typed anything yet", so the field falls back to
      the address the current session uses — the register → sign-in hand-off stays
@@ -38,15 +36,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
-  /** Where this session should land, given the panel the API reports. */
-  const landingRoute = (serverPanel: string | undefined) =>
-    panelById(isPanelId(serverPanel) ? serverPanel : panel).href;
-
-  /* Already signed in (or restored from the cookie on refresh)? Skip the form. */
+  /* Already signed in (or restored from the cookie on refresh)? Skip the form.
+     Uses subscription from the existing session — no extra API call. */
   useEffect(() => {
-    if (ready && signedIn) router.replace(landingRoute(user?.panel));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, signedIn, user, panel, router]);
+    if (ready && signedIn) router.replace(postAuthRoute(user));
+  }, [ready, signedIn, user, router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -60,9 +54,8 @@ export default function LoginPage() {
     setPending(true);
 
     try {
-      // Real call: the API verifies the password and sets the session cookie.
       const signedInUser = await signIn(address, password, remember);
-      router.replace(landingRoute(signedInUser.panel));
+      router.replace(postAuthRoute(signedInUser));
     } catch (err) {
       const { message, errors } = describeApiError(err);
       setError(errors.length > 0 ? `${message} — ${errors.join(", ")}` : message);
@@ -70,12 +63,10 @@ export default function LoginPage() {
     }
   };
 
-  const target = panelById(panel);
-
   return (
     <AuthCard
       title="Welcome to BisonsEduCore360"
-      subtitle="Sign in to your school workspace and pick up right where you left off."
+      subtitle="Sign in with your school email — we'll open the right workspace for your account."
       footer={
         <span className="text-[var(--theme-text-muted)]">
           New school?{" "}
@@ -87,15 +78,6 @@ export default function LoginPage() {
     >
       <form onSubmit={handleSubmit} noValidate>
         <div className="space-y-5">
-          <div>
-            <p className="mb-2 text-[13px] font-medium text-[var(--theme-text)]">Sign in as</p>
-            <PanelSelect value={panel} onChange={setPanel} disabled={pending} />
-            <p className="mt-2 text-[12px] text-[var(--theme-text-faint)]">
-              Your account decides the final panel.{" "}
-              <span className="font-medium text-[var(--theme-text-muted)]">{target.label}</span> — {target.blurb}.
-            </p>
-          </div>
-
           <Field label="Email Address">
             <IconInput
               icon={Mail}
@@ -154,8 +136,8 @@ export default function LoginPage() {
       </form>
 
       <DemoNote>
-        Sign in with the email and password you registered your school with. If the API is not
-        running you will see a connection error above.
+        Sign in with the email and password for your account. Admin, teacher, and
+        student users all use this same form — your panel opens automatically.
       </DemoNote>
     </AuthCard>
   );

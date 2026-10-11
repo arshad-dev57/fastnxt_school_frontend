@@ -1,88 +1,229 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarCheck, CheckCircle2, Save, Users } from "lucide-react";
-import { Avatar, Btn, Card, CardHead, EmptyState, PageHeader, Select, StatCard, cn } from "@/components/ui";
+import {
+  Avatar,
+  Btn,
+  Card,
+  CardHead,
+  EmptyState,
+  Input,
+  PageHeader,
+  Select,
+  StatCard,
+  cn,
+} from "@/components/ui";
 import { StatusPill, statusColor } from "@/components/board-kit";
 import { PortalScopeBar, ProgressMeter } from "@/components/portal/portal-ui";
-import { simulateDelay } from "@/components/skeleton";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useBranch } from "@/lib/branch-context";
 import {
-  ATTENDANCE_STATUSES, PORTAL_TEACHER, TEACHER_META, attendanceRate,
-  teacherAttendanceRegister, teacherClassSectionLabels, teacherClasses,
-} from "@/lib/portal-data";
-import type { AttendanceStatus } from "@/lib/school-mock-data";
+  attendanceApi,
+  describeApiError,
+  type ClassSectionOption,
+  type StudentAttendanceRosterRow,
+} from "@/lib/auth/api-client";
 
-/* ===========================================================================
-   Teacher Attendance — the write side of the Admin /attendance module.
-
-   The Admin board is read-only (it lists what was marked). A Teacher holds
-   "create" + "edit" on attendance in branch-access.ts, so this page lets them
-   mark their OWN sections only, using the exact same four statuses
-   (Present / Absent / Late / Leave) and the same StudentAttendance shape.
-   ========================================================================== */
+const ATTENDANCE_STATUSES = ["Present", "Absent", "Late", "Leave"] as const;
 
 type Mark = Record<string, string>;
 
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function TeacherAttendancePage() {
-  const [section, setSection] = useState(teacherClassSectionLabels[0] ?? "");
+  const { user } = useAuth();
+  const { currentBranchId } = useBranch();
+
+  const [sections, setSections] = useState<ClassSectionOption[]>([]);
+  const [sectionLabel, setSectionLabel] = useState("");
+  const [date, setDate] = useState(todayIso());
+  const [roster, setRoster] = useState<StudentAttendanceRosterRow[]>([]);
   const [marks, setMarks] = useState<Mark>({});
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const roster = useMemo(() => {
-    const registered = teacherAttendanceRegister.filter((r) => `${r.cls}-${r.section}` === section);
-    const known = new Set(registered.map((r) => r.student));
-    // Include every enrolled student so nobody is missing from the register.
-    const own = teacherClasses.find((c) => c.label === section);
-    const extra = (own?.members ?? []).filter((m) => !known.has(m.name))
-      .map((m) => ({ id: m.id, student: m.name, cls: m.cls, section: m.section, date: "", status: "Present" as const, remark: "" }));
-    return [...registered, ...extra];
-  }, [section]);
+  const branchScope = currentBranchId !== "all" ? currentBranchId : undefined;
+  const selected = sections.find((s) => s.label === sectionLabel) || null;
 
-  const statusOf = (student: string): AttendanceStatus =>
-    (marks[student] as AttendanceStatus | undefined) ?? "Present";
-  const setStatus = (student: string, status: string) => setMarks((m) => ({ ...m, [student]: status }));
+  const loadSections = useCallback(async () => {
+    if (!user) return;
+    try {
+      setError(null);
+      const res = await attendanceApi.mySections();
+      const list = res.sections ?? [];
+      setSections(list);
+      setSectionLabel((prev) => prev || list[0]?.label || "");
+    } catch (err) {
+      setError(describeApiError(err).message);
+      setSections([]);
+    }
+  }, [user]);
+
+  const loadRoster = useCallback(async () => {
+    if (!selected) {
+      setRoster([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const res = await attendanceApi.studentRoster({
+        cls: selected.cls,
+        section: selected.section,
+        date,
+        branchId: selected.branchId || branchScope,
+      });
+      setRoster(res.roster ?? []);
+      const initial: Mark = {};
+      for (const row of res.roster ?? []) {
+        if (row.marked) initial[row.studentId] = row.status;
+      }
+      setMarks(initial);
+    } catch (err) {
+      setError(describeApiError(err).message);
+      setRoster([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selected, date, branchScope]);
+
+  useEffect(() => {
+    loadSections();
+  }, [loadSections]);
+
+  useEffect(() => {
+    loadRoster();
+  }, [loadRoster]);
+
+  const statusOf = (id: string): string => marks[id] ?? "Present";
+  const setStatus = (id: string, status: string) =>
+    setMarks((m) => ({ ...m, [id]: status }));
+  const markAll = (status: string) =>
+    setMarks(Object.fromEntries(roster.map((r) => [r.studentId, status])));
 
   const summary = useMemo(() => {
     const c: Record<string, number> = { Present: 0, Absent: 0, Late: 0, Leave: 0 };
-    for (const r of roster) c[statusOf(r.student)] = (c[statusOf(r.student)] ?? 0) + 1;
+    for (const r of roster) c[statusOf(r.studentId)] = (c[statusOf(r.studentId)] ?? 0) + 1;
     return c;
   }, [roster, marks]);
 
-  const rate = attendanceRate(roster.map((r) => ({ status: statusOf(r.student) })));
+  const rate = roster.length
+    ? Math.round((((summary.Present ?? 0) + (summary.Late ?? 0)) / roster.length) * 100)
+    : 0;
 
-  const save = async () => { setSaving(true); await simulateDelay(); setSaving(false); setSaved(true); };
-  const markAll = (status: string) => setMarks(Object.fromEntries(roster.map((r) => [r.student, status])));
+  const save = async () => {
+    if (!selected || roster.length === 0) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await attendanceApi.markStudents({
+        date,
+        cls: selected.cls,
+        section: selected.section,
+        branchId: selected.branchId || branchScope || null,
+        records: roster.map((r) => ({
+          studentId: r.studentId,
+          status: statusOf(r.studentId),
+          remark: r.remark || "",
+        })),
+      });
+      setSaved(true);
+      await loadRoster();
+    } catch (err) {
+      setError(describeApiError(err).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sectionOptions = sections.map((s) => s.label);
 
   return (
     <>
       <PageHeader
         title="Mark Attendance"
-        subtitle={`Daily register for your own classes · ${PORTAL_TEACHER.name}`}
-        actions={<Btn variant="primary" Icon={Save} onClick={save} loading={saving} loadingLabel="Saving…">Save Attendance</Btn>}
+        subtitle={`Daily register for your class-teacher sections · ${user?.name || "Teacher"}`}
+        actions={
+          <Btn
+            variant="primary"
+            Icon={Save}
+            onClick={save}
+            loading={saving}
+            loadingLabel="Saving…"
+            disabled={!selected || roster.length === 0}
+          >
+            Save Attendance
+          </Btn>
+        }
       />
 
       <div className="px-4 pb-24 pt-4 sm:px-6">
-        <PortalScopeBar count={roster.length} noun="students" label={section} Icon={Users} />
+        {error ? (
+          <p className="mb-3 rounded-lg bg-[var(--theme-danger-soft)] px-3 py-2 text-[13px] text-[var(--theme-danger-text)]">
+            {error}
+          </p>
+        ) : null}
+
+        <PortalScopeBar
+          count={roster.length}
+          noun="students"
+          label={sectionLabel || "No class assigned"}
+          Icon={Users}
+        />
 
         <div className="grid grid-cols-2 gap-3 py-4 sm:grid-cols-4">
-          <StatCard label="Class Attendance" value={`${rate}%`} Icon={CalendarCheck} tone={rate >= 90 ? "green" : "orange"} sub={TEACHER_META.campus} />
+          <StatCard
+            label="Class Attendance"
+            value={`${rate}%`}
+            Icon={CalendarCheck}
+            tone={rate >= 90 ? "green" : "orange"}
+            sub={date}
+          />
           <StatCard label="Present" value={summary.Present ?? 0} Icon={CalendarCheck} tone="green" />
           <StatCard label="Absent" value={summary.Absent ?? 0} Icon={CalendarCheck} tone="red" />
-          <StatCard label="Late / Leave" value={(summary.Late ?? 0) + (summary.Leave ?? 0)} Icon={CalendarCheck} tone="blue" />
+          <StatCard
+            label="Late / Leave"
+            value={(summary.Late ?? 0) + (summary.Leave ?? 0)}
+            Icon={CalendarCheck}
+            tone="blue"
+          />
         </div>
 
         <div className="mb-3 flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-[13px] text-[var(--theme-text-muted)]">
             Section
-            <Select options={teacherClassSectionLabels} value={section} onChange={(e) => { setSection(e.target.value); setMarks({}); }} className="w-44" />
+            <Select
+              options={sectionOptions.length ? sectionOptions : ["No class assigned"]}
+              value={sectionLabel || "No class assigned"}
+              onChange={(e) => {
+                setSectionLabel(e.target.value);
+                setMarks({});
+              }}
+              className="w-44"
+              disabled={sectionOptions.length === 0}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-[13px] text-[var(--theme-text-muted)]">
+            Date
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-40" />
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[13px] text-[var(--theme-text-muted)]">Mark all:</span>
             {ATTENDANCE_STATUSES.map((s) => (
-              <button key={s} onClick={() => markAll(s)}
+              <button
+                key={s}
+                type="button"
+                onClick={() => markAll(s)}
                 className="rounded-full px-3 py-1 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
-                style={{ background: statusColor(s) }}>
+                style={{ background: statusColor(s) }}
+              >
                 {s}
               </button>
             ))}
@@ -90,25 +231,53 @@ export default function TeacherAttendancePage() {
         </div>
 
         <Card pad={false}>
-          <CardHead title={`Register — ${section}`} subtitle="Tap a status for each student" Icon={CalendarCheck}
-            right={<span className="rounded-full bg-[var(--theme-primary-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--theme-primary-hover)]">{roster.length} students</span>} />
-          {roster.length === 0 ? (
-            <EmptyState Icon={Users} title="No students" message="This section has no students assigned." />
+          <CardHead
+            title={`Register — ${sectionLabel || "—"} · ${date}`}
+            subtitle="Only class teachers can mark their own sections"
+            Icon={CalendarCheck}
+            right={
+              <span className="rounded-full bg-[var(--theme-primary-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--theme-primary-hover)]">
+                {roster.length} students
+              </span>
+            }
+          />
+          {loading ? (
+            <p className="px-4 py-8 text-center text-[13px] text-[var(--theme-text-muted)]">Loading roster…</p>
+          ) : sections.length === 0 ? (
+            <EmptyState
+              Icon={Users}
+              title="No class assigned"
+              message="You are not set as class teacher on any class. Ask admin to assign you as class teacher."
+            />
+          ) : roster.length === 0 ? (
+            <EmptyState Icon={Users} title="No students" message="This section has no active students." />
           ) : (
             <div className="divide-y divide-[var(--theme-border)]">
               {roster.map((r) => (
-                <div key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div key={r.studentId} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <Avatar name={r.student} size={34} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-medium">{r.student}</p>
-                    <p className="truncate text-[12px] text-[var(--theme-text-faint)]">{r.id}{r.remark ? ` · ${r.remark}` : ""}</p>
+                    <p className="truncate text-[12px] text-[var(--theme-text-faint)]">
+                      {r.studentCode || r.studentId}
+                      {r.remark ? ` · ${r.remark}` : ""}
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {ATTENDANCE_STATUSES.map((s) => (
-                      <button key={s} onClick={() => setStatus(r.student, s)} aria-pressed={statusOf(r.student) === s}
-                        className={cn("rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors",
-                          statusOf(r.student) === s ? "text-white" : "bg-[var(--theme-subtle)] text-[var(--theme-text-muted)] hover:bg-[var(--theme-border)]")}
-                        style={statusOf(r.student) === s ? { background: statusColor(s) } : undefined}>
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setStatus(r.studentId, s)}
+                        aria-pressed={statusOf(r.studentId) === s}
+                        className={cn(
+                          "rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors",
+                          statusOf(r.studentId) === s
+                            ? "text-white"
+                            : "bg-[var(--theme-subtle)] text-[var(--theme-text-muted)] hover:bg-[var(--theme-border)]"
+                        )}
+                        style={statusOf(r.studentId) === s ? { background: statusColor(s) } : undefined}
+                      >
                         {s}
                       </button>
                     ))}
@@ -120,7 +289,7 @@ export default function TeacherAttendancePage() {
         </Card>
 
         <Card className="mt-5">
-          <p className="mb-2 text-[13px] font-medium">Today's distribution</p>
+          <p className="mb-2 text-[13px] font-medium">Day&apos;s distribution</p>
           <div className="space-y-2">
             {ATTENDANCE_STATUSES.map((s) => (
               <div key={s}>
@@ -128,16 +297,19 @@ export default function TeacherAttendancePage() {
                   <span className="text-[var(--theme-text-muted)]">{s}</span>
                   <span className="font-medium tabular-nums">{summary[s] ?? 0}</span>
                 </div>
-                <ProgressMeter value={roster.length ? ((summary[s] ?? 0) / roster.length) * 100 : 0} tone={statusColor(s)} />
+                <ProgressMeter
+                  value={roster.length ? ((summary[s] ?? 0) / roster.length) * 100 : 0}
+                  tone={statusColor(s)}
+                />
               </div>
             ))}
           </div>
-          {saved && (
+          {saved ? (
             <p className="mt-4 flex flex-wrap items-center gap-2 text-[13px] text-[var(--theme-success-text)]">
-              <CheckCircle2 className="h-4 w-4" /> Attendance saved for {section}.
+              <CheckCircle2 className="h-4 w-4" /> Attendance saved for {sectionLabel} on {date}.
               <StatusPill label="Saved" />
             </p>
-          )}
+          ) : null}
         </Card>
       </div>
     </>

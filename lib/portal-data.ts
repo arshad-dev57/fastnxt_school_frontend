@@ -188,10 +188,10 @@ export const PORTAL_FORM_OPTIONS = {
 
 export const STUDENT_VIEW_MODULES: readonly AccessModule[] = [
   "timetable", "attendance", "exams", "results", "homework",
-  "library", "events", "communication", "meetings", "certificates",
+  "library", "events", "communication", "meetings", "certificates", "leave",
 ];
 
 export const TEACHER_VIEW_MODULES: readonly AccessModule[] = [
   "dashboard", "timetable", "attendance", "homework", "exams",
-  "results", "communication", "meetings", "tasks",
+  "results", "communication", "meetings", "tasks", "leave", "payroll",
 ];

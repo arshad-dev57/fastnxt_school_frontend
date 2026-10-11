@@ -10,9 +10,11 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useBranch } from "@/lib/branch-context";
 import {
   classesApi,
+  describeApiError,
   employeesApi,
   homeworkApi,
   subjectsApi,
+  uploadsApi,
   type EmployeeItem,
   type HomeworkAttachment,
   type HomeworkItem,
@@ -305,7 +307,7 @@ export default function TeacherHomeworkPage() {
                     {r.attachments.map((att, idx) => (
                       <a
                         key={idx}
-                        href={att.data}
+                        href={att.url || att.data || "#"}
                         download={att.name}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -446,33 +448,31 @@ function NewAssignmentModal({
 
   const valid = !!title.trim() && !!due && !uploadingFiles && !!selectedClassLabel;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    e.target.value = "";
     if (!files || files.length === 0) return;
 
     setUploadingFiles(true);
-    const filePromises: Promise<HomeworkAttachment>[] = Array.from(files).map((file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          resolve({
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            data: reader.result as string,
-          });
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(filePromises)
-      .then((newAtts) => {
-        setAttachments((prev) => [...prev, ...newAtts]);
-      })
-      .catch((err) => console.error("File reading error:", err))
-      .finally(() => setUploadingFiles(false));
+    try {
+      const uploaded: HomeworkAttachment[] = [];
+      for (const file of Array.from(files)) {
+        const res = await uploadsApi.upload(file, { purpose: "homework", folder: "homework" });
+        uploaded.push({
+          name: res.upload.name || file.name,
+          type: res.upload.type || file.type,
+          size: res.upload.size || file.size,
+          url: res.upload.url,
+          publicId: res.upload.publicId,
+        });
+      }
+      setAttachments((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      console.error("Cloudinary upload error:", err);
+      alert(describeApiError(err).message);
+    } finally {
+      setUploadingFiles(false);
+    }
   };
 
   const removeAttachment = (idx: number) => {
