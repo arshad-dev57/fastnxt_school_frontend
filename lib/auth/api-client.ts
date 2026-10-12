@@ -139,7 +139,7 @@ export type SchoolProfile = {
   principal?: string;
   academicSession?: string;
   motto?: string;
-  logoUrl?: string;
+  logoUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -2056,6 +2056,8 @@ export type ExamMarkRosterRow = {
 };
 
 export type ExamResultItem = {
+  /** Composite key `${examId}-${studentId}` — set by API or client normalize. */
+  id: string;
   examId: string;
   exam: string;
   studentId: string;
@@ -2281,7 +2283,7 @@ export const examsApi = {
       { method: "POST", body: data }
     ),
 
-  listResults: (
+  listResults: async (
     params?: { examId?: string; cls?: string; section?: string; branchId?: string; publishedOnly?: boolean },
     signal?: AbortSignal
   ) => {
@@ -2292,11 +2294,24 @@ export const examsApi = {
     if (params?.branchId && params.branchId !== "all") query.set("branchId", params.branchId);
     if (params?.publishedOnly) query.set("publishedOnly", "true");
     const qs = query.toString() ? `?${query.toString()}` : "";
-    return request<{ results: ExamResultItem[] }>(`/exams/results${qs}`, { signal });
+    const res = await request<{ results: ExamResultItem[] }>(`/exams/results${qs}`, { signal });
+    return {
+      results: (res.results ?? []).map((r) => ({
+        ...r,
+        id: r.id || `${r.examId}-${r.studentId}`,
+      })),
+    };
   },
 
-  myResults: (signal?: AbortSignal) =>
-    request<{ results: ExamResultItem[] }>("/exams/results/me", { signal }),
+  myResults: async (signal?: AbortSignal) => {
+    const res = await request<{ results: ExamResultItem[] }>("/exams/results/me", { signal });
+    return {
+      results: (res.results ?? []).map((r) => ({
+        ...r,
+        id: r.id || `${r.examId}-${r.studentId}`,
+      })),
+    };
+  },
 
   verify: (examId: string) =>
     request<{ exam: ExamItem }>(`/exams/${examId}/verify`, { method: "POST", body: {} }),

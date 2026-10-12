@@ -115,6 +115,7 @@ export default function StudentLeavePage() {
           subtitleOf={(r) => `${r.from} → ${r.to} · ${r.days} day(s)`}
           searchTextOf={(r) => `${r.type} ${r.reason} ${r.status} ${r.from} ${r.to}`}
           searchPlaceholder="Search leave"
+          scopeLabel={user?.name || "My leave"}
           countNoun="requests"
           groupBy={(r) => r.status}
           groupColorOf={(k) => COLORS[k]}
