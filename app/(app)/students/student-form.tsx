@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Save, User, GraduationCap, Users2, FileText, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { Btn, Card, CardHead, Field, Input, PageHeader, Select, Textarea, Avatar, type IconType } from "@/components/ui";
+import PasswordInput from "@/components/auth/password-input";
+import { ClassFormModal } from "@/components/classes/class-form-modal";
 import {
   classesApi,
   describeApiError,
@@ -14,6 +16,7 @@ import {
   type CreateStudentInput,
   type StudentDocItem,
   type StudentItem,
+  type TeacherOption,
 } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
 
@@ -128,6 +131,7 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
   const isEdit = Boolean(studentId);
 
   const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingStudent, setLoadingStudent] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
@@ -136,15 +140,22 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
   const [documents, setDocuments] = useState<StudentDocItem[]>([]);
   const [docLabel, setDocLabel] = useState("");
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [classModalOpen, setClassModalOpen] = useState(false);
+  const [savingClass, setSavingClass] = useState(false);
+  const [classApiError, setClassApiError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadClasses() {
       try {
         setLoadingClasses(true);
         const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
-        const res = await classesApi.list({ branchId: branchScope });
-        const list = res.classes || [];
+        const [classRes, teacherRes] = await Promise.all([
+          classesApi.list({ branchId: branchScope }),
+          classesApi.listTeachers(branchScope),
+        ]);
+        const list = classRes.classes || [];
         setClasses(list);
+        setTeachers(teacherRes.teachers || []);
         if (!isEdit && list.length > 0) {
           setF((p) =>
             p.cls
@@ -235,6 +246,26 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
       cls: newClassName,
       section: found?.sections?.[0] || "A",
     });
+  };
+
+  const handleCreateClass = async (payload: Partial<ClassItem> & { teacherId?: string | null }) => {
+    setSavingClass(true);
+    setClassApiError(null);
+    try {
+      const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
+      const res = await classesApi.create({ ...payload, branchId: branchScope } as Parameters<typeof classesApi.create>[0]);
+      const created = res.class;
+      setClasses((prev) => [created, ...prev]);
+      set({
+        cls: created.name,
+        section: created.sections?.[0] || "A",
+      });
+      setClassModalOpen(false);
+    } catch (err) {
+      setClassApiError(describeApiError(err).message);
+    } finally {
+      setSavingClass(false);
+    }
   };
 
   const selectedClassObj = classes.find((c) => c.name === f.cls);
@@ -416,16 +447,47 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
                 <Select options={SESSIONS} value={f.session} onChange={(e) => set({ session: e.target.value })} />
               </Field>
               <Field label="Class *">
-                <Select
-                  options={classNames.length ? classNames : f.cls ? [f.cls] : ["No classes found"]}
-                  value={f.cls}
-                  onChange={(e) => handleClassChange(e.target.value)}
-                  placeholder={loadingClasses ? "Loading classes…" : "Select class"}
-                  disabled={loadingClasses || (classNames.length === 0 && !f.cls)}
-                />
+                <div className="flex gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Select
+                      options={classNames.length ? classNames : f.cls ? [f.cls] : []}
+                      value={f.cls}
+                      onChange={(e) => handleClassChange(e.target.value)}
+                      placeholder={
+                        loadingClasses
+                          ? "Loading classes…"
+                          : classNames.length === 0
+                            ? "No classes yet — add one"
+                            : "Select class"
+                      }
+                      disabled={loadingClasses || classNames.length === 0}
+                    />
+                  </div>
+                  <Btn
+                    type="button"
+                    variant="secondary"
+                    Icon={Plus}
+                    onClick={() => {
+                      setClassApiError(null);
+                      setClassModalOpen(true);
+                    }}
+                  >
+                    Add
+                  </Btn>
+                </div>
+                {classNames.length === 0 && !loadingClasses ? (
+                  <p className="mt-1 text-[12px] text-[var(--theme-text-muted)]">
+                    No classes found for this campus. Click <span className="font-medium">Add</span> to create one here.
+                  </p>
+                ) : null}
               </Field>
               <Field label="Section *">
-                <Select options={availableSections} value={f.section} onChange={(e) => set({ section: e.target.value })} />
+                <Select
+                  options={availableSections}
+                  value={f.section}
+                  onChange={(e) => set({ section: e.target.value })}
+                  disabled={!f.cls}
+                />
               </Field>
             </div>
           </Section>
@@ -462,11 +524,11 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
               </Field>
               {!isEdit ? (
                 <Field label="Login password">
-                  <Input
-                    type="password"
+                  <PasswordInput
                     value={f.password}
                     onChange={(e) => set({ password: e.target.value })}
                     placeholder="Default if blank: Password123"
+                    autoComplete="new-password"
                   />
                 </Field>
               ) : (
@@ -607,6 +669,18 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
           </div>
         </div>
       </div>
+
+      <ClassFormModal
+        modal={classModalOpen ? { mode: "add" } : null}
+        teachers={teachers}
+        saving={savingClass}
+        apiError={classApiError}
+        onClose={() => {
+          setClassModalOpen(false);
+          setClassApiError(null);
+        }}
+        onSave={handleCreateClass}
+      />
     </>
   );
 }
