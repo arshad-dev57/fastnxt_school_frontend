@@ -206,7 +206,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   },
   {
     k: "settings", label: "General Settings", Icon: Settings, children: [
-      { label: "Institute Profile", href: "/settings/institute", module: "settings" },
+      { label: "Management Profile", href: "/settings/institute", module: "settings" },
       { label: "Branches & Campuses", href: "/settings/branches", module: "settings" },
       { label: "Fee Voucher Layout", href: "/settings/fee-voucher", module: "settings" },
       { label: "Admission Letter Layout", href: "/settings/admission-letter", module: "settings" },

@@ -114,14 +114,14 @@ export default function InstituteProfilePage() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-4 text-center">
         <Building2 className="h-16 w-16 text-[var(--theme-text-muted)]" />
-        <p className="text-[15px] font-medium">Please sign in to view your institute profile.</p>
+        <p className="text-[15px] font-medium">Please sign in to view your management profile.</p>
       </div>
     );
   }
 
   return (
     <>
-      <PageHeader title="Institute Profile" subtitle="School identity, branding and contact information."
+      <PageHeader title="Management Profile" subtitle="School identity, branding and contact information."
         actions={
           <Btn variant="primary" Icon={Save} onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -283,7 +283,7 @@ export default function InstituteProfilePage() {
         footer={<Btn variant="primary" onClick={() => setSaved(false)}>Close</Btn>}>
         <div className="flex flex-col items-center gap-3 py-2 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--theme-success-soft)] text-[var(--theme-success-text)]"><CheckCircle2 className="h-7 w-7 icon-pop" /></span>
-          <p className="text-[15px] font-medium">Institute profile updated successfully.</p>
+          <p className="text-[15px] font-medium">Management profile updated successfully.</p>
           <p className="text-[13px] text-[var(--theme-text-muted)]">Changes will reflect across all documents.</p>
         </div>
       </Modal>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Save, CheckCircle2, User, Briefcase, FileText, Plus, Trash2, ImagePlus } from "lucide-react";
 import { Avatar, Btn, Card, CardHead, Field, Input, Modal, PageHeader, Select, Textarea, type IconType } from "@/components/ui";
+import PasswordInput from "@/components/auth/password-input";
 import { DESIGNATIONS, DEPARTMENTS, EMPLOYMENT_TYPES, GENDERS } from "@/lib/mock-data";
 import { employeesApi, describeApiError, uploadsApi, type EmployeeDocItem } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
@@ -130,7 +131,14 @@ export default function AddEmployeePage() {
               <Field label="CNIC / National ID"><Input value={f.cnic} onChange={(e) => set({ cnic: e.target.value })} placeholder="35202-XXXXXXX-X" /></Field>
               <Field label="Phone"><Input value={f.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="03XX-XXXXXXX" /></Field>
               <Field label="Email Address (For Teacher Login)"><Input type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} placeholder="teacher@school.com" /></Field>
-              <Field label="Login Password"><Input type="password" value={f.password} onChange={(e) => set({ password: e.target.value })} placeholder="Default: Password123" /></Field>
+              <Field label="Login Password">
+                <PasswordInput
+                  value={f.password}
+                  onChange={(e) => set({ password: e.target.value })}
+                  placeholder="Default: Password123"
+                  autoComplete="new-password"
+                />
+              </Field>
               <Field label="Address" className="sm:col-span-2"><Textarea value={f.address} onChange={(e) => set({ address: e.target.value })} placeholder="House, street, area, city" /></Field>
               <Field label="Photo" className="sm:col-span-2">
                 <div className="flex items-center gap-3">
