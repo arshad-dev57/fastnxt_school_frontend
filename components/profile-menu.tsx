@@ -12,7 +12,7 @@ const PROFILE_ICON = "/images/profile-icon.png";
 export type ProfileMenuLinks = {
   profile: string;
   account: string;
-  logout?: string;
+  logout: string;
 };
 
 const DEFAULT_LINKS: ProfileMenuLinks = {
@@ -43,7 +43,11 @@ export default function ProfileMenu({
 }) {
   const { user, panel } = useAuth();
   const [open, setOpen] = useState(false);
-  const hrefs = { ...DEFAULT_LINKS, ...links };
+  const hrefs: ProfileMenuLinks = {
+    profile: links.profile ?? DEFAULT_LINKS.profile,
+    account: links.account ?? DEFAULT_LINKS.account,
+    logout: links.logout ?? DEFAULT_LINKS.logout,
+  };
 
   const allowAccount = showAccountSettings ?? canSeeAccountSettings(user?.role, panel || user?.panel);
 
