@@ -50,34 +50,42 @@ export default function StudentTimetablePage() {
 
   return (
     <>
-      <PageHeader
-        title="My Timetable"
-        subtitle={student ? `Weekly period-wise schedule for ${scopeLabel}.` : "Your class timetable"}
-        actions={<Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print</Btn>}
-      />
+      <div className="no-print">
+        <PageHeader
+          title="My Timetable"
+          subtitle={student ? `Weekly period-wise schedule for ${scopeLabel}.` : "Your class timetable"}
+          actions={<Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print / PDF</Btn>}
+        />
+      </div>
 
       <div className="px-4 pb-24 sm:px-6">
-        {(error || profileError) && (
-          <p className="mb-3 text-[13px] text-[var(--theme-danger)]">{error || profileError}</p>
-        )}
-        <PortalScopeBar
-          count={slots.length}
-          noun="period slots"
-          label={scopeLabel}
-          Icon={CalendarClock}
-        />
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-[var(--theme-text-muted)]">
-          {student?.session ? (
-            <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">
-              Session {student.session}
-            </span>
-          ) : null}
-          {loading ? (
-            <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">Loading…</span>
-          ) : null}
+        <div className="no-print">
+          {(error || profileError) && (
+            <p className="mb-3 text-[13px] text-[var(--theme-danger)]">{error || profileError}</p>
+          )}
+          <PortalScopeBar
+            count={slots.length}
+            noun="period slots"
+            label={scopeLabel}
+            Icon={CalendarClock}
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-[var(--theme-text-muted)]">
+            {student?.session ? (
+              <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">
+                Session {student.session}
+              </span>
+            ) : null}
+            {loading ? (
+              <span className="rounded-full bg-[var(--theme-surface)] px-3 py-1.5 ring-1 ring-[var(--theme-border)]">Loading…</span>
+            ) : null}
+          </div>
         </div>
 
-        <div className="mt-4 print-area">
+        <div className="mt-4 print-area print-document print-timetable">
+          <div className="mb-3 hidden border-b-2 border-black pb-2 print:block">
+            <h1 className="text-[16px] font-bold">Class Timetable</h1>
+            <p className="text-[11px] text-neutral-600">{scopeLabel}{student?.session ? ` · Session ${student.session}` : ""}</p>
+          </div>
           <PortalTimetable
             slots={slots}
             title={`${scopeLabel} weekly timetable`}

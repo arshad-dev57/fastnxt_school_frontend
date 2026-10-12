@@ -525,13 +525,25 @@ export type UserAccount = {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: string;
   panel: string;
+  branchId?: string | null;
   status: "Active" | "Inactive";
   isActive: boolean;
   lastLogin: string;
   lastLoginAt?: string;
   createdAt: string;
+};
+
+export type UserUpsertPayload = {
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  status?: string;
+  password?: string;
+  branchId?: string | null;
 };
 
 export const usersApi = {
@@ -543,9 +555,9 @@ export const usersApi = {
     const qs = query.toString() ? `?${query.toString()}` : "";
     return request<{ users: UserAccount[] }>(`/users${qs}`, { signal });
   },
-  create: (data: { name: string; email: string; role: string; status?: string; password?: string }) =>
+  create: (data: UserUpsertPayload) =>
     request<{ user: UserAccount }>("/users", { method: "POST", body: data }),
-  update: (id: string, data: Partial<{ name: string; email: string; role: string; status: string; isActive: boolean }>) =>
+  update: (id: string, data: Partial<UserUpsertPayload & { isActive: boolean }>) =>
     request<{ user: UserAccount }>(`/users/${id}`, { method: "PATCH", body: data }),
   resetPassword: (id: string, password?: string) =>
     request<{ success: boolean; message: string }>(`/users/${id}/reset-password`, { method: "POST", body: { password } }),

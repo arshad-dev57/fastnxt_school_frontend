@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, ImagePlus, Palette, Sparkles } from "lucide-react";
 import { cn } from "@/components/ui";
 import { IconButton } from "@/components/icons";
+import { SCHOOL_HEADER_IMAGES } from "@/components/school-stickers";
 import { useTheme } from "@/lib/theme/theme-provider";
 import { BRAND_DARK_ID, BRAND_LIGHT_ID } from "@/lib/theme/brand-theme";
 import BrandSetup from "./theme/brand-setup";
@@ -30,8 +31,15 @@ export default function ThemeSwitcher() {
 
   return (
     <div className="relative z-50">
-      <IconButton Icon={Palette} label="Appearance" ariaExpanded={open} active={open}
-        onClick={() => setOpen((v) => !v)} className={open ? "ic-open" : ""} />
+      <IconButton
+        imgSrc={SCHOOL_HEADER_IMAGES.artBrush}
+        imgSize={26}
+        label="Appearance"
+        ariaExpanded={open}
+        active={open}
+        onClick={() => setOpen((v) => !v)}
+        className={open ? "ic-open" : ""}
+      />
 
       {open && (
         <>

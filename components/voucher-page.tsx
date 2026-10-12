@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, ArrowUpDown, Filter, RefreshCw, CheckCircle2, XCircle, Trash2, Eye } from "lucide-react";
+import { Plus, ArrowUpDown, Filter, RefreshCw, CheckCircle2, XCircle, Trash2, Eye, Printer } from "lucide-react";
 import { Btn, ConfirmDialog, Field, Input, Modal, Select, type IconType, rs } from "@/components/ui";
 import { BoardList, type BoardColumn } from "@/components/board-list";
 import { StatusPill, ToolDropdown, statusColor, type BoardView } from "@/components/board-kit";
 import { money } from "@/components/report";
 import { BoardPageSkeleton } from "@/components/skeleton";
+import { PrintDocument, triggerPrint, useSchoolPrintMeta } from "@/components/print/print-document";
 import { accountsApi, type VoucherItem, type AccountItem, type CashBankAccountItem } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
 
@@ -42,6 +43,7 @@ export function VoucherPage({
   emptyMessage: string;
 }) {
   const { currentBranchId } = useBranch();
+  const { meta } = useSchoolPrintMeta();
   const [rows, setRows] = useState<VoucherItem[]>([]);
   const [accounts, setAccounts] = useState<AccountItem[]>([]);
   const [cashBankAccounts, setCashBankAccounts] = useState<CashBankAccountItem[]>([]);
@@ -296,59 +298,76 @@ export function VoucherPage({
         }
       />
 
-      {/* Voucher Detail Modal */}
+      {/* Voucher Detail Modal — printable official document */}
       <Modal
         open={!!detail}
         onClose={() => setDetail(null)}
         title={detail?.no ?? ""}
         subtitle={`${detail?.kind} Voucher Details`}
-        footer={<Btn variant="secondary" onClick={() => setDetail(null)}>Close</Btn>}
+        width="max-w-2xl"
+        footer={
+          <>
+            <Btn variant="secondary" onClick={() => setDetail(null)}>Close</Btn>
+            <Btn variant="primary" Icon={Printer} onClick={triggerPrint}>Print / PDF</Btn>
+          </>
+        }
       >
         {detail && (
-          <div className="grid grid-cols-2 gap-3 text-[13px] sm:grid-cols-3">
-            <div className="rounded border border-[var(--theme-border)] p-2.5">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">Date</span>
-              <p className="font-medium">{detail.date}</p>
+          <>
+            <div className="no-print mb-3 grid grid-cols-2 gap-3 text-[13px] sm:grid-cols-3">
+              <div className="rounded border border-[var(--theme-border)] p-2.5">
+                <span className="text-[11px] text-[var(--theme-text-muted)]">Date</span>
+                <p className="font-medium">{detail.date}</p>
+              </div>
+              <div className="rounded border border-[var(--theme-border)] p-2.5">
+                <span className="text-[11px] text-[var(--theme-text-muted)]">{partyLabel}</span>
+                <p className="font-medium">{detail.party}</p>
+              </div>
+              <div className="rounded border border-[var(--theme-border)] p-2.5">
+                <span className="text-[11px] text-[var(--theme-text-muted)]">Amount</span>
+                <p className="font-bold text-[16px] text-[var(--theme-primary)]">{rs(detail.amount)}</p>
+              </div>
             </div>
-            <div className="rounded border border-[var(--theme-border)] p-2.5">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">{partyLabel}</span>
-              <p className="font-medium">{detail.party}</p>
-            </div>
-            <div className="rounded border border-[var(--theme-border)] p-2.5">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">{accountLabel}</span>
-              <p className="font-medium">{detail.account}</p>
-            </div>
-            <div className="rounded border border-[var(--theme-border)] p-2.5">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">Amount</span>
-              <p className="font-bold text-[16px] text-[var(--theme-primary)]">{rs(detail.amount)}</p>
-            </div>
-            <div className="rounded border border-[var(--theme-border)] p-2.5">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">Payment Method</span>
-              <p className="font-medium">{detail.method}</p>
-            </div>
-            <div className="rounded border border-[var(--theme-border)] p-2.5">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">Cash / Bank Account</span>
-              <p className="font-medium">
-                {detail.cashBankAccount
-                  ? detail.cashBankAccountNumber
-                    ? `${detail.cashBankAccount} (${detail.cashBankAccountNumber})`
-                    : detail.cashBankAccount
-                  : "—"}
+
+            <PrintDocument
+              title={`${detail.kind} Voucher`}
+              subtitle={`Voucher No. ${detail.no} · Status: ${detail.status}`}
+              meta={meta}
+              preparedBy="Accounts Office"
+              className="!shadow-none !ring-0"
+            >
+              <table className="print-table w-full border-collapse text-[12px]">
+                <tbody>
+                  {[
+                    ["Voucher No.", detail.no],
+                    ["Date", detail.date],
+                    [partyLabel, detail.party],
+                    [accountLabel, detail.account],
+                    ["Amount", rs(detail.amount)],
+                    ["Payment Method", detail.method],
+                    [
+                      "Cash / Bank",
+                      detail.cashBankAccount
+                        ? detail.cashBankAccountNumber
+                          ? `${detail.cashBankAccount} (${detail.cashBankAccountNumber})`
+                          : detail.cashBankAccount
+                        : "—",
+                    ],
+                    ["Reference", detail.reference || "—"],
+                    ["Status", detail.status],
+                  ].map(([k, v]) => (
+                    <tr key={String(k)} className="border-b border-neutral-300">
+                      <td className="w-[38%] px-2 py-2 font-semibold text-neutral-700">{k}</td>
+                      <td className="px-2 py-2 font-medium">{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-6 text-[11px] text-neutral-600">
+                This is a computer-generated {detail.kind.toLowerCase()} voucher. Please retain for accounts records.
               </p>
-            </div>
-            <div className="rounded border border-[var(--theme-border)] p-2.5">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">Reference</span>
-              <p className="font-medium">{detail.reference || "—"}</p>
-            </div>
-            <div className="rounded border border-[var(--theme-border)] p-2.5">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">Status</span>
-              <p className="font-medium">{detail.status}</p>
-            </div>
-            <div className="rounded border border-[var(--theme-border)] p-2.5 sm:col-span-2">
-              <span className="text-[11px] text-[var(--theme-text-muted)]">Journal Entry ID</span>
-              <p className="font-mono text-[12px]">{detail.journalEntryId || "None (Draft)"}</p>
-            </div>
-          </div>
+            </PrintDocument>
+          </>
         )}
       </Modal>
 

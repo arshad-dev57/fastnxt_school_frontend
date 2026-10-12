@@ -271,7 +271,7 @@ export default function FeeInvoicesPage() {
               Edit voucher layout
             </Link>
             <Btn variant="secondary" onClick={() => setView(null)}>Close</Btn>
-            <Btn variant="secondary" Icon={Printer} onClick={() => window.print()}>Print</Btn>
+            <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print / PDF</Btn>
             <Btn variant="primary" Icon={CreditCard} onClick={() => { if (view) markPaid(view.id); }}>Record Full Payment</Btn>
           </>
         }

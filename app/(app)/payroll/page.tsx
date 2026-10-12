@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Wallet, Plus, CheckCircle2, Banknote, Trash2, RefreshCw, Eye, Users,
+  Wallet, Plus, CheckCircle2, Banknote, Trash2, RefreshCw, Eye, Users, Printer,
 } from "lucide-react";
 import {
   Badge, Btn, Card, ConfirmDialog, EmptyState, Field, Input, Modal, PageHeader, RowMenu, Select, StatCard, Textarea, rs,
 } from "@/components/ui";
 import { StatusPill } from "@/components/board-kit";
+import { PrintDocument, PrintTable, triggerPrint, useSchoolPrintMeta } from "@/components/print/print-document";
 import { useBranch } from "@/lib/branch-context";
 import {
   describeApiError,
@@ -40,6 +41,7 @@ function currentMonth() {
 
 export default function PayrollPage() {
   const { currentBranchId } = useBranch();
+  const { meta } = useSchoolPrintMeta();
   const [runs, setRuns] = useState<PayrollRunItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -293,6 +295,11 @@ export default function PayrollPage() {
         footer={
           runDetail ? (
             <>
+              {runDetail.payslips.length > 0 && (
+                <Btn variant="secondary" Icon={Printer} onClick={triggerPrint}>
+                  Print / PDF
+                </Btn>
+              )}
               {runDetail.run.status === "Draft" && (
                 <>
                   <Btn
@@ -329,12 +336,12 @@ export default function PayrollPage() {
         }
       >
         {detailLoading && (
-          <p className="py-8 text-center text-[13px] text-[var(--theme-text-muted)]">Loading payslips…</p>
+          <p className="no-print py-8 text-center text-[13px] text-[var(--theme-text-muted)]">Loading payslips…</p>
         )}
         {!detailLoading && runDetail && (
           <div className="space-y-3">
             <div
-              className="rounded-lg border px-3 py-2 text-[12.5px]"
+              className="no-print rounded-lg border px-3 py-2 text-[12.5px]"
               style={{
                 borderColor: "var(--theme-border)",
                 background: "var(--theme-sidebar)",
@@ -348,50 +355,107 @@ export default function PayrollPage() {
             </div>
 
             {runDetail.payslips.length === 0 ? (
-              <EmptyState
-                Icon={Users}
-                title="No payslips yet"
-                message="Generate payslips from active employee salary structures."
-                action={
-                  <Btn variant="primary" Icon={RefreshCw} loading={actionBusy} onClick={() => runAction("generate")}>
-                    Generate Payslips
-                  </Btn>
-                }
-              />
+              <div className="no-print">
+                <EmptyState
+                  Icon={Users}
+                  title="No payslips yet"
+                  message="Generate payslips from active employee salary structures."
+                  action={
+                    <Btn variant="primary" Icon={RefreshCw} loading={actionBusy} onClick={() => runAction("generate")}>
+                      Generate Payslips
+                    </Btn>
+                  }
+                />
+              </div>
             ) : (
-              <div className="max-h-[50vh] overflow-auto rounded-lg border border-[var(--theme-border)]">
-                <table className="w-full min-w-[720px] text-left text-[13px]">
-                  <thead className="sticky top-0 bg-[var(--theme-sidebar)] text-[var(--theme-text-muted)]">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Employee</th>
-                      <th className="px-3 py-2 font-medium">Basic</th>
-                      <th className="px-3 py-2 font-medium">Allowances</th>
-                      <th className="px-3 py-2 font-medium">Deductions</th>
-                      <th className="px-3 py-2 font-medium">Net</th>
-                      <th className="px-3 py-2 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {runDetail.payslips.map((p) => (
-                      <tr key={p.id} className="border-t border-[var(--theme-border)]">
-                        <td className="px-3 py-2">
-                          <p className="font-medium">{p.employeeName}</p>
-                          <p className="text-[11px] text-[var(--theme-text-faint)]">
-                            {p.designation} · {p.employeeCode}
-                          </p>
+              <>
+                <div className="no-print max-h-[40vh] overflow-auto rounded-lg border border-[var(--theme-border)]">
+                  <table className="w-full min-w-[720px] text-left text-[13px]">
+                    <thead className="sticky top-0 bg-[var(--theme-sidebar)] text-[var(--theme-text-muted)]">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Employee</th>
+                        <th className="px-3 py-2 font-medium">Basic</th>
+                        <th className="px-3 py-2 font-medium">Allowances</th>
+                        <th className="px-3 py-2 font-medium">Deductions</th>
+                        <th className="px-3 py-2 font-medium">Net</th>
+                        <th className="px-3 py-2 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {runDetail.payslips.map((p) => (
+                        <tr key={p.id} className="border-t border-[var(--theme-border)]">
+                          <td className="px-3 py-2">
+                            <p className="font-medium">{p.employeeName}</p>
+                            <p className="text-[11px] text-[var(--theme-text-faint)]">
+                              {p.designation} · {p.employeeCode}
+                            </p>
+                          </td>
+                          <td className="px-3 py-2 tabular-nums">{rs(p.basic)}</td>
+                          <td className="px-3 py-2 tabular-nums">{rs(p.allowances)}</td>
+                          <td className="px-3 py-2 tabular-nums">{rs(p.deductions)}</td>
+                          <td className="px-3 py-2 font-semibold tabular-nums">{rs(p.net)}</td>
+                          <td className="px-3 py-2">
+                            <StatusPill label={p.status} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="hidden print:block">
+                <PrintDocument
+                  title="Payroll Register"
+                  subtitle={`${monthLabel(runDetail.run.month)} · ${runDetail.run.status} · ${runDetail.payslips.length} payslips · Net ${rs(runDetail.run.totalNet)}`}
+                  meta={meta}
+                  preparedBy="Payroll / Accounts"
+                  className="!shadow-none !ring-0"
+                >
+                  <div className="mb-3 grid grid-cols-3 gap-2 border border-neutral-400 text-[11px]">
+                    <div className="border-r border-neutral-400 p-2">
+                      <p className="text-neutral-600">Gross</p>
+                      <p className="font-bold tabular-nums">{rs(runDetail.run.totalGross)}</p>
+                    </div>
+                    <div className="border-r border-neutral-400 p-2">
+                      <p className="text-neutral-600">Deductions</p>
+                      <p className="font-bold tabular-nums">{rs(runDetail.run.totalDeductions)}</p>
+                    </div>
+                    <div className="p-2">
+                      <p className="text-neutral-600">Net Payable</p>
+                      <p className="font-bold tabular-nums">{rs(runDetail.run.totalNet)}</p>
+                    </div>
+                  </div>
+                  <PrintTable
+                    columns={[
+                      { label: "#", width: "36px" },
+                      { label: "Employee" },
+                      { label: "Code", width: "80px" },
+                      { label: "Basic", align: "right", width: "80px" },
+                      { label: "Allow.", align: "right", width: "80px" },
+                      { label: "Deduct.", align: "right", width: "80px" },
+                      { label: "Net", align: "right", width: "90px" },
+                      { label: "Status", width: "70px" },
+                    ]}
+                  >
+                    {runDetail.payslips.map((p, i) => (
+                      <tr key={p.id} className="border-b border-neutral-300">
+                        <td className="px-2 py-1.5 text-neutral-600">{i + 1}</td>
+                        <td className="px-2 py-1.5 font-medium">
+                          {p.employeeName}
+                          <span className="block text-[10px] font-normal text-neutral-600">{p.designation}</span>
                         </td>
-                        <td className="px-3 py-2 tabular-nums">{rs(p.basic)}</td>
-                        <td className="px-3 py-2 tabular-nums">{rs(p.allowances)}</td>
-                        <td className="px-3 py-2 tabular-nums">{rs(p.deductions)}</td>
-                        <td className="px-3 py-2 font-semibold tabular-nums">{rs(p.net)}</td>
-                        <td className="px-3 py-2">
-                          <StatusPill label={p.status} />
-                        </td>
+                        <td className="px-2 py-1.5 font-mono text-[11px]">{p.employeeCode}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums">{rs(p.basic)}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums">{rs(p.allowances)}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums">{rs(p.deductions)}</td>
+                        <td className="px-2 py-1.5 text-right font-semibold tabular-nums">{rs(p.net)}</td>
+                        <td className="px-2 py-1.5">{p.status}</td>
                       </tr>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </PrintTable>
+                </PrintDocument>
+                </div>
+              </>
             )}
           </div>
         )}

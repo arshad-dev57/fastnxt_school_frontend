@@ -27,7 +27,6 @@ import {
   type StudentAttendanceItem,
   type StudentAttendanceRosterRow,
 } from "@/lib/auth/api-client";
-
 const ATTENDANCE_STATUSES = ["Present", "Absent", "Late", "Leave"] as const;
 const COLORS: Record<string, string> = {
   Present: "var(--theme-success)",
@@ -177,7 +176,7 @@ export default function AttendancePage() {
         title="Student Attendance"
         subtitle="Day-wise register — class teachers mark from Teacher Portal; admin can cover any class here."
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/attendance/employees"
               className="inline-flex h-9 items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] hover:bg-[var(--theme-hover)]"

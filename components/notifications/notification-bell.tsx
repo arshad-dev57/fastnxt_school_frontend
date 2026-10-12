@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { cn, TONE } from "@/components/ui";
 import { IconButton } from "@/components/icons";
+import { SCHOOL_HEADER_IMAGES } from "@/components/school-stickers";
 import { useNotifications } from "@/lib/notifications-context";
 import type { AppNotification } from "@/lib/auth/api-client";
 import type { IconType } from "@/components/ui";
@@ -26,18 +27,23 @@ export function NotificationBell({
   onOpenChange,
   settingsHref = "/settings/account",
   expandHref = "/notifications",
+  useLucideIcon = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   settingsHref?: string;
   expandHref?: string;
+  /** Use Lucide bell instead of the school-bell sticker (student portal). */
+  useLucideIcon?: boolean;
 }) {
   const { items, unread, markRead, markAllRead } = useNotifications();
 
   return (
     <div className="relative z-50">
       <IconButton
-        Icon={Bell}
+        {...(useLucideIcon
+          ? { Icon: Bell }
+          : { imgSrc: SCHOOL_HEADER_IMAGES.schoolBell, imgSize: 24 })}
         label="Notifications"
         ariaExpanded={open}
         onClick={() => onOpenChange(!open)}

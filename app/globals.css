@@ -65,6 +65,37 @@ body {
   .icon-pop { animation: icon-pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
   .icon-float { animation: icon-float 3.5s ease-in-out infinite; }
   .icon-shake { animation: icon-shake 0.7s ease-in-out both; }
+
+  /* School stickers (dashboard / shell) */
+  .sticker-float { animation: sticker-float 3.2s ease-in-out infinite; transform-origin: center; }
+  .sticker-bob { animation: sticker-bob 2.6s ease-in-out infinite; transform-origin: center; }
+  .sticker-wiggle { animation: sticker-wiggle 2.8s ease-in-out infinite; transform-origin: center; }
+  .sticker-spin-slow { animation: sticker-spin-slow 12s linear infinite; transform-origin: center; }
+  .sticker-pop { animation: icon-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+}
+
+@keyframes sticker-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes sticker-bob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-5px) rotate(4deg); }
+}
+@keyframes sticker-wiggle {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  50% { transform: rotate(8deg) scale(1.06); }
+}
+@keyframes sticker-spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sticker-float,
+  .sticker-bob,
+  .sticker-wiggle,
+  .sticker-spin-slow,
+  .sticker-pop { animation: none !important; }
 }
 
 /* -------------------------------------------------- Bisons AI assistant */
@@ -143,29 +174,91 @@ body {
 }
 
 /* ---------------------------------------------------------------- printing */
+.print-only { display: none !important; }
+
 @media print {
   .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  .print-only-flex { display: flex !important; }
+
   html, body { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
   .app-root { height: auto !important; overflow: visible !important; background: #fff !important; }
   .app-scroll { overflow: visible !important; height: auto !important; min-height: 0 !important; }
-  .print-area { box-shadow: none !important; border: none !important; margin: 0 !important; max-width: none !important; }
+
+  .print-area {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
   .print-document {
     background: #fff !important;
     color: #000 !important;
     box-shadow: none !important;
-    ring: none !important;
+    outline: none !important;
+    width: 100% !important;
+    max-width: none !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .print-document * { color: inherit; }
+  .print-document,
+  .print-document * {
+    color: #000 !important;
+    box-shadow: none !important;
+  }
   .print-document img,
   .print-area img {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     max-width: 100%;
   }
-  .print-break { break-inside: avoid; }
+  .print-break { break-inside: avoid; page-break-inside: avoid; }
+
+  .report-print-shell .report-card > div {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  .report-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+  .report-table th {
+    background: #f3f4f6 !important;
+    border-color: #000 !important;
+    color: #000 !important;
+  }
+  .report-table td { border-color: #d4d4d4 !important; }
+  .overflow-x-auto { overflow: visible !important; }
+
+  .fee-voucher-print {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .fee-voucher-print > div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-timetable {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+
   .modal-overlay { position: static !important; background: transparent !important; padding: 0 !important; display: block !important; }
-  .modal-panel { box-shadow: none !important; border: 0 !important; max-width: none !important; width: auto !important; max-height: none !important; border-radius: 0 !important; }
-  @page { size: A4; margin: 12mm; }
+  .modal-panel {
+    box-shadow: none !important;
+    border: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+  }
+  @page { size: A4 portrait; margin: 12mm; }
 }

@@ -211,22 +211,22 @@ export const TRANSACTIONS: TxRow[] = [
 /** @deprecated Prefer `UserRole` from `@/lib/branch` — kept for mock seed rows. */
 export type UserRole = import("@/lib/branch").UserRole | "Administrator";
 export type UserRow = {
-  id: string; name: string; email: string; role: string;
-  lastLogin: string; status: ActiveStatus;
+  id: string; name: string; email: string; phone?: string; role: string;
+  branchId?: string | null; lastLogin: string; status: ActiveStatus;
 };
 
 export const USER_ROWS: UserRow[] = [
-  { id: "USR-01", name: "Amara Reyes", email: "amara.reyes@bisons.edu", role: "Super Admin", lastLogin: "2026-01-13 09:12", status: "Active" },
-  { id: "USR-02", name: "Daniel Okafor", email: "daniel.okafor@bisons.edu", role: "Administrator", lastLogin: "2026-01-13 08:40", status: "Active" },
-  { id: "USR-03", name: "Priya Nair", email: "priya.nair@bisons.edu", role: "Principal", lastLogin: "2026-01-12 15:22", status: "Active" },
-  { id: "USR-04", name: "Liam Bennett", email: "liam.bennett@bisons.edu", role: "Teacher", lastLogin: "2026-01-12 11:05", status: "Active" },
-  { id: "USR-05", name: "Maria Fernandes", email: "maria.f@bisons.edu", role: "Accountant", lastLogin: "2026-01-11 14:48", status: "Active" },
-  { id: "USR-06", name: "Hassan Sheikh", email: "hassan.s@bisons.edu", role: "Receptionist", lastLogin: "2026-01-10 09:30", status: "Active" },
-  { id: "USR-07", name: "Nadia Rehman", email: "nadia.rehman@bisons.edu", role: "Teacher", lastLogin: "2025-12-20 16:10", status: "Inactive" },
-  { id: "USR-08", name: "Farhan Sheikh", email: "farhan.s@bisons.edu", role: "Administrator", lastLogin: "2026-01-09 10:02", status: "Active" },
+  { id: "USR-01", name: "Amara Reyes", email: "amara.reyes@bisons.edu", phone: "0300-1112233", role: "Super Admin", lastLogin: "2026-01-13 09:12", status: "Active" },
+  { id: "USR-02", name: "Daniel Okafor", email: "daniel.okafor@bisons.edu", phone: "0300-2223344", role: "Owner", lastLogin: "2026-01-13 08:40", status: "Active" },
+  { id: "USR-03", name: "Priya Nair", email: "priya.nair@bisons.edu", phone: "0300-3334455", role: "Branch Admin", lastLogin: "2026-01-12 15:22", status: "Active" },
+  { id: "USR-04", name: "Liam Bennett", email: "liam.bennett@bisons.edu", phone: "0300-4445566", role: "Teacher", lastLogin: "2026-01-12 11:05", status: "Active" },
+  { id: "USR-05", name: "Maria Fernandes", email: "maria.f@bisons.edu", phone: "0300-5556677", role: "Accountant", lastLogin: "2026-01-11 14:48", status: "Active" },
+  { id: "USR-06", name: "Hassan Sheikh", email: "hassan.s@bisons.edu", phone: "0300-6667788", role: "Receptionist", lastLogin: "2026-01-10 09:30", status: "Active" },
+  { id: "USR-07", name: "Nadia Rehman", email: "nadia.rehman@bisons.edu", phone: "0300-7778899", role: "Teacher", lastLogin: "2025-12-20 16:10", status: "Inactive" },
+  { id: "USR-08", name: "Farhan Sheikh", email: "farhan.s@bisons.edu", phone: "0300-8889900", role: "Branch Admin", lastLogin: "2026-01-09 10:02", status: "Active" },
 ];
 
-export const USER_ROLES: UserRole[] = ["Super Admin", "Administrator", "Principal", "Teacher", "Accountant", "Receptionist"];
+export const USER_ROLES: UserRole[] = ["Super Admin", "Owner", "Branch Admin", "Accountant", "Receptionist", "Teacher", "Student"];
 
 /* ---------------------------------------------------- Roles & Permissions */
 export type PermissionGroup = { module: string; actions: string[] };

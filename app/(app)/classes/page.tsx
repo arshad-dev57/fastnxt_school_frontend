@@ -16,7 +16,6 @@ import { ClassFormModal } from "@/components/classes/class-form-modal";
 import { useBranch } from "@/lib/branch-context";
 import { BranchScopeBar } from "@/components/branch/branch-ui";
 import { classesApi, type ClassItem, type TeacherOption } from "@/lib/auth/api-client";
-
 const SECTIONS_ALL = ["A", "B", "C", "D"];
 const STATUSES: ClassItem["status"][] = ["Active", "Inactive"];
 const TABS = ["All", "Active", "Inactive"] as const;

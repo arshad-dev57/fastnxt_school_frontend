@@ -1,38 +1,97 @@
 "use client";
 
-import { type ReactNode } from "react";
-import { Download, Printer } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
+import { Download, FileDown, LoaderCircle } from "lucide-react";
 import { Btn, Card, CardHead, PageHeader, Select, cn, rs, type IconType } from "./ui";
+import { exportReportTablesCsv } from "@/lib/print-report";
+import { downloadReportPdfFromDom } from "@/lib/pdf-export";
 
 /* ============================================================================
-   Financial report kit — professional report layout (tables + totals) shared by
-   the accounting reports (Trial Balance, P&L, Balance Sheet, Ledger, Cash Flow).
-   Uses the existing Card / PageHeader / theme tokens. UI only.
+   Financial report kit — screen UI + accounting-style branded PDF (jsPDF) + CSV.
    ========================================================================== */
 
 export const money = (n?: number) => (n === undefined || n === null || n === 0 ? "—" : rs(n));
 export const moneySigned = (n: number) => (n < 0 ? `(${rs(Math.abs(n))})` : rs(n));
 
-/** Report page: title + optional filter bar + export/print actions. */
-export function ReportPage({ title, subtitle, Icon, filters, actions, children }: {
-  title: string; subtitle?: string; Icon?: IconType; filters?: ReactNode; actions?: ReactNode; children: ReactNode;
+/** Report page: Export = CSV, Print/PDF = branded A4 PDF download (like accounting-web-app). */
+export function ReportPage({
+  title,
+  subtitle,
+  Icon,
+  filters,
+  actions,
+  children,
+  printSubtitle,
+  preparedBy,
+}: {
+  title: string;
+  subtitle?: string;
+  Icon?: IconType;
+  filters?: ReactNode;
+  actions?: ReactNode;
+  children: ReactNode;
+  printSubtitle?: string;
+  preparedBy?: string;
 }) {
+  const uid = useId().replace(/:/g, "");
+  const containerId = `report-export-root-${uid}`;
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  const handleExportCsv = () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const safe = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    exportReportTablesCsv(`#${containerId}`, `${safe || "report"}-${stamp}.csv`);
+  };
+
+  const handlePdf = async () => {
+    setPdfBusy(true);
+    try {
+      await downloadReportPdfFromDom({
+        reportTitle: title,
+        subtitle: printSubtitle || subtitle,
+        containerSelector: `#${containerId}`,
+      });
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Failed to generate PDF.");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   return (
     <>
-      <PageHeader
-        title={title}
-        subtitle={subtitle}
-        actions={
-          <>
-            {actions}
-            <Btn variant="secondary" Icon={Download} className="hidden sm:inline-flex">Export</Btn>
-            <Btn variant="secondary" Icon={Printer} onClick={() => window.print()} className="hidden sm:inline-flex">Print</Btn>
-          </>
-        }
-      />
-      <div className="px-4 pb-24 sm:px-6">
-        {filters && <div className="flex flex-wrap items-center gap-3 py-3">{filters}</div>}
-        <div className="space-y-5">{children}</div>
+      <div className="no-print">
+        <PageHeader
+          title={title}
+          subtitle={subtitle}
+          actions={
+            <>
+              {actions}
+              <Btn variant="secondary" Icon={Download} onClick={handleExportCsv} className="hidden sm:inline-flex">
+                Export
+              </Btn>
+              <Btn
+                variant="primary"
+                Icon={pdfBusy ? LoaderCircle : FileDown}
+                onClick={handlePdf}
+                disabled={pdfBusy}
+                className="hidden sm:inline-flex"
+              >
+                {pdfBusy ? "Preparing…" : "PDF"}
+              </Btn>
+            </>
+          }
+        />
+        <div className="px-4 sm:px-6">
+          {filters ? <div className="flex flex-wrap items-center gap-3 py-3">{filters}</div> : null}
+        </div>
+      </div>
+
+      <div className="px-4 pb-24 pt-2 sm:px-6">
+        <div id={containerId} className="report-print-shell space-y-5">
+          {children}
+        </div>
       </div>
     </>
   );
@@ -54,10 +113,18 @@ export function ReportCard({ title, subtitle, Icon, right, children, className =
   title?: string; subtitle?: string; Icon?: IconType; right?: ReactNode; children: ReactNode; className?: string; pad?: boolean;
 }) {
   return (
-    <Card pad={false} className={className}>
-      {title && <CardHead title={title} subtitle={subtitle} Icon={Icon} right={right} />}
-      <div className={cn("min-w-0", pad && "p-4")}>{children}</div>
-    </Card>
+    <div className={cn("report-card", className)} data-print-title={title || undefined} data-print-subtitle={subtitle || undefined}>
+      <Card pad={false}>
+        {title && (
+          <div className="no-print">
+            <CardHead title={title} subtitle={subtitle} Icon={Icon} right={right} />
+          </div>
+        )}
+        <span className="print-section-title sr-only">{title}</span>
+        {subtitle ? <span className="print-section-subtitle sr-only">{subtitle}</span> : null}
+        <div className={cn("min-w-0", pad && "p-4")}>{children}</div>
+      </Card>
+    </div>
   );
 }
 
@@ -67,7 +134,7 @@ export type ReportCol = { label: string; align?: "left" | "right"; className?: s
 export function ReportTable({ columns, children, minWidth = 620 }: { columns: ReportCol[]; children: ReactNode; minWidth?: number }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-[14px]" style={{ minWidth }}>
+      <table className="report-table w-full border-collapse text-[14px]" style={{ minWidth }}>
         <thead>
           <tr className="border-b border-[var(--theme-border)]">
             {columns.map((c) => (
@@ -109,7 +176,7 @@ export function RC({ children, align = "left", bold, muted, danger, className = 
 /** Emphasised total row. */
 export function RTotal({ children }: { children: ReactNode }) {
   return (
-    <tr className="border-t-2 border-[var(--theme-border-strong)] bg-[var(--theme-sidebar)] font-semibold">
+    <tr className="border-t-2 border-[var(--theme-border-strong)] bg-[var(--theme-sidebar)] font-semibold total">
       {children}
     </tr>
   );

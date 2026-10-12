@@ -23,6 +23,7 @@ import {
   type DashboardOverview,
 } from "@/lib/auth/api-client";
 import { DashboardNotificationFloat } from "@/components/notifications/dashboard-float";
+import { DashboardWelcomeBanner } from "@/components/school-stickers";
 
 type Stat = { label: string; value: string | number; Icon: IconType; tone: Tone; sub?: string };
 
@@ -224,6 +225,11 @@ export default function DashboardPage() {
       />
 
       <div className="space-y-5 px-4 pb-24 pt-4 sm:px-6">
+        <DashboardWelcomeBanner
+          title={`Welcome back — ${scopeLabel}`}
+          subtitle="Campus pulse at a glance: students, staff, fees, and today’s school rhythm."
+        />
+
         {/* Mobile campus dropdown */}
         <label className="flex items-center gap-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2.5 sm:hidden">
           <Building2 className="h-4 w-4 text-[var(--theme-text-muted)]" />

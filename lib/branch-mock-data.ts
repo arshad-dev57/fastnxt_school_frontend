@@ -135,11 +135,11 @@ export const BRANCH_NUMBERING: Record<string, { students: string; fees: string; 
 export const DEMO_USER_BRANCH_ACCESS: Record<string, UserBranchAccess> = {
   "USR-01": { userId: "USR-01", branchIds: ["BR-MAIN", "BR-GUL", "BR-NORTH", "BR-DHA"], role: "Super Admin", isPrimary: true },
   "USR-02": { userId: "USR-02", branchIds: ["BR-MAIN", "BR-GUL", "BR-NORTH", "BR-DHA"], role: "Owner", isPrimary: true },
-  "USR-03": { userId: "USR-03", branchIds: ["BR-MAIN"], role: "Principal", isPrimary: true },
+  "USR-03": { userId: "USR-03", branchIds: ["BR-MAIN"], role: "Branch Admin", isPrimary: true },
   "USR-04": { userId: "USR-04", branchIds: ["BR-MAIN"], role: "Teacher", isPrimary: true },
   "USR-05": { userId: "USR-05", branchIds: ["BR-MAIN", "BR-GUL"], role: "Accountant", isPrimary: true },
   "USR-06": { userId: "USR-06", branchIds: ["BR-GUL"], role: "Branch Admin", isPrimary: true },
-  "USR-07": { userId: "USR-07", branchIds: ["BR-DHA"], role: "Transport Manager", isPrimary: true },
+  "USR-07": { userId: "USR-07", branchIds: ["BR-DHA"], role: "Receptionist", isPrimary: true },
   "USR-08": { userId: "USR-08", branchIds: ["BR-MAIN", "BR-NORTH"], role: "Branch Admin", isPrimary: true },
 };
 

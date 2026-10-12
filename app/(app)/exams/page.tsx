@@ -34,7 +34,6 @@ import {
   type QuestionPaperSubmissionItem,
 } from "@/lib/auth/api-client";
 import { letterHtmlForEmail } from "@/components/letters/official-letter";
-
 const COLORS: Record<string, string> = {
   Scheduled: "var(--theme-info)",
   "Marks Entry": "var(--theme-warning)",

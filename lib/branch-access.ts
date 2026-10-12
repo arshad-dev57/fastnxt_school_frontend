@@ -123,27 +123,28 @@ export const ROLE_DEFS: RoleDef[] = [
     modules: "*", defaultActions: FULL,
   },
   {
-    role: "Principal", label: "Principal", scope: "branch",
-    description: "Runs a single campus: academics, staff, fees and reports.",
+    role: "Branch Admin", label: "Branch Admin", scope: "branch",
+    description: "Day-to-day administration of one campus: academics, staff, fees and reports.",
     modules: ACADEMIC_MODULES,
     actions: { fees: ["view", "approve", "export"] },
     defaultActions: ACADEMIC,
   },
   {
-    role: "Branch Admin", label: "Branch Admin", scope: "branch",
-    description: "Day-to-day administration of one campus.",
-    modules: ACADEMIC_MODULES,
-    defaultActions: ACADEMIC,
+    role: "Accountant", label: "Accountant", scope: "multiple",
+    description: "Fees, receipts and accounting for assigned campuses.",
+    modules: ["dashboard", "fees", "accounts", "payroll", "reports", "students"],
+    actions: { students: ["view", "export"] },
+    defaultActions: ["view", "create", "edit", "export"],
   },
   {
-    role: "Academic Coordinator", label: "Academic Coordinator", scope: "branch",
-    description: "Oversees academics: classes, timetable, exams and results.",
-    modules: ["dashboard", "students", "classes", "subjects", "timetable", "attendance", "exams", "results", "homework", "certificates", "communication", "events", "meetings", "reports"],
-    defaultActions: ACADEMIC,
+    role: "Receptionist", label: "Receptionist", scope: "branch",
+    description: "Front office: enquiries, visitors, admissions and student records.",
+    modules: ["dashboard", "frontoffice", "admissions", "students", "families", "communication", "tasks", "events"],
+    defaultActions: ["view", "create", "edit"],
   },
   {
     role: "Teacher", label: "Teacher", scope: "own",
-    description: "Own classes only: attendance, homework, marks and lesson plans.",
+    description: "Own classes only: attendance, homework, marks and lesson plans. Created via Employees.",
     modules: ["dashboard", "classes", "students", "timetable", "attendance", "homework", "exams", "results", "communication", "meetings", "tasks", "leave", "payroll", "settings"],
     actions: {
       leave: ["view", "create", "edit", "approve"],
@@ -155,55 +156,21 @@ export const ROLE_DEFS: RoleDef[] = [
     defaultActions: ["view", "create", "edit"],
   },
   {
-    role: "Accountant", label: "Accountant", scope: "multiple",
-    description: "Fees, receipts and accounting for assigned campuses.",
-    modules: ["dashboard", "fees", "accounts", "reports", "students"],
-    actions: { students: ["view", "export"] },
-    defaultActions: ["view", "create", "edit", "export"],
-  },
-  {
-    role: "HR Manager", label: "HR Manager", scope: "branch",
-    description: "Employees, recruitment, leave, payroll and performance.",
-    modules: ["dashboard", "employees", "recruitment", "leave", "payroll", "reports", "communication"],
-    defaultActions: ["view", "create", "edit", "approve", "export"],
-  },
-  {
-    role: "Receptionist", label: "Receptionist", scope: "branch",
-    description: "Front office: enquiries, visitors, gate passes and calls.",
-    modules: ["dashboard", "frontoffice", "admissions", "students", "communication", "tasks"],
-    defaultActions: ["view", "create"],
-  },
-  {
-    role: "Librarian", label: "Librarian", scope: "branch",
-    description: "Catalogue, issue, return and fines for one campus library.",
-    modules: ["dashboard", "library", "students", "reports"],
-    defaultActions: ["view", "create", "edit"],
-  },
-  {
-    role: "Transport Manager", label: "Transport Manager", scope: "branch",
-    description: "Vehicles, routes, drivers and transport assignments.",
-    modules: ["dashboard", "transport", "students", "reports"],
-    defaultActions: ["view", "create", "edit"],
-  },
-  {
-    role: "Hostel Warden", label: "Hostel Warden", scope: "branch",
-    description: "Hostel rooms, allocation, out-passes and mess.",
-    modules: ["dashboard", "hostel", "students", "health", "reports"],
-    defaultActions: ["view", "create", "edit"],
-  },
-  {
-    role: "Parent", label: "Parent", scope: "own",
-    description: "Parent portal — only their own children's records.",
-    modules: ["attendance", "exams", "results", "fees", "homework", "communication", "events", "meetings", "leave", "complaints", "transport", "library", "timetable"],
-    defaultActions: ["view"],
-  },
-  {
     role: "Student", label: "Student", scope: "own",
-    description: "Student portal — own timetable, homework, results and library.",
+    description: "Student portal — own timetable, homework, results and library. Created via Students.",
     modules: ["dashboard", "timetable", "attendance", "exams", "results", "homework", "library", "events", "communication", "meetings", "certificates", "leave", "settings"],
     actions: { leave: ["view", "create"], settings: ["view"] },
     defaultActions: ["view"],
   },
+];
+
+/** Roles that can be assigned from Manage Login / Add User (not Teacher/Student). */
+export const STAFF_LOGIN_ROLES: UserRole[] = [
+  "Super Admin",
+  "Owner",
+  "Branch Admin",
+  "Accountant",
+  "Receptionist",
 ];
 
 export const BRANCH_SCOPES: BranchScope[] = ["own", "branch", "multiple", "all"];
@@ -255,6 +222,10 @@ export const DEFAULT_ROLE_LIST: UserRole[] = ROLE_DEFS.map((r) => r.role);
 export function normalizeUserRole(role: string | null | undefined): UserRole {
   const raw = String(role || "").trim();
   if (raw === "Admin" || raw === "Administrator") return "Super Admin";
+  if (raw === "Principal" || raw === "Academic Coordinator" || raw === "HR Manager") return "Branch Admin";
+  if (raw === "Librarian" || raw === "Transport Manager" || raw === "Hostel Warden" || raw === "Parent") {
+    return "Receptionist";
+  }
   if ((DEFAULT_ROLE_LIST as string[]).includes(raw)) return raw as UserRole;
   return "Receptionist";
 }

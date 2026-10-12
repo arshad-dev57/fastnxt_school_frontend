@@ -214,7 +214,7 @@ export function BranchProvider({ children, userRole: userRoleProp, userBranchAcc
   const isAllBranchesMode = useCallback(() => currentBranchId === "all", [currentBranchId]);
 
   const isBranchAdmin = useCallback(
-    () => effectiveRole === "Branch Admin" || effectiveRole === "Principal",
+    () => effectiveRole === "Branch Admin",
     [effectiveRole]
   );
 
