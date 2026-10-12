@@ -56,7 +56,7 @@ export type PortalBoardProps<T> = {
   loading?: boolean;
 };
 
-export function PortalBoard<T extends { id: string }>({
+export function PortalBoard<T>({
   title, subtitle, Icon, nameLabel, rows, keyOf, nameOf, subtitleOf, searchTextOf, searchPlaceholder,
   columns, groupBy, groupColorOf, detailFields, mobileRows, menu, primaryAction, toolbar,
   emptyTitle, emptyMessage, countNoun, scopeLabel, minWidth, loading,
@@ -121,7 +121,7 @@ export function PortalBoard<T extends { id: string }>({
       />
 
       {detailFields && (
-        <Modal open={!!detail} onClose={() => setDetail(null)} title={detail ? nameOf(detail) : "Record"} subtitle={detail?.id} width="max-w-xl"
+        <Modal open={!!detail} onClose={() => setDetail(null)} title={detail ? nameOf(detail) : "Record"} subtitle={detail ? keyOf(detail) : undefined} width="max-w-xl"
           footer={<Btn variant="secondary" onClick={() => setDetail(null)}>Close</Btn>}>
           {detail && <DetailGrid fields={detailFields(detail)} />}
         </Modal>

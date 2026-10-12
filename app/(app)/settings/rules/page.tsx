@@ -213,7 +213,12 @@ function RuleForm({
   onClose: () => void;
   onSave: (form: { title: string; body: string; audience: RuleAudience; status: "Active" | "Inactive" }) => void;
 }) {
-  const blank = { title: "", body: "", audience: "Both" as RuleAudience, status: "Active" as const };
+  const blank: { title: string; body: string; audience: RuleAudience; status: "Active" | "Inactive" } = {
+    title: "",
+    body: "",
+    audience: "Both",
+    status: "Active",
+  };
   const [form, setForm] = useState(blank);
   const key = `${modal?.mode ?? ""}-${modal?.row?.id ?? ""}`;
   const [lastKey, setLastKey] = useState(key);

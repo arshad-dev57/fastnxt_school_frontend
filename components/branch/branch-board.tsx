@@ -15,7 +15,7 @@ import { BranchCell, BranchScopeBar } from "./branch-ui";
    mode, and keeps the existing monday-style table / kanban presentation.
    ========================================================================== */
 
-export type BranchRecord = { id: string; branchId: string };
+export type BranchRecord = { id: string; branchId?: string | null };
 
 const PALETTE = [
   "var(--theme-primary)", "var(--theme-accent)", "var(--theme-success)", "var(--theme-warning)",
@@ -79,7 +79,7 @@ export function BranchBoard<T extends BranchRecord>({
 
   const cols = useMemo<BoardColumn<T>[]>(() => {
     if (!all) return columns;
-    return [{ key: "__branch", label: "Branch", width: "150px", cell: (r) => <BranchCell branchId={r.branchId} /> }, ...columns];
+    return [{ key: "__branch", label: "Branch", width: "150px", cell: (r) => <BranchCell branchId={r.branchId || ""} /> }, ...columns];
   }, [all, columns]);
 
   if (loading) return <TablePageSkeleton rows={6} cols={Math.min(cols.length + 1, 6)} />;

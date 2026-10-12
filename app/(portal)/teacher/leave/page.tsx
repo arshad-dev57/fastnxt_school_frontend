@@ -194,6 +194,7 @@ export default function TeacherLeavePage() {
             `${r.person} ${r.type} ${r.reason} ${r.status} ${r.cls || ""} ${r.section || ""}`
           }
           searchPlaceholder="Search leave"
+          scopeLabel={tab === "mine" ? "My leave" : "My class students"}
           countNoun="requests"
           groupBy={(r) => r.status}
           groupColorOf={(k) => COLORS[k]}
