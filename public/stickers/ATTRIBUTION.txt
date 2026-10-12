@@ -1,0 +1,3 @@
+School stickers in this folder:
+- Twemoji SVG (CC-BY 4.0) — https://github.com/twitter/twemoji
+- book-apple.svg — local composite SVG for BisonsEduCore360

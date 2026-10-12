@@ -16,7 +16,6 @@ import { TablePageSkeleton } from "@/components/skeleton";
 import { DESIGNATIONS, DEPARTMENTS, EMPLOYMENT_TYPES, type EmployeeRow } from "@/lib/mock-data";
 import { useBranch } from "@/lib/branch-context";
 import { employeesApi, describeApiError, uploadsApi, type EmployeeItem, type EmployeeDocItem } from "@/lib/auth/api-client";
-
 export type ExtendedEmployeeRow = EmployeeRow & {
   employeeId?: string;
   gender?: string;

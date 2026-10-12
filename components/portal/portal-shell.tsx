@@ -4,11 +4,12 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ChevronRight, CircleHelp, ExternalLink, LogOut, Menu, PanelLeftClose, Plus, Search, X,
+  ChevronRight, LogOut, Menu, PanelLeftClose, Plus, Search, X,
 } from "lucide-react";
 import { Avatar, Tooltip } from "@/components/ui";
 import { IconButton } from "@/components/icons";
 import ThemeSwitcher from "@/components/theme-switcher";
+import ProfileMenu from "@/components/profile-menu";
 import FloatingAIAssistant from "@/components/ai-assistant/FloatingAIAssistant";
 import { HeaderPageSearch } from "@/components/page-search";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -39,7 +40,8 @@ export default function PortalShell({ config, children }: { config: PortalConfig
   );
 
   const closeOnMobile = () => { if (window.innerWidth < 1024) setSideOpen(false); };
-  const expandHref = config.base.startsWith("/teacher") ? "/teacher/notifications" : config.base.startsWith("/student") ? "/student/notifications" : "/notifications";
+  const isStudentPortal = config.base.startsWith("/student");
+  const expandHref = config.base.startsWith("/teacher") ? "/teacher/notifications" : isStudentPortal ? "/student/notifications" : "/notifications";
 
   const railLink = (item: PortalNavItem, key: string) => {
     const active = isActive(pathname, item);
@@ -87,10 +89,12 @@ export default function PortalShell({ config, children }: { config: PortalConfig
               </span>
             </div>
           </Link>
-          <Link href="/dashboard"
-            className="ml-2 hidden items-center gap-2 rounded-md bg-gradient-to-r from-[var(--theme-accent)] to-[var(--theme-accent-2)] px-3.5 py-2 text-[14px] font-semibold transition-opacity hover:opacity-90 md:flex">
-            <ExternalLink className="h-4 w-4" /> Admin Panel
-          </Link>
+          {!isStudentPortal && (
+            <Link href="/dashboard"
+              className="ml-2 hidden items-center gap-2 rounded-md bg-gradient-to-r from-[var(--theme-accent)] to-[var(--theme-accent-2)] px-3.5 py-2 text-[14px] font-semibold transition-opacity hover:opacity-90 md:flex">
+              Admin Panel
+            </Link>
+          )}
           <div className="flex-1" />
 
           <NotificationBell
@@ -98,9 +102,9 @@ export default function PortalShell({ config, children }: { config: PortalConfig
             onOpenChange={setNotifOpen}
             expandHref={expandHref}
             settingsHref={config.userHref}
+            useLucideIcon={isStudentPortal}
           />
-
-          <ThemeSwitcher />
+          {!isStudentPortal && <ThemeSwitcher />}
           <span ref={searchAnchorRef} className="relative inline-flex">
             <IconButton
               Icon={Search}
@@ -110,10 +114,15 @@ export default function PortalShell({ config, children }: { config: PortalConfig
               ariaExpanded={searchOpen}
             />
           </span>
-          <IconButton Icon={CircleHelp} label="Help" className="max-sm:hidden" />
-          <Link href={config.userHref} className="ml-1 sm:ml-2" aria-label="Account">
-            <Avatar name={config.userName} size={36} />
-          </Link>
+          <ProfileMenu
+            userName={config.userName}
+            userSub={config.userSub}
+            links={{
+              profile: config.userHref,
+              account: "/settings/account",
+              logout: "/logout",
+            }}
+          />
         </header>
 
         <HeaderPageSearch
@@ -125,23 +134,91 @@ export default function PortalShell({ config, children }: { config: PortalConfig
         />
 
         <div className="relative flex min-h-0 flex-1">
-          {/* ICON RAIL — same 64px rail as the Admin shell */}
-          <nav aria-label={`${config.portalName} modules`} className="no-print hidden w-16 shrink-0 flex-col items-center gap-1 overflow-y-auto py-2 md:flex">
-            {config.items.slice(0, 8).map((it, i) => railLink(it, `${config.base}-rail-${i}`))}
-            <button type="button" onClick={() => setRailOpen((o) => !o)} aria-expanded={railOpen}
-              aria-label={railOpen ? "Show fewer modules" : "Show more modules"}
-              className={`group/ic ic-nav relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${railOpen ? "ic-nav-active bg-white/15 text-white" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
-              {railOpen ? <ChevronRight className="ic-hover h-[21px] w-[21px] rotate-90" strokeWidth={1.8} /> : <Plus className="ic-plus h-[21px] w-[21px]" strokeWidth={1.8} />}
-              <Tooltip label={railOpen ? "Show less" : `More modules (${Math.max(0, config.items.length - 8)})`} side="right" />
-            </button>
-            {railOpen && (
-              <div className="flex flex-col items-center gap-1.5">
-                <span className="my-1.5 h-px w-7 shrink-0 bg-white/15" />
-                {config.items.slice(8).map((it, i) => railLink(it, `${config.base}-more-${i}`))}
-              </div>
-            )}
+          {/* ICON RAIL — primary 8 fixed; Plus opens side flyout (no icon reflow) */}
+          <nav
+            aria-label={`${config.portalName} modules`}
+            className="no-print relative z-20 hidden w-16 shrink-0 flex-col items-center gap-1 overflow-visible py-2 md:flex"
+          >
+            <div className="flex w-full flex-col items-center gap-1">
+              {config.items.slice(0, 8).map((it) => railLink(it, `${config.base}-rail-${it.href}`))}
+
+              {config.items.length > 8 ? (
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setRailOpen((o) => !o)}
+                    aria-expanded={railOpen}
+                    aria-label={railOpen ? "Hide more modules" : "Show more modules"}
+                    className={`group/ic ic-nav relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+                      railOpen
+                        ? "ic-nav-active bg-white/15 text-white"
+                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {railOpen ? (
+                      <ChevronRight className="ic-hover h-[21px] w-[21px] rotate-90" strokeWidth={1.8} />
+                    ) : (
+                      <Plus className="ic-plus h-[21px] w-[21px]" strokeWidth={1.8} />
+                    )}
+                    <Tooltip
+                      label={
+                        railOpen
+                          ? "Show less"
+                          : `More modules (${config.items.length - 8})`
+                      }
+                      side="right"
+                    />
+                  </button>
+
+                  {railOpen ? (
+                    <>
+                      <button
+                        type="button"
+                        aria-label="Close more modules"
+                        className="fixed inset-0 z-40 cursor-default"
+                        onClick={() => setRailOpen(false)}
+                      />
+                      <div className="absolute left-full top-0 z-50 ml-2 max-h-[min(70vh,520px)] w-[240px] overflow-y-auto rounded-xl bg-[var(--theme-chrome)] p-2 shadow-2xl ring-1 ring-white/20">
+                        <p className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/50">
+                          More modules
+                        </p>
+                        <div className="flex flex-col gap-0.5">
+                          {config.items.slice(8).map((item) => {
+                            const active = isActive(pathname, item);
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => {
+                                  setRailOpen(false);
+                                  closeOnMobile();
+                                }}
+                                className={`ic-nav flex items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] transition-colors ${
+                                  active
+                                    ? "ic-nav-active bg-white/15 font-medium text-white"
+                                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                                }`}
+                              >
+                                <item.Icon
+                                  className="ic-hover h-[18px] w-[18px] shrink-0"
+                                  strokeWidth={1.8}
+                                />
+                                <span className="truncate">{item.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
             <div className="flex-1" />
-            <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--theme-accent)] text-base font-extrabold text-white">B</div>
+            <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--theme-accent)] text-base font-extrabold text-white">
+              B
+            </div>
           </nav>
 
           {sideOpen && <div className="no-print fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setSideOpen(false)} />}

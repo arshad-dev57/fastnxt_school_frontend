@@ -72,6 +72,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     k: "employees", label: "Employees", Icon: Briefcase, children: [
       { label: "All Employees", href: "/employees", module: "employees" },
       { label: "Add New Employee", href: "/employees/new", module: "employees" },
+      { label: "Print Staff List", href: "/employees/print-list", module: "employees" },
       { label: "Job Letters", href: "/employees/job-letters", module: "recruitment" },
     ],
   },

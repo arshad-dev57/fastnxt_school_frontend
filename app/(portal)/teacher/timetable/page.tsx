@@ -152,33 +152,41 @@ export default function TeacherTimetablePage() {
 
   return (
     <>
-      <PageHeader
-        title="My Timetable"
-        subtitle={`Weekly teaching schedule for ${teacherName}.`}
-        actions={
-          <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>
-            Print Timetable
-          </Btn>
-        }
-      />
+      <div className="no-print">
+        <PageHeader
+          title="My Timetable"
+          subtitle={`Weekly teaching schedule for ${teacherName}.`}
+          actions={
+            <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>
+              Print / PDF
+            </Btn>
+          }
+        />
+      </div>
 
       <div className="px-4 pb-24 sm:px-6">
-        <PortalScopeBar count={slots.length} noun="period slots" label={teacherName} Icon={CalendarClock} />
+        <div className="no-print">
+          <PortalScopeBar count={slots.length} noun="period slots" label={teacherName} Icon={CalendarClock} />
 
-        <div className="grid grid-cols-2 gap-3 py-4 sm:grid-cols-4">
-          <StatCard label="Weekly Periods" value={slots.length} Icon={CalendarClock} tone="blue" sub={campusName} />
-          <StatCard label="Assigned Sections" value={uniqueSections} Icon={CalendarClock} tone="purple" sub="Teaching" />
-          <StatCard label="Subjects" value={uniqueSubjects} Icon={CalendarClock} tone="green" />
-          <StatCard label={`${day} Periods`} value={daySlots.length} Icon={CalendarClock} tone="orange" sub="Selected Day" />
+          <div className="grid grid-cols-2 gap-3 py-4 sm:grid-cols-4">
+            <StatCard label="Weekly Periods" value={slots.length} Icon={CalendarClock} tone="blue" sub={campusName} />
+            <StatCard label="Assigned Sections" value={uniqueSections} Icon={CalendarClock} tone="purple" sub="Teaching" />
+            <StatCard label="Subjects" value={uniqueSubjects} Icon={CalendarClock} tone="green" />
+            <StatCard label={`${day} Periods`} value={daySlots.length} Icon={CalendarClock} tone="orange" sub="Selected Day" />
+          </div>
         </div>
 
         {loading ? (
-          <div className="flex h-48 items-center justify-center gap-2 text-[14px] text-[var(--theme-text-muted)]">
+          <div className="no-print flex h-48 items-center justify-center gap-2 text-[14px] text-[var(--theme-text-muted)]">
             <LoaderCircle className="h-5 w-5 animate-spin text-[var(--theme-primary)]" /> Loading timetable...
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+            <div className="print-area print-document print-timetable lg:col-span-2">
+              <div className="mb-3 hidden border-b-2 border-black pb-2 print:block">
+                <h1 className="text-[16px] font-bold">Teaching Timetable</h1>
+                <p className="text-[11px] text-neutral-600">{teacherName} · {campusName}</p>
+              </div>
               <PortalTimetable
                 slots={slots}
                 title="Weekly teaching timetable"
@@ -187,7 +195,7 @@ export default function TeacherTimetablePage() {
               />
             </div>
 
-            <Card pad={false}>
+            <Card pad={false} className="no-print">
               <CardHead title="Classes & Schedule" subtitle="Period-wise details" Icon={CalendarClock} />
               <div className="divide-y divide-[var(--theme-border)]">
                 {slots.length === 0 ? (

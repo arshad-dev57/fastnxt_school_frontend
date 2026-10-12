@@ -16,7 +16,6 @@ import { CalendarBoard, KanbanBoard, MobileItem } from "@/components/board-views
 import { BoardPageSkeleton } from "@/components/skeleton";
 import { useBranch } from "@/lib/branch-context";
 import { studentsApi, classesApi, type StudentItem, type ClassItem } from "@/lib/auth/api-client";
-
 const COL_META: { key: string; label: string; width: string }[] = [
   { key: "studentId", label: "Student ID", width: "120px" },
   { key: "cls", label: "Class", width: "120px" },
