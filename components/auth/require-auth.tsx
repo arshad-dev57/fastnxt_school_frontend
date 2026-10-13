@@ -3,7 +3,11 @@
 import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
-import { hasActiveSubscription, SUBSCRIPTION_PATH } from "@/lib/auth/subscription";
+import {
+  hasActiveSubscription,
+  isSchoolActive,
+  SUBSCRIPTION_PATH,
+} from "@/lib/auth/subscription";
 
 /* ============================================================================
    RequireAuth — session gate for the signed-in areas
@@ -14,11 +18,13 @@ import { hasActiveSubscription, SUBSCRIPTION_PATH } from "@/lib/auth/subscriptio
 
      • loading       → full-page splash, so protected content never flashes
      • anonymous     → redirect to /login
+     • authenticated + deactivated school → sign out + /login
      • authenticated + expired subscription → /subscription (unless allowExpired)
      • authenticated + active subscription → the page
 
    Subscription status comes from the existing session payload — no extra API
-   calls on every shell navigation.
+   calls on every shell navigation. Deactivation is also enforced by the API
+   on every request via requireAuth.
    ========================================================================== */
 
 function Splash({ label }: { label: string }) {
@@ -41,10 +47,11 @@ export default function RequireAuth({
   /** Set on the /subscription lock screen so expired schools can still open it. */
   allowExpired?: boolean;
 }) {
-  const { ready, signedIn, subscription } = useAuth();
+  const { ready, signedIn, subscription, user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const active = hasActiveSubscription(subscription);
+  const schoolOk = isSchoolActive(user);
 
   useEffect(() => {
     if (!ready) return;
@@ -52,13 +59,20 @@ export default function RequireAuth({
       router.replace("/login");
       return;
     }
+    if (!schoolOk) {
+      void signOut().finally(() => {
+        router.replace("/login");
+      });
+      return;
+    }
     if (!allowExpired && !active && pathname !== SUBSCRIPTION_PATH) {
       router.replace(SUBSCRIPTION_PATH);
     }
-  }, [ready, signedIn, allowExpired, active, pathname, router]);
+  }, [ready, signedIn, schoolOk, allowExpired, active, pathname, router, signOut]);
 
   if (!ready) return <Splash label="Restoring your session…" />;
   if (!signedIn) return <Splash label="Redirecting to sign in…" />;
+  if (!schoolOk) return <Splash label="School access revoked…" />;
   if (!allowExpired && !active) return <Splash label="Checking your subscription…" />;
   return <>{children}</>;
 }

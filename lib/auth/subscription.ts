@@ -22,9 +22,16 @@ export function hasActiveSubscription(sub: AuthSubscription | null | undefined):
   return Boolean(sub.active) && !sub.isExpired && sub.status !== "EXPIRED";
 }
 
+/** Platform kill-switch — school cannot use the product at all. */
+export function isSchoolActive(user: AuthUser | null | undefined): boolean {
+  if (!user?.school) return false;
+  return user.school.isActive !== false;
+}
+
 /** Where to send the user after a successful sign-in / session restore. */
 export function postAuthRoute(user: AuthUser | null | undefined): string {
   if (!user) return "/login";
+  if (!isSchoolActive(user)) return "/login";
   if (!hasActiveSubscription(user.subscription)) return SUBSCRIPTION_PATH;
   return panelById(isPanelId(user.panel) ? user.panel : DEFAULT_PANEL).href;
 }

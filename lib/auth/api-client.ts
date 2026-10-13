@@ -85,9 +85,14 @@ async function request<T>(path: string, { method = "GET", body, signal }: Reques
   }
 
   if (!response.ok || !payload?.success) {
+    const code = payload?.code || "REQUEST_FAILED";
+    // Platform deactivation — tell AuthProvider to drop the local session.
+    if (code === "SCHOOL_DEACTIVATED" && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("bisons:school-deactivated"));
+    }
     throw new ApiError(
       payload?.message || `The request failed (HTTP ${response.status}).`,
-      payload?.code || "REQUEST_FAILED",
+      code,
       response.status,
       Array.isArray(payload?.errors) ? payload.errors : []
     );

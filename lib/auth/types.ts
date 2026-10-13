@@ -28,6 +28,8 @@ export type AuthSchool = {
   country: string;
   city: string;
   logoUrl?: string | null;
+  /** False when platform admin has deactivated the school. */
+  isActive?: boolean;
 };
 
 /** School subscription, with the day counts computed server-side. */

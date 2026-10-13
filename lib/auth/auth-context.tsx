@@ -50,6 +50,7 @@ export type SchoolSnapshot = {
   country: string;
   city: string;
   logoUrl?: string | null;
+  isActive: boolean;
 };
 
 const PANEL_STORAGE_KEY = "bisons:panel";
@@ -108,6 +109,7 @@ function toSchoolSnapshot(user: AuthUser | null): SchoolSnapshot | null {
     country: user.school.country,
     city: user.school.city,
     logoUrl: user.school.logoUrl || null,
+    isActive: user.school.isActive !== false,
   };
 }
 
@@ -161,8 +163,11 @@ async function fetchSession(): Promise<{ user: AuthUser | null; problem: string 
   const result = await asResult(() => authApi.me());
   if (result.ok) return { user: result.data.user, problem: null };
 
-  // A 401 is the API's normal "not signed in" answer, not an error to display.
-  const expected = result.code === "UNAUTHORIZED" || result.code === "FORBIDDEN";
+  // 401 / school deactivated are expected "not signed in" answers.
+  const expected =
+    result.code === "UNAUTHORIZED" ||
+    result.code === "FORBIDDEN" ||
+    result.code === "SCHOOL_DEACTIVATED";
   return { user: null, problem: expected ? null : result.message };
 }
 
@@ -215,6 +220,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted.current = false;
     };
   }, [applySession]);
+
+  /* Platform admin deactivated this school mid-session — drop local state. */
+  useEffect(() => {
+    const onDeactivated = () => {
+      if (!mounted.current) return;
+      setError("This school has been deactivated. Please contact support.");
+      adopt(null);
+      void authApi.logout().catch(() => {});
+    };
+    window.addEventListener("bisons:school-deactivated", onDeactivated);
+    return () => window.removeEventListener("bisons:school-deactivated", onDeactivated);
+  }, [adopt]);
 
   /** Re-read the session cookie from the API. Never throws. */
   const refresh = useCallback(

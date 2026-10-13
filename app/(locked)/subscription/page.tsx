@@ -19,8 +19,14 @@ export default function SubscriptionPlanPage() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!signedIn) router.replace("/login");
-  }, [ready, signedIn, router]);
+    if (!signedIn) {
+      router.replace("/login");
+      return;
+    }
+    if (school?.isActive === false || user?.school?.isActive === false) {
+      void signOut().finally(() => router.replace("/login"));
+    }
+  }, [ready, signedIn, school, user, router, signOut]);
 
   const schoolName = school?.schoolName || user?.school?.name || "Your school";
   const planLabel = subscription?.isTrial

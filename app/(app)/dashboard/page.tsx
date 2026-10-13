@@ -79,7 +79,7 @@ function MiniBars({
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { ready, subscription } = useAuth();
+  const { ready, subscription, user, signOut } = useAuth();
   const { availableBranches, currentBranchId } = useBranch();
 
   /** Dashboard-local campus scope (All + each campus) — does not force-change shell branch. */
@@ -90,10 +90,15 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (ready && !hasActiveSubscription(subscription)) {
+    if (!ready) return;
+    if (user && user.school?.isActive === false) {
+      void signOut().finally(() => router.replace("/login"));
+      return;
+    }
+    if (!hasActiveSubscription(subscription)) {
       router.replace(SUBSCRIPTION_PATH);
     }
-  }, [ready, subscription, router]);
+  }, [ready, subscription, user, router, signOut]);
 
   // Default scope follows shell once branches are known (only on first align).
   useEffect(() => {
