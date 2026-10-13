@@ -417,13 +417,25 @@ export type DashboardStats = {
   collectedFees: number;
   income: number;
   expenses: number;
+  /** Income − Expenses from posted ledger P&L (same as Accounts → Profit & Loss). */
+  net?: number;
   paidInvoices: number;
   overdueInvoices: number;
+};
+
+export type DashboardPnl = {
+  totalIncome: number;
+  totalExpenses: number;
+  net: number;
+  income: { name: string; amount: number }[];
+  expenses: { name: string; amount: number }[];
 };
 
 export type DashboardOverview = {
   scope: string;
   stats: DashboardStats;
+  /** Live Profit & Loss snapshot from the accounting ledger. */
+  pnl?: DashboardPnl;
   gender: { Male: number; Female: number; Other: number };
   feeStatus: Record<string, number>;
   recentAdmissions: {

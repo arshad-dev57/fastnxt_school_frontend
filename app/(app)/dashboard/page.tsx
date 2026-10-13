@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Users, UserCheck, UserX, School, Briefcase, Wallet, TrendingUp, TrendingDown,
   ReceiptText, Plus, FileText, CreditCard, ArrowRight, CalendarDays, Activity,
-  Download, UserPlus, Landmark, Building2, Layers, RefreshCw,
+  Download, UserPlus, Landmark, Building2, Layers, RefreshCw, Coins,
 } from "lucide-react";
 import {
   Avatar, Badge, Card, CardHead, PageHeader, StatCard, rs, cn,
@@ -47,6 +47,7 @@ const EMPTY_STATS = {
   collectedFees: 0,
   income: 0,
   expenses: 0,
+  net: 0,
   paidInvoices: 0,
   overdueInvoices: 0,
 };
@@ -158,6 +159,14 @@ export default function DashboardPage() {
   }, [scopeId, availableBranches]);
 
   const stats = data?.stats ?? EMPTY_STATS;
+  const pnl = data?.pnl ?? {
+    totalIncome: stats.income,
+    totalExpenses: stats.expenses,
+    net: stats.net ?? stats.income - stats.expenses,
+    income: [] as { name: string; amount: number }[],
+    expenses: [] as { name: string; amount: number }[],
+  };
+  const netPnl = pnl.net;
   const scopedStats: Stat[] = [
     { label: "Total Students", value: stats.totalStudents, Icon: Users, tone: "blue", sub: scopeLabel },
     { label: "Active Students", value: stats.activeStudents, Icon: UserCheck, tone: "green", sub: "Currently attending" },
@@ -166,8 +175,15 @@ export default function DashboardPage() {
     { label: "Total Employees", value: stats.totalEmployees, Icon: Briefcase, tone: "purple", sub: `${stats.activeEmployees} active` },
     { label: "Pending Fees", value: rs(stats.pendingFees), Icon: ReceiptText, tone: "orange", sub: "Outstanding balance" },
     { label: "Collected Fees", value: rs(stats.collectedFees), Icon: Wallet, tone: "green", sub: "Payments received" },
-    { label: "Expenses", value: rs(stats.expenses), Icon: TrendingDown, tone: "red", sub: scopeId === "all" ? "From ledger" : "Campus fee view" },
-    { label: "Income", value: rs(stats.income), Icon: TrendingUp, tone: "blue", sub: scopeId === "all" ? "From ledger" : "Fee collections" },
+    { label: "Income", value: rs(pnl.totalIncome), Icon: TrendingUp, tone: "blue", sub: "Ledger P&L" },
+    { label: "Expenses", value: rs(pnl.totalExpenses), Icon: TrendingDown, tone: "red", sub: "Ledger P&L" },
+    {
+      label: netPnl >= 0 ? "Net Surplus" : "Net Deficit",
+      value: rs(Math.abs(netPnl)),
+      Icon: Coins,
+      tone: netPnl >= 0 ? "green" : "red",
+      sub: "Income − Expenses",
+    },
   ];
 
   const genderItems = [
@@ -181,6 +197,26 @@ export default function DashboardPage() {
     { label: "Pending", value: data?.feeStatus?.Pending ?? 0, color: "var(--theme-info)" },
     { label: "Overdue", value: data?.feeStatus?.Overdue ?? 0, color: "var(--theme-danger)" },
   ];
+  const pnlIncomeBars = (pnl.income.length
+    ? pnl.income
+    : pnl.totalIncome
+      ? [{ name: "Total income", amount: pnl.totalIncome }]
+      : []
+  ).map((row) => ({
+    label: row.name,
+    value: Math.max(0, row.amount),
+    color: "var(--theme-success)",
+  }));
+  const pnlExpenseBars = (pnl.expenses.length
+    ? pnl.expenses
+    : pnl.totalExpenses
+      ? [{ name: "Total expenses", amount: pnl.totalExpenses }]
+      : []
+  ).map((row) => ({
+    label: row.name,
+    value: Math.max(0, row.amount),
+    color: "var(--theme-danger)",
+  }));
 
   if (loading && !data) return <DashboardSkeleton />;
 
@@ -267,6 +303,78 @@ export default function DashboardPage() {
             <StatCard key={s.label} label={s.label} value={s.value} Icon={s.Icon} tone={s.tone} sub={s.sub} />
           ))}
         </div>
+
+        <Card pad={false} className={cn(refreshing && "opacity-70")}>
+          <CardHead
+            title="Profit & Loss"
+            subtitle="Live from accounting ledger — same figures as Accounts → Profit & Loss"
+            Icon={Coins}
+            right={
+              <Link
+                href="/accounts/profit-loss"
+                className="inline-flex items-center gap-1 text-[13px] font-medium text-[var(--theme-primary)] hover:underline"
+              >
+                Full statement <ArrowRight className="h-4 w-4" />
+              </Link>
+            }
+          />
+          <div className="grid grid-cols-1 gap-0 divide-y divide-[var(--theme-border)] md:grid-cols-3 md:divide-x md:divide-y-0">
+            <div className="p-4">
+              <p className="text-[12px] font-medium text-[var(--theme-text-muted)]">Total Income</p>
+              <p className="mt-1 text-[22px] font-bold tabular-nums text-[var(--theme-success-text)]">
+                {rs(pnl.totalIncome)}
+              </p>
+            </div>
+            <div className="p-4">
+              <p className="text-[12px] font-medium text-[var(--theme-text-muted)]">Total Expenses</p>
+              <p className="mt-1 text-[22px] font-bold tabular-nums text-[var(--theme-danger-text)]">
+                {rs(pnl.totalExpenses)}
+              </p>
+            </div>
+            <div className="p-4">
+              <p className="text-[12px] font-medium text-[var(--theme-text-muted)]">
+                {netPnl >= 0 ? "Net Surplus" : "Net Deficit"}
+              </p>
+              <p
+                className={cn(
+                  "mt-1 text-[22px] font-bold tabular-nums",
+                  netPnl >= 0 ? "text-[var(--theme-success-text)]" : "text-[var(--theme-danger-text)]"
+                )}
+              >
+                {rs(Math.abs(netPnl))}
+              </p>
+              <p className="mt-1 text-[11px] text-[var(--theme-text-faint)]">Income − Expenses</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-0 border-t border-[var(--theme-border)] md:grid-cols-2">
+            <div className="border-b border-[var(--theme-border)] md:border-b-0 md:border-r">
+              <div className="flex items-center justify-between px-4 pt-3">
+                <p className="text-[13px] font-semibold">Income breakdown</p>
+                <Badge label={`${pnlIncomeBars.length} accounts`} tone="green" />
+              </div>
+              {pnlIncomeBars.length === 0 ? (
+                <p className="px-4 py-6 text-center text-[13px] text-[var(--theme-text-muted)]">
+                  No income posted yet.
+                </p>
+              ) : (
+                <MiniBars items={pnlIncomeBars} />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center justify-between px-4 pt-3">
+                <p className="text-[13px] font-semibold">Expense breakdown</p>
+                <Badge label={`${pnlExpenseBars.length} accounts`} tone="red" />
+              </div>
+              {pnlExpenseBars.length === 0 ? (
+                <p className="px-4 py-6 text-center text-[13px] text-[var(--theme-text-muted)]">
+                  No expenses posted yet.
+                </p>
+              ) : (
+                <MiniBars items={pnlExpenseBars} />
+              )}
+            </div>
+          </div>
+        </Card>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link href="/student"
