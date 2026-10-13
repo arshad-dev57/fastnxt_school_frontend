@@ -17,7 +17,7 @@ import {
   type DiscountTypeItem,
   type FeeInvoiceItem,
   type FeeInvoiceStatus,
-  type FeeParticularItem,
+  type FeeStructureItem,
   type FeeVoucherSchoolInfo,
   type FeeVoucherTemplate,
   type StudentItem,
@@ -26,6 +26,7 @@ import {
 const COLS = "grid-cols-[130px_minmax(150px,1.2fr)_100px_110px_100px_100px_100px_90px_90px_100px_120px_64px]";
 const STEPS = 8;
 const STATUSES: FeeInvoiceStatus[] = ["Paid", "Partially Paid", "Pending", "Overdue"];
+const SESSIONS = ["2023-2024", "2024-2025", "2025-2026"];
 
 export default function FeeInvoicesPage() {
   const { currentBranchId } = useBranch();
@@ -33,7 +34,6 @@ export default function FeeInvoicesPage() {
 
   const [rows, setRows] = useState<FeeInvoiceItem[]>([]);
   const [students, setStudents] = useState<StudentItem[]>([]);
-  const [particulars, setParticulars] = useState<FeeParticularItem[]>([]);
   const [discounts, setDiscounts] = useState<DiscountTypeItem[]>([]);
   const [voucherTemplate, setVoucherTemplate] = useState<FeeVoucherTemplate | null>(null);
   const [voucherSchool, setVoucherSchool] = useState<FeeVoucherSchoolInfo | null>(null);
@@ -52,16 +52,14 @@ export default function FeeInvoicesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [invRes, stRes, partRes, discRes, tmplRes] = await Promise.all([
+      const [invRes, stRes, discRes, tmplRes] = await Promise.all([
         feesApi.listInvoices({ branchId: branchScope }),
         studentsApi.list({ branchId: branchScope, status: "Active" }),
-        feesApi.listParticulars({ status: "Active", branchId: branchScope }),
         feesApi.listDiscounts({ status: "Active", branchId: branchScope }),
         feesApi.getVoucherTemplate(),
       ]);
       setRows(invRes.invoices ?? []);
       setStudents(stRes.students ?? []);
-      setParticulars(partRes.particulars ?? []);
       setDiscounts(discRes.discounts ?? []);
       setVoucherTemplate(tmplRes.template);
       setVoucherSchool(tmplRes.school);
@@ -248,7 +246,6 @@ export default function FeeInvoicesPage() {
       <CreateInvoice
         open={creating}
         students={students}
-        particulars={particulars}
         discounts={discounts}
         branchId={branchScope}
         onClose={() => setCreating(false)}
@@ -310,38 +307,89 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CreateInvoice({ open, onClose, onCreated, students, particulars, discounts, branchId }: {
+function CreateInvoice({ open, onClose, onCreated, students, discounts, branchId }: {
   open: boolean;
   onClose: () => void;
   onCreated: (inv: FeeInvoiceItem) => void | Promise<void>;
   students: StudentItem[];
-  particulars: FeeParticularItem[];
   discounts: DiscountTypeItem[];
   branchId?: string;
 }) {
   const [studentId, setStudentId] = useState("");
+  const [session, setSession] = useState("2025-2026");
   const [period, setPeriod] = useState(() => new Date().toLocaleString("en-US", { month: "short", year: "numeric" }));
   const [issue, setIssue] = useState(new Date().toISOString().slice(0, 10));
   const [due, setDue] = useState(new Date().toISOString().slice(0, 10));
+  const [structure, setStructure] = useState<FeeStructureItem[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
+  const [structureLoading, setStructureLoading] = useState(false);
   const [discountTypeId, setDiscountTypeId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wasOpen, setWasOpen] = useState(open);
 
+  const selected = students.find((s) => s.id === studentId) || null;
+
   if (wasOpen !== open) {
     setWasOpen(open);
     if (open) {
       setStudentId("");
+      setSession("2025-2026");
       setPeriod(new Date().toLocaleString("en-US", { month: "short", year: "numeric" }));
-      setPicked(particulars.slice(0, 4).map((p) => p.id));
+      setStructure([]);
+      setPicked([]);
       setDiscountTypeId("");
       setError(null);
     }
   }
 
-  const lines = particulars.filter((p) => picked.includes(p.id));
-  const total = lines.reduce((a, p) => a + p.amount, 0);
+  useEffect(() => {
+    if (!open || !selected) {
+      setStructure([]);
+      setPicked([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setStructureLoading(true);
+      setError(null);
+      try {
+        const res = await feesApi.listStructure({
+          session,
+          cls: selected.cls,
+          section: selected.section,
+          branchId,
+        });
+        if (cancelled) return;
+        let lines = res.structure ?? [];
+        // If this section has no lines yet, fall back to any structure for the class.
+        if (lines.length === 0) {
+          const all = await feesApi.listStructure({ session, cls: selected.cls, branchId });
+          if (cancelled) return;
+          const byParticular = new Map<string, FeeStructureItem>();
+          for (const row of all.structure ?? []) {
+            const key = row.particularId || row.particular;
+            if (!byParticular.has(key)) byParticular.set(key, row);
+          }
+          lines = [...byParticular.values()];
+        }
+        setStructure(lines);
+        setPicked(lines.map((l) => l.id));
+      } catch (err) {
+        if (!cancelled) {
+          setError(describeApiError(err).message);
+          setStructure([]);
+          setPicked([]);
+        }
+      } finally {
+        if (!cancelled) setStructureLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, studentId, session, branchId, selected]);
+
+  const lines = structure.filter((l) => picked.includes(l.id));
+  const total = lines.reduce((a, l) => a + l.amount, 0);
   const disc = discounts.find((d) => d.id === discountTypeId);
   const discountAmount = disc
     ? disc.basis === "Percentage"
@@ -350,7 +398,7 @@ function CreateInvoice({ open, onClose, onCreated, students, particulars, discou
     : 0;
 
   const create = async () => {
-    if (!studentId || total === 0) return;
+    if (!studentId || lines.length === 0) return;
     setSaving(true);
     setError(null);
     try {
@@ -359,7 +407,14 @@ function CreateInvoice({ open, onClose, onCreated, students, particulars, discou
         period,
         issue,
         due,
-        particularIds: picked,
+        session,
+        useStructure: true,
+        lines: lines.map((l) => ({
+          particularId: l.particularId ?? null,
+          particular: l.particular,
+          amount: l.amount,
+          frequency: l.frequency,
+        })),
         discountTypeId: discountTypeId || undefined,
         branchId: branchId ?? null,
       });
@@ -372,28 +427,32 @@ function CreateInvoice({ open, onClose, onCreated, students, particulars, discou
   };
 
   return (
-    <Modal open={open} onClose={onClose} width="max-w-xl" title="Create Fee Invoice" subtitle="Generate an invoice for a student"
+    <Modal open={open} onClose={onClose} width="max-w-xl" title="Create Fee Invoice" subtitle="Fees come from the class fee structure"
       footer={<><Btn variant="secondary" onClick={onClose}>Cancel</Btn>
-        <Btn variant="primary" loading={saving} disabled={!studentId || total === 0} onClick={create}>Create Invoice</Btn></>}>
+        <Btn variant="primary" loading={saving} disabled={!studentId || lines.length === 0 || total === 0} onClick={create}>Create Invoice</Btn></>}>
       <div className="space-y-4">
         {error ? <p className="text-[13px] text-[var(--theme-danger)]">{error}</p> : null}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Student" className="sm:col-span-2">
             <Select
               options={students.map((s) => `${s.name} (${s.cls}-${s.section})`)}
-              value={students.find((s) => s.id === studentId) ? `${students.find((s) => s.id === studentId)!.name} (${students.find((s) => s.id === studentId)!.cls}-${students.find((s) => s.id === studentId)!.section})` : ""}
+              value={selected ? `${selected.name} (${selected.cls}-${selected.section})` : ""}
               onChange={(e) => {
                 const label = e.target.value;
                 const st = students.find((s) => `${s.name} (${s.cls}-${s.section})` === label);
                 setStudentId(st?.id || "");
+                if (st?.session && SESSIONS.includes(st.session)) setSession(st.session);
               }}
               placeholder={students.length ? "Select student" : "No students found"}
             />
           </Field>
+          <Field label="Session">
+            <Select options={SESSIONS} value={session} onChange={(e) => setSession(e.target.value)} />
+          </Field>
           <Field label="Billing Period"><input value={period} onChange={(e) => setPeriod(e.target.value)} className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px]" /></Field>
           <Field label="Due Date"><input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px]" /></Field>
           <Field label="Issue Date"><input type="date" value={issue} onChange={(e) => setIssue(e.target.value)} className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px]" /></Field>
-          <Field label="Discount Type">
+          <Field label="Discount Type" className="sm:col-span-2">
             <Select
               options={["No discount", ...discounts.map((d) => d.name)]}
               value={disc?.name || "No discount"}
@@ -406,16 +465,25 @@ function CreateInvoice({ open, onClose, onCreated, students, particulars, discou
         </div>
 
         <div>
-          <p className="mb-2 text-[13px] font-medium">Fee particulars</p>
+          <p className="mb-2 text-[13px] font-medium">
+            Fee structure{selected ? ` · ${selected.cls}-${selected.section}` : ""}
+          </p>
           <div className="space-y-1.5 rounded-lg border border-[var(--theme-border)] p-3">
-            {particulars.length === 0 ? (
-              <p className="text-[13px] text-[var(--theme-text-muted)]">No active particulars. Add them under Fees Particulars first.</p>
-            ) : particulars.map((p) => (
-              <label key={p.id} className="flex items-center gap-2.5 text-[14px]">
-                <input type="checkbox" checked={picked.includes(p.id)} className="h-4 w-4 accent-[var(--theme-primary)]"
-                  onChange={(e) => setPicked((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)))} />
-                <span className="flex-1">{p.particular}</span>
-                <span className="text-[var(--theme-text-muted)]">{rs(p.amount)}</span>
+            {!selected ? (
+              <p className="text-[13px] text-[var(--theme-text-muted)]">Select a student to load class fees.</p>
+            ) : structureLoading ? (
+              <p className="text-[13px] text-[var(--theme-text-muted)]">Loading fee structure…</p>
+            ) : structure.length === 0 ? (
+              <p className="text-[13px] text-[var(--theme-text-muted)]">
+                No fee structure for {selected.cls}-{selected.section} ({session}). Add lines under Fee Structure first.
+              </p>
+            ) : structure.map((l) => (
+              <label key={l.id} className="flex items-center gap-2.5 text-[14px]">
+                <input type="checkbox" checked={picked.includes(l.id)} className="h-4 w-4 accent-[var(--theme-primary)]"
+                  onChange={(e) => setPicked((prev) => (e.target.checked ? [...prev, l.id] : prev.filter((x) => x !== l.id)))} />
+                <span className="flex-1">{l.particular}</span>
+                <span className="text-[12px] text-[var(--theme-text-faint)]">{l.frequency}</span>
+                <span className="text-[var(--theme-text-muted)]">{rs(l.amount)}</span>
               </label>
             ))}
           </div>
