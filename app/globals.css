@@ -243,6 +243,39 @@ body {
     page-break-inside: avoid;
   }
 
+  .fee-receipt-print {
+    background: #fff !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .fee-receipt-print.fee-receipt-A4 {
+    width: 100%;
+    max-width: 180mm;
+    margin: 0 auto;
+  }
+  .fee-receipt-print.fee-receipt-80mm {
+    width: 72mm;
+    max-width: 72mm;
+    margin: 0 auto;
+    font-size: 11px;
+  }
+  .fee-receipt-print.fee-receipt-58mm {
+    width: 52mm;
+    max-width: 52mm;
+    margin: 0 auto;
+    font-size: 9px;
+  }
+  .fee-receipt-duplicate {
+    break-inside: avoid;
+  }
+
+  body.printing-fee-receipt-80mm .modal-panel,
+  body.printing-fee-receipt-58mm .modal-panel {
+    width: auto !important;
+    max-width: none !important;
+  }
+
   .print-timetable {
     background: #fff !important;
     color: #000 !important;

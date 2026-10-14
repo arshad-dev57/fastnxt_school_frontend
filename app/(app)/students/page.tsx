@@ -341,6 +341,18 @@ export default function AllStudentsPage() {
               {detail.email && <Info label="Email" value={detail.email} />}
               {detail.address && <div className="col-span-2"><Info label="Address" value={detail.address} /></div>}
             </div>
+            <div className="rounded-lg border border-[var(--theme-border)] px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-[var(--theme-text-faint)]">Fee receipts</p>
+              <p className="mt-1 text-[13px] text-[var(--theme-text-muted)]">
+                View and reprint this student&apos;s saved fee payment receipts.
+              </p>
+              <a
+                href={`/fees/receipts?q=${encodeURIComponent(detail.admissionNo || detail.studentId || detail.name)}`}
+                className="mt-2 inline-flex text-[13px] font-medium text-[var(--theme-primary)] hover:underline"
+              >
+                Open fee receipt history →
+              </a>
+            </div>
           </div>
         )}
       </Modal>

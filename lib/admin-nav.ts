@@ -104,6 +104,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { label: "Fee Structure", href: "/fees/structure", module: "fees" },
       { label: "Discount Types", href: "/fees/discounts", module: "fees" },
       { label: "Fee Invoices", href: "/fees/invoices", module: "fees" },
+      { label: "Fee Receipts", href: "/fees/receipts", module: "fees" },
     ],
   },
   {

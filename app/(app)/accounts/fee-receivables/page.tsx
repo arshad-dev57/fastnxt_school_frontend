@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Filter, ArrowUpDown, HandCoins, DollarSign, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Filter, HandCoins, DollarSign, RefreshCw, CheckCircle2, Printer } from "lucide-react";
 import { Btn, Field, Input, Modal, Select, StatCard, rs } from "@/components/ui";
 import { BoardList, type BoardColumn } from "@/components/board-list";
 import { StatusPill, ToolDropdown, statusColor, type BoardView } from "@/components/board-kit";
 import { money } from "@/components/report";
 import { BoardPageSkeleton } from "@/components/skeleton";
-import { accountsApi, type CashBankAccountItem, type ReceivableItem, type ReceivablesResponse } from "@/lib/auth/api-client";
+import { FeeReceiptPreviewModal } from "@/components/fees/fee-receipt-actions";
+import {
+  accountsApi,
+  feesApi,
+  type CashBankAccountItem,
+  type FeePaymentItem,
+  type ReceivableItem,
+  type ReceivablesResponse,
+} from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
 
 const STATUSES = ["Paid", "Partial", "Pending", "Overdue"] as const;
@@ -37,6 +45,8 @@ export default function FeeReceivablesPage() {
   const [cashBankAccountId, setCashBankAccountId] = useState("");
   const [collectSaving, setCollectSaving] = useState(false);
   const [collectErr, setCollectErr] = useState<string | null>(null);
+  const [payReference, setPayReference] = useState("");
+  const [receipt, setReceipt] = useState<FeePaymentItem | null>(null);
 
   const fetchReceivables = async () => {
     setLoading(true);
@@ -45,8 +55,8 @@ export default function FeeReceivablesPage() {
       const branchScope = currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined;
       const res = await accountsApi.listReceivables({ branchId: branchScope });
       setData(res);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load fee receivables.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load fee receivables.");
     } finally {
       setLoading(false);
     }
@@ -106,6 +116,7 @@ export default function FeeReceivablesPage() {
     setCollecting(r);
     setPayAmount(String(r.outstanding));
     setPayMethod("Cash");
+    setPayReference("");
     setCollectErr(null);
   };
 
@@ -116,6 +127,10 @@ export default function FeeReceivablesPage() {
       setCollectErr("Payment amount must be greater than zero.");
       return;
     }
+    if (val > collecting.outstanding) {
+      setCollectErr(`Amount exceeds outstanding balance (Rs ${collecting.outstanding}).`);
+      return;
+    }
     if (!cashBankAccountId) {
       setCollectErr(payMethod === "Cash" ? "Please select a cash account." : "Please select a bank account.");
       return;
@@ -124,18 +139,40 @@ export default function FeeReceivablesPage() {
     setCollectSaving(true);
     setCollectErr(null);
     try {
-      await accountsApi.collectFee(collecting.id, {
+      const idempotencyKey =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `recv-${collecting.id}-${Date.now()}`;
+      const res = await accountsApi.collectFee(collecting.id, {
         amount: val,
         method: payMethod,
         cashBankAccountId,
+        reference: payReference || undefined,
+        idempotencyKey,
         branchId: currentBranchId !== "all" ? currentBranchId : undefined,
       });
       setCollecting(null);
       await fetchReceivables();
-    } catch (e: any) {
-      setCollectErr(e?.message || "Failed to collect fee.");
+      if (res.payment) setReceipt(res.payment);
+    } catch (e: unknown) {
+      setCollectErr(e instanceof Error ? e.message : "Failed to collect fee.");
     } finally {
       setCollectSaving(false);
+    }
+  };
+
+  const openLatestReceipt = async (r: ReceivableItem) => {
+    try {
+      const res = await feesApi.listInvoicePayments(r.id);
+      const latest = res.payments?.[0];
+      if (!latest) {
+        setError("No saved receipt found for this invoice yet.");
+        return;
+      }
+      const full = await feesApi.getReceipt(latest.id);
+      setReceipt(full.receipt);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load receipt.");
     }
   };
 
@@ -260,6 +297,9 @@ export default function FeeReceivablesPage() {
           ...(r.outstanding > 0
             ? [{ label: "Collect Fee", Icon: CheckCircle2, onClick: () => openCollect(r) }]
             : []),
+          ...(r.paid > 0
+            ? [{ label: "Reprint Receipt", Icon: Printer, onClick: () => openLatestReceipt(r) }]
+            : []),
         ]}
         mobileRows={(r) => [
           { label: "Student", value: r.student },
@@ -366,12 +406,22 @@ export default function FeeReceivablesPage() {
               )}
             </select>
           </Field>
+          <Field label="Reference / Transaction No (optional)">
+            <Input value={payReference} onChange={(e) => setPayReference(e.target.value)} placeholder="Cheque / online txn ref" />
+          </Field>
           <p className="text-[12px] text-[var(--theme-text-muted)]">
-            Collecting this fee will automatically record a posted Receipt Voucher (RV) and balanced Journal Entry
-            crediting Tuition Fees and debiting the selected Cash/Bank account in the accounting ledger.
+            Collecting this fee saves a payment receipt, posts a Receipt Voucher (RV) and a balanced Journal Entry.
+            A printable receipt opens only after the backend confirms success.
           </p>
         </div>
       </Modal>
+
+      <FeeReceiptPreviewModal
+        open={!!receipt}
+        receipt={receipt}
+        onClose={() => setReceipt(null)}
+        title="Payment Successful — Fee Receipt"
+      />
     </div>
   );
 }

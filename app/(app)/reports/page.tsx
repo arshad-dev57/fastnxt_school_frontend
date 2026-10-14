@@ -14,7 +14,7 @@ const BASICS: ReportLink[] = [
   { title: "Branch Performance", desc: "Consolidated multi-campus comparison across every KPI.", href: "/reports/branch-performance", Icon: Building2 },
   { title: "Student Reports", desc: "Enrollment, class distribution, gender and status.", href: "/students", Icon: Users },
   { title: "Attendance Reports", desc: "Daily register, monthly summary and absentee alerts.", href: "/attendance", Icon: CalendarCheck },
-  { title: "Fee Reports", desc: "Collection, outstanding, defaulters and receipts.", href: "/fees/invoices", Icon: Wallet },
+  { title: "Fee Reports", desc: "Collection, outstanding, defaulters and receipts.", href: "/fees/receipts", Icon: Wallet },
   { title: "Examination Reports", desc: "Results, grades, merit lists and class averages.", href: "/results", Icon: GraduationCap },
   { title: "HR Reports", desc: "Employees, attendance, leave and recruitment.", href: "/employees", Icon: Briefcase },
   { title: "Payroll Reports", desc: "Salary register, allowances, deductions and net pay.", href: "/payroll", Icon: Wallet2 },

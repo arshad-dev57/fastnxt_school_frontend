@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Filter, ArrowUpDown, Eye, CreditCard, Trash2, FileText, Printer, Settings2 } from "lucide-react";
+import { Plus, Filter, ArrowUpDown, Eye, CreditCard, Trash2, FileText, Printer, Settings2, ReceiptText } from "lucide-react";
 import {
   Btn, Card, ConfirmDialog, EmptyState, Field, Modal, PageHeader, Pagination, RowMenu,
-  SearchBox, Select, SplitButton, Th, Td, cn, rs, INVOICE_COLORS, PillSelect,
+  SearchBox, Select, SplitButton, Th, Td, cn, rs,
 } from "@/components/ui";
+import { StatusPill } from "@/components/board-kit";
 import { useBranch } from "@/lib/branch-context";
 import { BranchScopeBar } from "@/components/branch/branch-ui";
 import { FeeVoucherDocument } from "@/components/fees/fee-voucher";
+import { FeeReceiptPreviewModal } from "@/components/fees/fee-receipt-actions";
 import {
   describeApiError,
   feesApi,
@@ -17,6 +19,7 @@ import {
   type DiscountTypeItem,
   type FeeInvoiceItem,
   type FeeInvoiceStatus,
+  type FeePaymentItem,
   type FeeStructureItem,
   type FeeVoucherSchoolInfo,
   type FeeVoucherTemplate,
@@ -47,6 +50,16 @@ export default function FeeInvoicesPage() {
   const [view, setView] = useState<FeeInvoiceItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [toDelete, setToDelete] = useState<FeeInvoiceItem | null>(null);
+  const [paying, setPaying] = useState<FeeInvoiceItem | null>(null);
+  const [payAmount, setPayAmount] = useState("");
+  const [payMethod, setPayMethod] = useState("Cash");
+  const [payReference, setPayReference] = useState("");
+  const [paySaving, setPaySaving] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<FeePaymentItem | null>(null);
+  const [invoicePayments, setInvoicePayments] = useState<FeePaymentItem[]>([]);
+  const [historyFor, setHistoryFor] = useState<FeeInvoiceItem | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,34 +86,87 @@ export default function FeeInvoicesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = useMemo(() => rows
-    .filter((r) => r.student.toLowerCase().includes(q.toLowerCase()) || r.invoiceNo.toLowerCase().includes(q.toLowerCase()))
-    .filter((r) => (cls ? r.cls === cls : true))
-    .filter((r) => (status ? r.status === status : true))
-    .sort((a, b) => (sortAsc ? a.student.localeCompare(b.student) : b.student.localeCompare(a.student))),
-  [rows, q, cls, status, sortAsc]);
+  const filtered = useMemo(() => {
+    const term = q.toLowerCase().trim();
+    return rows
+      .filter((r) => {
+        if (!term) return true;
+        const student = students.find((s) => s.id === r.studentId);
+        const hay = [
+          r.student,
+          r.invoiceNo,
+          r.studentCode || "",
+          student?.admissionNo || "",
+          student?.studentId || "",
+        ].join(" ").toLowerCase();
+        return hay.includes(term);
+      })
+      .filter((r) => (cls ? r.cls === cls : true))
+      .filter((r) => (status ? r.status === status : true))
+      .sort((a, b) => (sortAsc ? a.student.localeCompare(b.student) : b.student.localeCompare(a.student)));
+  }, [rows, q, cls, status, sortAsc, students]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / STEPS));
   const current = Math.min(page, pages);
   const paged = filtered.slice((current - 1) * STEPS, current * STEPS);
   const classOptions = [...new Set(rows.map((i) => i.cls).filter(Boolean))];
 
-  const markPaid = async (id: string) => {
+  const openCollect = (inv: FeeInvoiceItem) => {
+    if (inv.balance <= 0) {
+      setError("This invoice is already fully paid.");
+      return;
+    }
+    setPaying(inv);
+    setPayAmount(String(inv.balance));
+    setPayMethod("Cash");
+    setPayReference("");
+    setPayError(null);
+  };
+
+  const submitPayment = async () => {
+    if (!paying) return;
+    const amount = Number(payAmount);
+    if (!amount || amount <= 0) {
+      setPayError("Payment amount must be greater than zero.");
+      return;
+    }
+    if (amount > paying.balance) {
+      setPayError(`Amount exceeds outstanding balance (Rs ${paying.balance}).`);
+      return;
+    }
+    setPaySaving(true);
+    setPayError(null);
     try {
-      const res = await feesApi.recordPayment(id);
-      setRows((p) => p.map((r) => (r.id === id ? res.invoice : r)));
-      if (view?.id === id) setView(res.invoice);
+      const idempotencyKey =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `pay-${paying.id}-${Date.now()}`;
+      const res = await feesApi.recordPayment(paying.id, {
+        amount,
+        method: payMethod,
+        reference: payReference || undefined,
+        idempotencyKey,
+        branchId: branchScope ?? null,
+      });
+      setRows((p) => p.map((r) => (r.id === paying.id ? res.invoice : r)));
+      if (view?.id === paying.id) setView(res.invoice);
+      setPaying(null);
+      setReceipt(res.payment);
     } catch (err) {
-      setError(describeApiError(err).message);
+      setPayError(describeApiError(err).message);
+    } finally {
+      setPaySaving(false);
     }
   };
 
-  const setStatusRemote = async (id: string, next: FeeInvoiceStatus) => {
+  const openPaymentHistory = async (inv: FeeInvoiceItem) => {
+    setHistoryFor(inv);
     try {
-      const res = await feesApi.updateInvoice(id, { status: next });
-      setRows((p) => p.map((r) => (r.id === id ? res.invoice : r)));
+      const res = await feesApi.listInvoicePayments(inv.id);
+      setInvoicePayments(res.payments ?? []);
     } catch (err) {
       setError(describeApiError(err).message);
+      setInvoicePayments([]);
     }
   };
 
@@ -123,9 +189,12 @@ export default function FeeInvoicesPage() {
 
   return (
     <>
-      <PageHeader title="Fee Invoices" subtitle="Track billed, paid and outstanding fee invoices. Preview prints Bank, Student and School copies."
+      <PageHeader title="Fee Invoices" subtitle="Track billed, paid and outstanding fee invoices. Collect payments to generate fee receipts."
         actions={
           <>
+            <Link href="/fees/receipts" className="hidden items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3.5 py-2 text-[14px] hover:bg-[var(--theme-hover)] sm:inline-flex">
+              <ReceiptText className="h-[18px] w-[18px]" /> Receipts
+            </Link>
             <Link href="/settings/fee-voucher" className="hidden items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3.5 py-2 text-[14px] hover:bg-[var(--theme-hover)] sm:inline-flex">
               <Settings2 className="h-[18px] w-[18px]" /> Voucher Layout
             </Link>
@@ -146,12 +215,19 @@ export default function FeeInvoicesPage() {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 pb-3">
-          <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search invoice or student" className="w-full sm:w-64" />
+          <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Student, admission, ID or invoice #" className="w-full sm:w-72" />
           <Select value={cls} onChange={(e) => { setCls(e.target.value); setPage(1); }} options={classOptions} placeholder="All Classes" className="w-36" />
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} options={STATUSES} placeholder="All Status" className="w-40" />
           <Btn variant="secondary" Icon={ArrowUpDown} onClick={() => setSortAsc((s) => !s)}>{sortAsc ? "A–Z" : "Z–A"}</Btn>
-          <Btn variant="secondary" Icon={Filter} className="hidden lg:inline-flex">Filter</Btn>
+          <Btn variant="secondary" Icon={Filter} className="hidden lg:inline-flex" onClick={() => setShowFilters((v) => !v)}>
+            {showFilters ? "Hide Filters" : "Filters"}
+          </Btn>
         </div>
+        {showFilters ? (
+          <p className="pb-2 text-[12px] text-[var(--theme-text-muted)]">
+            Searching name, admission number, student ID and invoice number. Status and class filters apply above.
+          </p>
+        ) : null}
 
         <div className="shrink-0"><BranchScopeBar count={filtered.length} noun="invoices" /></div>
 
@@ -190,13 +266,15 @@ export default function FeeInvoicesPage() {
                         <Td className="border-l border-[var(--theme-border)] text-[var(--theme-success-text)]">{rs(r.paid)}</Td>
                         <Td className={cn("border-l border-[var(--theme-border)] font-medium", r.balance > 0 && "text-[var(--theme-danger-text)]")}>{rs(r.balance)}</Td>
                         <Td className="border-l border-[var(--theme-border)]">
-                          <PillSelect<FeeInvoiceStatus> value={r.status as FeeInvoiceStatus} options={STATUSES} colors={INVOICE_COLORS}
-                            onPick={(s) => setStatusRemote(r.id, s)} className="w-32" />
+                          <StatusPill label={r.status} />
                         </Td>
                         <Td className="justify-center border-l border-[var(--theme-border)]">
                           <RowMenu items={[
                             { label: "View Voucher", Icon: Eye, onClick: () => setView(r) },
-                            { label: "Record Payment", Icon: CreditCard, onClick: () => markPaid(r.id) },
+                            ...(r.balance > 0
+                              ? [{ label: "Collect Payment", Icon: CreditCard, onClick: () => openCollect(r) }]
+                              : []),
+                            { label: "Payment History", Icon: ReceiptText, onClick: () => openPaymentHistory(r) },
                             { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
                           ]} />
                         </Td>
@@ -214,8 +292,7 @@ export default function FeeInvoicesPage() {
                         <p className="truncate text-[15px] font-medium">{r.student}</p>
                         <p className="font-mono text-[12px] text-[var(--theme-text-faint)]">{r.invoiceNo}</p>
                       </div>
-                      <PillSelect<FeeInvoiceStatus> value={r.status as FeeInvoiceStatus} options={STATUSES} colors={INVOICE_COLORS}
-                        onPick={(s) => setStatusRemote(r.id, s)} className="w-32" />
+                      <StatusPill label={r.status} />
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
                       <Info label="Class" value={`${r.cls}-${r.section}`} />
@@ -223,9 +300,12 @@ export default function FeeInvoicesPage() {
                       <Info label="Total" value={rs(r.total)} />
                       <Info label="Balance" value={rs(r.balance)} />
                     </div>
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <Btn size="sm" variant="secondary" Icon={Eye} onClick={() => setView(r)}>Voucher</Btn>
-                      <Btn size="sm" variant="primary" Icon={CreditCard} onClick={() => markPaid(r.id)}>Mark Paid</Btn>
+                      {r.balance > 0 ? (
+                        <Btn size="sm" variant="primary" Icon={CreditCard} onClick={() => openCollect(r)}>Collect</Btn>
+                      ) : null}
+                      <Btn size="sm" variant="secondary" Icon={ReceiptText} onClick={() => openPaymentHistory(r)}>History</Btn>
                     </div>
                   </div>
                 ))}
@@ -268,8 +348,12 @@ export default function FeeInvoicesPage() {
               Edit voucher layout
             </Link>
             <Btn variant="secondary" onClick={() => setView(null)}>Close</Btn>
-            <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print / PDF</Btn>
-            <Btn variant="primary" Icon={CreditCard} onClick={() => { if (view) markPaid(view.id); }}>Record Full Payment</Btn>
+            <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print Voucher</Btn>
+            {view && view.balance > 0 ? (
+              <Btn variant="primary" Icon={CreditCard} onClick={() => { setView(null); openCollect(view); }}>
+                Collect Payment
+              </Btn>
+            ) : null}
           </>
         }
       >
@@ -281,6 +365,96 @@ export default function FeeInvoicesPage() {
           />
         ) : null}
       </Modal>
+
+      <Modal
+        open={!!paying}
+        onClose={() => !paySaving && setPaying(null)}
+        title="Collect Fee Payment"
+        subtitle={paying ? `${paying.student} · ${paying.invoiceNo}` : undefined}
+        footer={
+          <>
+            <Btn variant="secondary" onClick={() => setPaying(null)} disabled={paySaving}>Cancel</Btn>
+            <Btn variant="primary" loading={paySaving} loadingLabel="Recording…" onClick={submitPayment}>
+              Confirm Payment
+            </Btn>
+          </>
+        }
+      >
+        {payError ? <p className="mb-3 text-[13px] text-[var(--theme-danger)]">{payError}</p> : null}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-[13px]">
+            <div className="rounded border border-[var(--theme-border)] p-2.5">
+              <span className="text-[11px] text-[var(--theme-text-muted)]">Outstanding</span>
+              <p className="font-bold text-[var(--theme-danger-text)]">{rs(paying?.balance || 0)}</p>
+            </div>
+            <div className="rounded border border-[var(--theme-border)] p-2.5">
+              <span className="text-[11px] text-[var(--theme-text-muted)]">Already Paid</span>
+              <p className="font-semibold">{rs(paying?.paid || 0)}</p>
+            </div>
+          </div>
+          <Field label="Amount to Collect (Rs)">
+            <input
+              type="number"
+              value={payAmount}
+              onChange={(e) => setPayAmount(e.target.value)}
+              className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px]"
+            />
+          </Field>
+          <Field label="Payment Method">
+            <Select options={["Cash", "Bank", "Cheque", "Online"]} value={payMethod} onChange={(e) => setPayMethod(e.target.value)} />
+          </Field>
+          <Field label="Reference / Transaction No (optional)">
+            <input
+              value={payReference}
+              onChange={(e) => setPayReference(e.target.value)}
+              className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px]"
+              placeholder="Cheque / online txn ref"
+            />
+          </Field>
+          <p className="text-[12px] text-[var(--theme-text-muted)]">
+            Payment is saved on the server first. A fee receipt is shown only after the backend confirms success.
+          </p>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!historyFor}
+        onClose={() => setHistoryFor(null)}
+        title="Payment History"
+        subtitle={historyFor ? `${historyFor.invoiceNo} · ${historyFor.student}` : undefined}
+        width="max-w-2xl"
+        footer={<Btn variant="secondary" onClick={() => setHistoryFor(null)}>Close</Btn>}
+      >
+        {invoicePayments.length === 0 ? (
+          <EmptyState Icon={ReceiptText} title="No payments yet" message="Collect a payment to generate a receipt for this invoice." />
+        ) : (
+          <div className="space-y-2">
+            {invoicePayments.map((p) => (
+              <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--theme-border)] px-3 py-2">
+                <div className="min-w-0">
+                  <p className="font-mono text-[13px] font-semibold">{p.receiptNo}</p>
+                  <p className="text-[12px] text-[var(--theme-text-muted)]">
+                    {new Date(p.paidAt).toLocaleString()} · {p.method} · {p.status}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-[var(--theme-success-text)]">{rs(p.amount)}</span>
+                  <Btn size="sm" variant="secondary" Icon={Printer} onClick={() => { setHistoryFor(null); setReceipt(p); }}>
+                    Reprint
+                  </Btn>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
+
+      <FeeReceiptPreviewModal
+        open={!!receipt}
+        receipt={receipt}
+        onClose={() => setReceipt(null)}
+        title="Payment Successful — Fee Receipt"
+      />
 
       <ConfirmDialog open={!!toDelete} onClose={() => setToDelete(null)} onConfirm={remove}
         title="Delete invoice" confirmLabel="Delete" message={`Delete invoice ${toDelete?.invoiceNo}? This cannot be undone.`} />

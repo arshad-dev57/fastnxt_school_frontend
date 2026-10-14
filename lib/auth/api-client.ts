@@ -1843,6 +1843,7 @@ export type FeeInvoiceItem = {
   studentCode?: string | null;
   cls: string;
   section: string;
+  session?: string | null;
   period: string;
   issue: string;
   due: string;
@@ -1856,6 +1857,62 @@ export type FeeInvoiceItem = {
   lines?: FeeInvoiceLine[];
   createdAt?: string;
   updatedAt?: string;
+};
+
+/** Immutable fee payment / receipt snapshot returned by the API. */
+export type FeePaymentItem = {
+  id: string;
+  receiptNo: string;
+  invoiceId: string;
+  invoiceNo: string;
+  branchId?: string | null;
+  studentId?: string | null;
+  studentName: string;
+  studentCode?: string | null;
+  admissionNo?: string | null;
+  cls: string;
+  section: string;
+  session?: string | null;
+  period: string;
+  amount: number;
+  method: string;
+  reference?: string;
+  cashierId?: string | null;
+  cashierName?: string;
+  paidAt: string;
+  grossAmount: number;
+  discount: number;
+  previousBalance: number;
+  remainingBalance: number;
+  status: string;
+  lines: FeeInvoiceLine[];
+  school: {
+    name: string;
+    shortName?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    logoUrl?: string | null;
+    principal?: string | null;
+    academicSession?: string | null;
+  };
+  voucherId?: string | null;
+  voucherNo?: string | null;
+  journalEntryId?: string | null;
+  reprintCount?: number;
+  duplicate?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type FeePaymentPaperSize = "A4" | "80mm" | "58mm";
+
+export type FeePayResult = {
+  invoice: FeeInvoiceItem;
+  payment: FeePaymentItem;
+  voucher?: { id: string; no: string; kind?: string; amount?: number; method?: string; journalEntryId?: string | null; status?: string } | null;
+  idempotent?: boolean;
 };
 
 export const feesApi = {
@@ -1943,10 +2000,75 @@ export const feesApi = {
   }) => request<{ invoice: FeeInvoiceItem }>("/fees/invoices", { method: "POST", body: data }),
   updateInvoice: (id: string, data: Partial<FeeInvoiceItem>) =>
     request<{ invoice: FeeInvoiceItem }>(`/fees/invoices/${id}`, { method: "PATCH", body: data }),
-  recordPayment: (id: string, data?: { amount?: number }) =>
-    request<{ invoice: FeeInvoiceItem }>(`/fees/invoices/${id}/pay`, { method: "POST", body: data || {} }),
+  recordPayment: (
+    id: string,
+    data?: {
+      amount?: number;
+      method?: string;
+      cashBankAccountId?: string;
+      reference?: string;
+      idempotencyKey?: string;
+      branchId?: string | null;
+      cashierName?: string;
+    }
+  ) => request<FeePayResult>(`/fees/invoices/${id}/pay`, { method: "POST", body: data || {} }),
   deleteInvoice: (id: string) =>
     request<{ deleted: boolean; id: string }>(`/fees/invoices/${id}`, { method: "DELETE" }),
+
+  listInvoicePayments: (invoiceId: string, signal?: AbortSignal) =>
+    request<{ payments: FeePaymentItem[] }>(`/fees/invoices/${invoiceId}/payments`, { signal }),
+
+  listPayments: (
+    params?: {
+      q?: string;
+      invoiceId?: string;
+      studentId?: string;
+      receiptNo?: string;
+      invoiceNo?: string;
+      cls?: string;
+      section?: string;
+      method?: string;
+      status?: string;
+      from?: string;
+      to?: string;
+      branchId?: string;
+      page?: number;
+      pageSize?: number;
+    },
+    signal?: AbortSignal
+  ) => {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.invoiceId) query.set("invoiceId", params.invoiceId);
+    if (params?.studentId) query.set("studentId", params.studentId);
+    if (params?.receiptNo) query.set("receiptNo", params.receiptNo);
+    if (params?.invoiceNo) query.set("invoiceNo", params.invoiceNo);
+    if (params?.cls) query.set("cls", params.cls);
+    if (params?.section) query.set("section", params.section);
+    if (params?.method) query.set("method", params.method);
+    if (params?.status) query.set("status", params.status);
+    if (params?.from) query.set("from", params.from);
+    if (params?.to) query.set("to", params.to);
+    if (params?.branchId && params.branchId !== "all") query.set("branchId", params.branchId);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.pageSize) query.set("pageSize", String(params.pageSize));
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{
+      payments: FeePaymentItem[];
+      meta: { page: number; pageSize: number; total: number; totalPages: number; hasNext: boolean; hasPrev: boolean };
+    }>(`/fees/payments${qs}`, { signal });
+  },
+
+  getPayment: (id: string, signal?: AbortSignal) =>
+    request<{ payment: FeePaymentItem }>(`/fees/payments/${id}`, { signal }),
+
+  getReceipt: (id: string, opts?: { duplicate?: boolean }, signal?: AbortSignal) => {
+    const qs = opts?.duplicate ? "?duplicate=true" : "";
+    return request<{ receipt: FeePaymentItem }>(`/fees/payments/${id}/receipt${qs}`, { signal });
+  },
+
+  reprintReceipt: (id: string) =>
+    request<{ receipt: FeePaymentItem }>(`/fees/payments/${id}/reprint`, { method: "POST", body: {} }),
 
   getVoucherTemplate: (signal?: AbortSignal) =>
     request<{ template: FeeVoucherTemplate; school: FeeVoucherSchoolInfo }>("/fees/voucher-template", { signal }),
@@ -3064,8 +3186,24 @@ export const accountsApi = {
     const q = qs.toString() ? `?${qs.toString()}` : "";
     return request<ReceivablesResponse>(`/accounts/receivables${q}`, { signal });
   },
-  collectFee: (id: string, data: { amount?: number; method?: string; cashBankAccountId?: string; branchId?: string | null }) =>
-    request<{ invoice: any; voucher: VoucherItem }>(`/accounts/receivables/${id}/pay`, { method: "POST", body: data }),
+  collectFee: (
+    id: string,
+    data: {
+      amount?: number;
+      method?: string;
+      cashBankAccountId?: string;
+      branchId?: string | null;
+      reference?: string;
+      idempotencyKey?: string;
+      cashierName?: string;
+    }
+  ) =>
+    request<{
+      invoice: FeeInvoiceItem;
+      voucher: VoucherItem | null;
+      payment: FeePaymentItem;
+      idempotent?: boolean;
+    }>(`/accounts/receivables/${id}/pay`, { method: "POST", body: data }),
 };
 
 // ─── ASSETS ──────────────────────────────────────────────────────────────────
