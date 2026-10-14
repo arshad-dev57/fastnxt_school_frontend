@@ -63,7 +63,7 @@ export default function FeeVoucherSettingsPage() {
     <>
       <PageHeader
         title="Fee Voucher Layout"
-        subtitle="Edit the fee invoice voucher — titles, bank details, signatures and copy labels. Used for Bank, Student and School copies."
+        subtitle="Challan / demand voucher layout (Bank, Student, School copies). Paid fee receipts use a separate receipt layout with A4 / 80mm / 58mm paper options at print time."
         actions={
           <Btn variant="primary" Icon={Save} loading={saving} loadingLabel="Saving…" onClick={save}>
             {saved ? "Saved" : "Save Layout"}

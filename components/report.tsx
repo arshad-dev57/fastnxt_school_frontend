@@ -1,19 +1,19 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
-import { Download, FileDown, LoaderCircle } from "lucide-react";
+import { Download, FileDown, LoaderCircle, Printer } from "lucide-react";
 import { Btn, Card, CardHead, PageHeader, Select, cn, rs, type IconType } from "./ui";
 import { exportReportTablesCsv } from "@/lib/print-report";
 import { downloadReportPdfFromDom } from "@/lib/pdf-export";
 
 /* ============================================================================
-   Financial report kit — screen UI + accounting-style branded PDF (jsPDF) + CSV.
+   Financial report kit — screen UI + print + branded A4 PDF (jsPDF) + CSV.
    ========================================================================== */
 
 export const money = (n?: number) => (n === undefined || n === null || n === 0 ? "—" : rs(n));
 export const moneySigned = (n: number) => (n < 0 ? `(${rs(Math.abs(n))})` : rs(n));
 
-/** Report page: Export = CSV, Print/PDF = branded A4 PDF download (like accounting-web-app). */
+/** Report page: Export = CSV, Print = browser print, PDF = branded download. */
 export function ReportPage({
   title,
   subtitle,
@@ -43,6 +43,25 @@ export function ReportPage({
     exportReportTablesCsv(`#${containerId}`, `${safe || "report"}-${stamp}.csv`);
   };
 
+  const handlePrint = () => {
+    void import("@/lib/print-element").then(({ printElement }) => {
+      const ok = printElement(`#${containerId}`, {
+        title,
+        pageCss: "@page { size: A4 portrait; margin: 12mm; }",
+        extraCss: `
+          body { background: #fff !important; color: #111 !important; }
+          .report-print-shell { padding: 0 !important; }
+          .report-card { break-inside: avoid; margin-bottom: 16px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; font-size: 12px; }
+          th { text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b; }
+          .text-right, [align="right"] { text-align: right; }
+        `,
+      });
+      if (!ok) window.print();
+    });
+  };
+
   const handlePdf = async () => {
     setPdfBusy(true);
     try {
@@ -68,17 +87,21 @@ export function ReportPage({
           actions={
             <>
               {actions}
-              <Btn variant="secondary" Icon={Download} onClick={handleExportCsv} className="hidden sm:inline-flex">
+              <Btn variant="secondary" Icon={Download} onClick={handleExportCsv}>
                 Export
+              </Btn>
+              <Btn variant="secondary" Icon={Printer} onClick={handlePrint}>
+                Print
               </Btn>
               <Btn
                 variant="primary"
                 Icon={pdfBusy ? LoaderCircle : FileDown}
                 onClick={handlePdf}
                 disabled={pdfBusy}
-                className="hidden sm:inline-flex"
+                loading={pdfBusy}
+                loadingLabel="Preparing…"
               >
-                {pdfBusy ? "Preparing…" : "PDF"}
+                PDF
               </Btn>
             </>
           }
@@ -89,7 +112,7 @@ export function ReportPage({
       </div>
 
       <div className="px-4 pb-24 pt-2 sm:px-6">
-        <div id={containerId} className="report-print-shell space-y-5">
+        <div id={containerId} className="report-print-shell space-y-5" data-print-root="financial-report">
           {children}
         </div>
       </div>

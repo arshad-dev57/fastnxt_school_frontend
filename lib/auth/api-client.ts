@@ -1841,6 +1841,7 @@ export type FeeInvoiceItem = {
   studentId?: string | null;
   student: string;
   studentCode?: string | null;
+  admissionNo?: string | null;
   cls: string;
   section: string;
   session?: string | null;
@@ -1877,6 +1878,9 @@ export type FeePaymentItem = {
   amount: number;
   method: string;
   reference?: string;
+  cashBankAccountId?: string | null;
+  cashBankAccountName?: string;
+  cashBankAccountNumber?: string;
   cashierId?: string | null;
   cashierName?: string;
   paidAt: string;
@@ -2017,6 +2021,22 @@ export const feesApi = {
 
   listInvoicePayments: (invoiceId: string, signal?: AbortSignal) =>
     request<{ payments: FeePaymentItem[] }>(`/fees/invoices/${invoiceId}/payments`, { signal }),
+
+  listMyPayments: (
+    params?: { page?: number; pageSize?: number; from?: string; to?: string },
+    signal?: AbortSignal
+  ) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.pageSize) query.set("pageSize", String(params.pageSize));
+    if (params?.from) query.set("from", params.from);
+    if (params?.to) query.set("to", params.to);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{
+      payments: FeePaymentItem[];
+      meta: { page: number; pageSize: number; total: number; totalPages: number; hasNext: boolean; hasPrev: boolean };
+    }>(`/fees/payments/me${qs}`, { signal });
+  },
 
   listPayments: (
     params?: {

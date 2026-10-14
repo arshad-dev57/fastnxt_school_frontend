@@ -57,7 +57,7 @@ export function DashboardNotificationFloat() {
   if (!queue.length) return null;
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2">
+    <div className="dashboard-float no-print pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2">
       {queue.slice(0, 3).map((n) => (
         <div
           key={n.id}

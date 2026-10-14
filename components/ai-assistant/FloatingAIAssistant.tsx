@@ -56,7 +56,7 @@ export default function FloatingAIAssistant() {
 
   return (
     <>
-      <div className="ai-wrap ai-float group/ai isolate fixed bottom-[84px] right-[18px] z-30 md:bottom-6 md:right-6">
+      <div className="ai-wrap ai-float group/ai no-print isolate fixed bottom-[84px] right-[18px] z-30 md:bottom-6 md:right-6">
         {/* soft colourful glow (stays behind the emblem) */}
         <span aria-hidden="true" className="ai-glow pointer-events-none absolute -inset-2 -z-10 rounded-full blur-lg" style={{ backgroundImage: AI_GRADIENT }} />
 
@@ -92,9 +92,9 @@ export default function FloatingAIAssistant() {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} aria-hidden="true" />
+          <div className="no-print fixed inset-0 z-30" onClick={() => setOpen(false)} aria-hidden="true" />
           <div role="dialog" aria-label="Bisons AI assistant preview"
-            className="fixed bottom-[152px] right-[18px] z-40 w-[320px] max-w-[calc(100vw-36px)] overflow-hidden rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-2xl ring-1 ring-[var(--theme-border)] md:bottom-[92px] md:right-6">
+            className="no-print fixed bottom-[152px] right-[18px] z-40 w-[320px] max-w-[calc(100vw-36px)] overflow-hidden rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-2xl ring-1 ring-[var(--theme-border)] md:bottom-[92px] md:right-6">
             <div className="flex items-center gap-2.5 border-b border-[var(--theme-border)] px-4 py-3">
               <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundImage: AI_GRADIENT }}>
                 <AiMark className="h-4 w-4 text-white" />

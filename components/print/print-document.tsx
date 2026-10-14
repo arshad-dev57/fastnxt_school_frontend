@@ -57,8 +57,20 @@ export function printedOnLabel(d = new Date()) {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export function triggerPrint() {
-  if (typeof window !== "undefined") window.print();
+export function triggerPrint(selectorOrEvent?: string | { preventDefault?: () => void }) {
+  if (typeof window === "undefined") return;
+  const selector =
+    typeof selectorOrEvent === "string" && selectorOrEvent
+      ? selectorOrEvent
+      : ".print-document, .print-area";
+  // Prefer isolated iframe print so AI logo / chrome never appear.
+  void import("@/lib/print-element").then(({ printElement }) => {
+    const ok = printElement(selector, {
+      title: "Print",
+      pageCss: "@page { size: A4 portrait; margin: 12mm; }",
+    });
+    if (!ok) window.print();
+  });
 }
 
 /** Official A4 report shell — letterhead + title + body + signatures. */

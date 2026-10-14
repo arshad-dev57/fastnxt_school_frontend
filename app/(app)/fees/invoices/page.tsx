@@ -13,9 +13,11 @@ import { BranchScopeBar } from "@/components/branch/branch-ui";
 import { FeeVoucherDocument } from "@/components/fees/fee-voucher";
 import { FeeReceiptPreviewModal } from "@/components/fees/fee-receipt-actions";
 import {
+  accountsApi,
   describeApiError,
   feesApi,
   studentsApi,
+  type CashBankAccountItem,
   type DiscountTypeItem,
   type FeeInvoiceItem,
   type FeeInvoiceStatus,
@@ -25,6 +27,11 @@ import {
   type FeeVoucherTemplate,
   type StudentItem,
 } from "@/lib/auth/api-client";
+
+function cashBankLabel(a: CashBankAccountItem) {
+  const num = a.number && a.number !== "—" ? a.number : "";
+  return num ? `${a.name} (${num})` : a.name;
+}
 
 const COLS = "grid-cols-[130px_minmax(150px,1.2fr)_100px_110px_100px_100px_100px_90px_90px_100px_120px_64px]";
 const STEPS = 8;
@@ -53,6 +60,8 @@ export default function FeeInvoicesPage() {
   const [paying, setPaying] = useState<FeeInvoiceItem | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState("Cash");
+  const [cashBankAccountId, setCashBankAccountId] = useState("");
+  const [cashBankAccounts, setCashBankAccounts] = useState<CashBankAccountItem[]>([]);
   const [payReference, setPayReference] = useState("");
   const [paySaving, setPaySaving] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
@@ -65,17 +74,19 @@ export default function FeeInvoicesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [invRes, stRes, discRes, tmplRes] = await Promise.all([
+      const [invRes, stRes, discRes, tmplRes, bankRes] = await Promise.all([
         feesApi.listInvoices({ branchId: branchScope }),
         studentsApi.list({ branchId: branchScope, status: "Active" }),
         feesApi.listDiscounts({ status: "Active", branchId: branchScope }),
         feesApi.getVoucherTemplate(),
+        accountsApi.listBankAccounts({ branchId: branchScope }).catch(() => ({ accounts: [] as CashBankAccountItem[] })),
       ]);
       setRows(invRes.invoices ?? []);
       setStudents(stRes.students ?? []);
       setDiscounts(discRes.discounts ?? []);
       setVoucherTemplate(tmplRes.template);
       setVoucherSchool(tmplRes.school);
+      setCashBankAccounts((bankRes.accounts || []).filter((a) => a.isActive !== false));
     } catch (err) {
       setError(describeApiError(err).message);
       setRows([]);
@@ -85,6 +96,22 @@ export default function FeeInvoicesPage() {
   }, [branchScope]);
 
   useEffect(() => { load(); }, [load]);
+
+  const cashBankOptions = useMemo(() => {
+    if (payMethod === "Cash") return cashBankAccounts.filter((a) => a.kind === "Cash");
+    const banks = cashBankAccounts.filter((a) => a.kind === "Bank");
+    return banks.length > 0 ? banks : cashBankAccounts;
+  }, [cashBankAccounts, payMethod]);
+
+  useEffect(() => {
+    if (cashBankOptions.length === 0) {
+      setCashBankAccountId("");
+      return;
+    }
+    if (!cashBankOptions.some((a) => a.id === cashBankAccountId)) {
+      setCashBankAccountId(cashBankOptions[0].id);
+    }
+  }, [cashBankOptions, cashBankAccountId]);
 
   const filtered = useMemo(() => {
     const term = q.toLowerCase().trim();
@@ -134,6 +161,10 @@ export default function FeeInvoicesPage() {
       setPayError(`Amount exceeds outstanding balance (Rs ${paying.balance}).`);
       return;
     }
+    if (!cashBankAccountId) {
+      setPayError(payMethod === "Cash" ? "Please select a cash account." : "Please select a bank account.");
+      return;
+    }
     setPaySaving(true);
     setPayError(null);
     try {
@@ -144,6 +175,7 @@ export default function FeeInvoicesPage() {
       const res = await feesApi.recordPayment(paying.id, {
         amount,
         method: payMethod,
+        cashBankAccountId,
         reference: payReference || undefined,
         idempotencyKey,
         branchId: branchScope ?? null,
@@ -348,7 +380,21 @@ export default function FeeInvoicesPage() {
               Edit voucher layout
             </Link>
             <Btn variant="secondary" onClick={() => setView(null)}>Close</Btn>
-            <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print Voucher</Btn>
+            <Btn
+              variant="primary"
+              Icon={Printer}
+              onClick={() => {
+                void import("@/lib/print-element").then(({ printElement }) => {
+                  const ok = printElement("[data-print-root='fee-voucher']", {
+                    title: view ? `Fee Voucher — ${view.invoiceNo}` : "Fee Voucher",
+                    pageCss: "@page { size: A4 portrait; margin: 10mm; }",
+                  });
+                  if (!ok) window.print();
+                });
+              }}
+            >
+              Print Voucher
+            </Btn>
             {view && view.balance > 0 ? (
               <Btn variant="primary" Icon={CreditCard} onClick={() => { setView(null); openCollect(view); }}>
                 Collect Payment
@@ -358,11 +404,13 @@ export default function FeeInvoicesPage() {
         }
       >
         {view ? (
-          <FeeVoucherDocument
-            invoice={view}
-            template={voucherTemplate}
-            school={voucherSchool}
-          />
+          <div data-print-root="fee-voucher">
+            <FeeVoucherDocument
+              invoice={view}
+              template={voucherTemplate}
+              school={voucherSchool}
+            />
+          </div>
         ) : null}
       </Modal>
 
@@ -403,6 +451,23 @@ export default function FeeInvoicesPage() {
           <Field label="Payment Method">
             <Select options={["Cash", "Bank", "Cheque", "Online"]} value={payMethod} onChange={(e) => setPayMethod(e.target.value)} />
           </Field>
+          <Field label={payMethod === "Cash" ? "Cash Account" : "Bank Account"}>
+            <select
+              value={cashBankAccountId}
+              onChange={(e) => setCashBankAccountId(e.target.value)}
+              className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] outline-none focus:border-[var(--theme-primary)]"
+            >
+              {cashBankOptions.length === 0 ? (
+                <option value="">No {payMethod === "Cash" ? "cash" : "bank"} accounts found</option>
+              ) : (
+                cashBankOptions.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {cashBankLabel(a)} · Bal {rs(a.balance || 0)}
+                  </option>
+                ))
+              )}
+            </select>
+          </Field>
           <Field label="Reference / Transaction No (optional)">
             <input
               value={payReference}
@@ -434,7 +499,11 @@ export default function FeeInvoicesPage() {
                 <div className="min-w-0">
                   <p className="font-mono text-[13px] font-semibold">{p.receiptNo}</p>
                   <p className="text-[12px] text-[var(--theme-text-muted)]">
-                    {new Date(p.paidAt).toLocaleString()} · {p.method} · {p.status}
+                    {new Date(p.paidAt).toLocaleString()} · {p.method}
+                    {p.cashBankAccountName
+                      ? ` · ${p.cashBankAccountNumber ? `${p.cashBankAccountName} (${p.cashBankAccountNumber})` : p.cashBankAccountName}`
+                      : ""}{" "}
+                    · {p.status}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

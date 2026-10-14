@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Banknote, ArrowLeftRight, FileSearch, Wallet, Plus, RefreshCw } from "lucide-react";
+import { Banknote, FileSearch, Wallet, Plus, RefreshCw } from "lucide-react";
 import { Btn, Card, CardHead, Field, Input, Modal, PageHeader, Select, StatCard, rs } from "@/components/ui";
 import { accountsApi, type CashBankAccountItem } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
@@ -121,7 +121,7 @@ export default function CashBankPage() {
           <StatCard
             label="Total Liquid Funds"
             value={rs(cash + bank)}
-            Icon={ArrowLeftRight}
+            Icon={Wallet}
             tone="purple"
             sub="Available cash + bank"
           />
@@ -170,14 +170,6 @@ export default function CashBankPage() {
                     >
                       <FileSearch className="h-4 w-4" /> Ledger
                     </Link>
-                    {a.kind === "Bank" && (
-                      <Link
-                        href={`/accounts/bank-reconciliation`}
-                        className="inline-flex h-8 items-center gap-1.5 rounded border border-[var(--theme-border-strong)] px-2.5 text-[13px] hover:bg-[var(--theme-hover)]"
-                      >
-                        <ArrowLeftRight className="h-4 w-4" /> Reconcile
-                      </Link>
-                    )}
                   </div>
                 </div>
               ))}

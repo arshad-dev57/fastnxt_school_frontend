@@ -174,9 +174,9 @@ export default function DashboardPage() {
     { label: "Total Classes", value: stats.totalClasses, Icon: School, tone: "purple", sub: "Active class sections" },
     { label: "Total Employees", value: stats.totalEmployees, Icon: Briefcase, tone: "purple", sub: `${stats.activeEmployees} active` },
     { label: "Pending Fees", value: rs(stats.pendingFees), Icon: ReceiptText, tone: "orange", sub: "Outstanding balance" },
-    { label: "Collected Fees", value: rs(stats.collectedFees), Icon: Wallet, tone: "green", sub: "Payments received" },
-    { label: "Income", value: rs(pnl.totalIncome), Icon: TrendingUp, tone: "blue", sub: "Ledger P&L" },
-    { label: "Expenses", value: rs(pnl.totalExpenses), Icon: TrendingDown, tone: "red", sub: "Ledger P&L" },
+    { label: "Collected Fees", value: rs(stats.collectedFees), Icon: Wallet, tone: "green", sub: "From fee invoices" },
+    { label: "Income", value: rs(pnl.totalIncome), Icon: TrendingUp, tone: "blue", sub: "Posted ledger" },
+    { label: "Expenses", value: rs(pnl.totalExpenses), Icon: TrendingDown, tone: "red", sub: "Posted ledger" },
     {
       label: netPnl >= 0 ? "Net Surplus" : "Net Deficit",
       value: rs(Math.abs(netPnl)),

@@ -130,10 +130,12 @@ function VoucherCopy({
       <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
         <Meta label="Student" value={invoice.student} />
         <Meta label="Class" value={`${invoice.cls}-${invoice.section}`} />
+        {invoice.session ? <Meta label="Session" value={invoice.session} /> : null}
         <Meta label="Period" value={invoice.period} />
         <Meta label="Status" value={invoice.status} />
         <Meta label="Issue" value={invoice.issue} />
         <Meta label="Due" value={invoice.due} />
+        {invoice.admissionNo ? <Meta label="Admission No" value={invoice.admissionNo} /> : null}
         {invoice.studentCode ? <Meta label="Student ID" value={invoice.studentCode} /> : null}
       </div>
 
@@ -250,8 +252,10 @@ export function sampleFeeInvoice(): FeeInvoiceItem {
     invoiceNo: "INV-2026-0001",
     student: "Sample Student",
     studentCode: "STD-1001",
+    admissionNo: "ADM-2026-0001",
     cls: "Grade 10",
     section: "A",
+    session: "2025-2026",
     period: "Oct 2026",
     issue: "2026-10-01",
     due: "2026-10-10",

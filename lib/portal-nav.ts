@@ -35,6 +35,7 @@ export const STUDENT_NAV: PortalNavItem[] = [
   { label: "Examinations", href: "/student/exams", Icon: GraduationCap, module: "exams", blurb: "Exam schedule and the class date sheet" },
   { label: "My Meetings", href: "/student/meetings", Icon: Video, module: "meetings", blurb: "Class sessions, doubt clearing and reviews you are invited to" },
   { label: "My Results", href: "/student/results", Icon: Award, module: "results", blurb: "Published marks, grades and class position" },
+  { label: "My Fee Receipts", href: "/student/fees", Icon: Wallet, module: "fees", blurb: "View and print your saved fee payment receipts" },
   { label: "Library", href: "/student/library", Icon: BookOpen, module: "library", blurb: "Borrowed books, due dates and fines" },
   { label: "Notices", href: "/student/notices", Icon: Megaphone, module: "communication", blurb: "Circulars and announcements for students" },
   { label: "Events", href: "/student/events", Icon: CalendarDays, module: "events", blurb: "Sports day, exhibitions and school calendar" },

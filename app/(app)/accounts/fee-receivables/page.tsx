@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Filter, HandCoins, DollarSign, RefreshCw, CheckCircle2, Printer } from "lucide-react";
+import { Filter, HandCoins, DollarSign, RefreshCw, CheckCircle2, Printer, FileDown } from "lucide-react";
 import { Btn, Field, Input, Modal, Select, StatCard, rs } from "@/components/ui";
 import { BoardList, type BoardColumn } from "@/components/board-list";
 import { StatusPill, ToolDropdown, statusColor, type BoardView } from "@/components/board-kit";
 import { money } from "@/components/report";
 import { BoardPageSkeleton } from "@/components/skeleton";
 import { FeeReceiptPreviewModal } from "@/components/fees/fee-receipt-actions";
+import { downloadBrandedPdf } from "@/lib/pdf-export";
 import {
   accountsApi,
   feesApi,
@@ -47,6 +48,7 @@ export default function FeeReceivablesPage() {
   const [collectErr, setCollectErr] = useState<string | null>(null);
   const [payReference, setPayReference] = useState("");
   const [receipt, setReceipt] = useState<FeePaymentItem | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const fetchReceivables = async () => {
     setLoading(true);
@@ -100,6 +102,86 @@ export default function FeeReceivablesPage() {
         .filter((r) => (cls ? r.cls === cls : true)),
     [rows, q, status, cls]
   );
+
+  const printReceivables = () => {
+    const stamp = new Date().toLocaleString("en-GB");
+    const bodyRows = filtered
+      .map(
+        (r) => `<tr>
+          <td>${escapeHtml(r.invoice)}</td>
+          <td>${escapeHtml(r.student)}</td>
+          <td>${escapeHtml(`${r.cls}-${r.section}`)}</td>
+          <td>${escapeHtml(r.dueDate || "—")}</td>
+          <td class="num">${rs(r.total || 0)}</td>
+          <td class="num">${rs(r.paid || 0)}</td>
+          <td class="num">${rs(r.outstanding || 0)}</td>
+          <td>${escapeHtml(r.status)}</td>
+        </tr>`
+      )
+      .join("");
+    const html = `<!doctype html><html><head><meta charset="utf-8" /><title>Fee Receivables</title>
+      <style>
+        body{font-family:Helvetica,Arial,sans-serif;color:#111;margin:16px}
+        h1{font-size:18px;margin:0 0 4px} .sub{color:#64748b;font-size:12px;margin-bottom:14px}
+        table{width:100%;border-collapse:collapse;font-size:11px}
+        th,td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left}
+        th{background:#e8f1f8;color:#0f4c81}
+        td.num{text-align:right;white-space:nowrap}
+        .summary{display:flex;gap:16px;margin-bottom:12px;font-size:12px}
+        .summary div{border:1px solid #e2e8f0;padding:8px 10px;border-radius:6px}
+        @page{size:A4 landscape;margin:10mm}
+      </style></head><body>
+      <h1>Fee Receivables</h1>
+      <div class="sub">Printed ${escapeHtml(stamp)} · ${filtered.length} invoice(s)</div>
+      <div class="summary">
+        <div><strong>Total Receivable</strong><br/>${rs(summary.total)}</div>
+        <div><strong>Current Due</strong><br/>${rs(summary.currentDue)}</div>
+        <div><strong>Overdue</strong><br/>${rs(summary.overdue)}</div>
+        <div><strong>Collected</strong><br/>${rs(summary.collected)}</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Invoice</th><th>Student</th><th>Class</th><th>Due</th>
+          <th>Total</th><th>Paid</th><th>Outstanding</th><th>Status</th>
+        </tr></thead>
+        <tbody>${bodyRows || `<tr><td colspan="8" style="text-align:center">No receivables</td></tr>`}</tbody>
+      </table>
+      </body></html>`;
+    void import("@/lib/print-element").then(({ printHtml }) => {
+      if (!printHtml(html)) window.print();
+    });
+  };
+
+  const downloadReceivablesPdf = async () => {
+    setPdfBusy(true);
+    try {
+      await downloadBrandedPdf({
+        reportTitle: "Fee Receivables",
+        subtitle: `${filtered.length} invoice(s) · Outstanding ${rs(summary.total)}`,
+        orientation: "landscape",
+        sections: [
+          {
+            title: "Outstanding Fee Invoices",
+            head: ["Invoice", "Student", "Class", "Due", "Total", "Paid", "Outstanding", "Status"],
+            body: filtered.map((r) => [
+              r.invoice,
+              r.student,
+              `${r.cls}-${r.section}`,
+              r.dueDate || "—",
+              rs(r.total || 0),
+              rs(r.paid || 0),
+              rs(r.outstanding || 0),
+              r.status,
+            ]),
+          },
+        ],
+      });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to generate PDF.");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   const groups = useMemo(
     () =>
@@ -273,13 +355,24 @@ export default function FeeReceivablesPage() {
         Icon={HandCoins}
         nameLabel="Invoice #"
         primaryAction={
-          <button
-            type="button"
-            onClick={fetchReceivables}
-            className="inline-flex h-9 items-center gap-1.5 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px] hover:bg-[var(--theme-hover)]"
-          >
-            <RefreshCw className="h-4 w-4" /> Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Btn variant="secondary" Icon={RefreshCw} onClick={fetchReceivables} loading={loading} loadingLabel="Refreshing…">
+              Refresh
+            </Btn>
+            <Btn variant="secondary" Icon={Printer} onClick={printReceivables} disabled={filtered.length === 0}>
+              Print
+            </Btn>
+            <Btn
+              variant="primary"
+              Icon={FileDown}
+              onClick={() => void downloadReceivablesPdf()}
+              loading={pdfBusy}
+              loadingLabel="Preparing…"
+              disabled={filtered.length === 0 || pdfBusy}
+            >
+              PDF
+            </Btn>
+          </div>
         }
         search={q}
         onSearch={setQ}
@@ -424,4 +517,12 @@ export default function FeeReceivablesPage() {
       />
     </div>
   );
+}
+
+function escapeHtml(s: string) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

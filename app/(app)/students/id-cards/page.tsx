@@ -91,7 +91,21 @@ export default function StudentIdCardsPage() {
               >
                 <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               </button>
-              <Btn variant="primary" Icon={Printer} onClick={() => window.print()} disabled={selected.length === 0}>
+              <Btn
+                variant="primary"
+                Icon={Printer}
+                disabled={selected.length === 0}
+                onClick={() => {
+                  void import("@/lib/print-element").then(({ printElement }) => {
+                    const ok = printElement("[data-print-root='id-cards']", {
+                      title: "Student ID Cards",
+                      pageCss: "@page { size: A4 portrait; margin: 10mm; }",
+                      extraCss: ".print-break { break-inside: avoid; page-break-inside: avoid; display: inline-block; margin: 6mm; vertical-align: top; }",
+                    });
+                    if (!ok) window.print();
+                  });
+                }}
+              >
                 Print {selected.length ? `(${selected.length})` : ""}
               </Btn>
             </div>
@@ -175,7 +189,10 @@ export default function StudentIdCardsPage() {
       </div>
 
       <div className="px-4 pb-24 sm:px-6">
-        <div className="print-area flex flex-wrap gap-4 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-sidebar)] p-4">
+        <div
+          data-print-root="id-cards"
+          className="print-area flex flex-wrap gap-4 rounded-lg border border-[var(--theme-border)] bg-white p-4"
+        >
           {selectedStudents.map((s) => (
             <IdCardView
               key={s.id}
@@ -187,7 +204,7 @@ export default function StudentIdCardsPage() {
             />
           ))}
           {selectedStudents.length === 0 && (
-            <p className="w-full py-10 text-center text-[14px] text-[var(--theme-text-muted)]">
+            <p className="no-print w-full py-10 text-center text-[14px] text-[var(--theme-text-muted)]">
               Select students above to preview and print their official ID cards.
             </p>
           )}

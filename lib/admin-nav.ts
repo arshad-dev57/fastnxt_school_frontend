@@ -88,7 +88,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { label: "Account Statement", href: "/accounts/statement", module: "accounts" },
       { label: "General Ledger", href: "/accounts/general-ledger", module: "accounts" },
       { label: "Cash & Bank", href: "/accounts/cash-bank", module: "accounts" },
-      { label: "Bank Reconciliation", href: "/accounts/bank-reconciliation", module: "accounts" },
       { label: "Fee Receivables", href: "/accounts/fee-receivables", module: "accounts" },
       { label: "Trial Balance", href: "/accounts/trial-balance", module: "accounts" },
       { label: "Profit & Loss", href: "/accounts/profit-loss", module: "accounts" },

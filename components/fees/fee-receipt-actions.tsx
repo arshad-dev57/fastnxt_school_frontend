@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Printer, Copy, X } from "lucide-react";
 import { Btn, Modal, Select } from "@/components/ui";
 import { FeeReceiptDocument } from "@/components/fees/fee-receipt";
+import { printHtml } from "@/lib/print-element";
+import { buildFeeReceiptPrintHtml } from "@/lib/fee-receipt-print";
 import {
   describeApiError,
   feesApi,
@@ -12,34 +14,19 @@ import {
 } from "@/lib/auth/api-client";
 
 const PAPER_OPTIONS: FeePaymentPaperSize[] = ["A4", "80mm", "58mm"];
+const PAPER_PREF_KEY = "bisons.feeReceipt.paperSize";
 
-const PAGE_CSS: Record<FeePaymentPaperSize, string> = {
-  A4: "@page { size: A4 portrait; margin: 12mm; }",
-  "80mm": "@page { size: 80mm auto; margin: 2mm; }",
-  "58mm": "@page { size: 58mm auto; margin: 1.5mm; }",
-};
+function readPaperPref(): FeePaymentPaperSize {
+  if (typeof window === "undefined") return "A4";
+  const v = window.localStorage.getItem(PAPER_PREF_KEY);
+  if (v === "A4" || v === "80mm" || v === "58mm") return v;
+  return "A4";
+}
 
-export function printFeeReceipt(paperSize: FeePaymentPaperSize = "A4") {
-  if (typeof document === "undefined" || typeof window === "undefined") return;
-
-  const styleId = "fee-receipt-page-style";
-  document.getElementById(styleId)?.remove();
-  const style = document.createElement("style");
-  style.id = styleId;
-  style.textContent = PAGE_CSS[paperSize] || PAGE_CSS.A4;
-  document.head.appendChild(style);
-
-  const cls = `printing-fee-receipt-${paperSize}`;
-  document.body.classList.add(cls);
-
-  const cleanup = () => {
-    document.body.classList.remove(cls);
-    document.getElementById(styleId)?.remove();
-    window.removeEventListener("afterprint", cleanup);
-  };
-  window.addEventListener("afterprint", cleanup);
-  window.print();
-  setTimeout(cleanup, 2500);
+/** Print a professional self-contained receipt (no style cloning). */
+export function printFeeReceipt(receipt: FeePaymentItem, paperSize: FeePaymentPaperSize = "A4") {
+  const html = buildFeeReceiptPrintHtml(receipt, paperSize);
+  printHtml(html);
 }
 
 export function FeeReceiptPreviewModal({
@@ -47,17 +34,27 @@ export function FeeReceiptPreviewModal({
   receipt,
   onClose,
   title = "Fee Receipt",
+  allowDuplicate = true,
 }: {
   open: boolean;
   receipt: FeePaymentItem | null;
   onClose: () => void;
   title?: string;
+  allowDuplicate?: boolean;
 }) {
-  const [paperSize, setPaperSize] = useState<FeePaymentPaperSize>("A4");
+  const [paperSize, setPaperSize] = useState<FeePaymentPaperSize>(() => readPaperPref());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** Overlay version after Duplicate Copy / Show Original — null means use `receipt` prop. */
   const [override, setOverride] = useState<FeePaymentItem | null>(null);
+  const wasOpen = useRef(false);
+
+  if (open && !wasOpen.current) {
+    wasOpen.current = true;
+    const pref = readPaperPref();
+    if (pref !== paperSize) setPaperSize(pref);
+  } else if (!open && wasOpen.current) {
+    wasOpen.current = false;
+  }
 
   const current = open ? (override?.id === receipt?.id ? override : receipt) : null;
 
@@ -66,6 +63,15 @@ export function FeeReceiptPreviewModal({
     setError(null);
     setBusy(false);
     onClose();
+  };
+
+  const onPaperChange = (next: FeePaymentPaperSize) => {
+    setPaperSize(next);
+    try {
+      window.localStorage.setItem(PAPER_PREF_KEY, next);
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleDuplicate = async () => {
@@ -109,20 +115,27 @@ export function FeeReceiptPreviewModal({
             <span className="text-[12px] text-[var(--theme-text-muted)]">Paper</span>
             <Select
               value={paperSize}
-              onChange={(e) => setPaperSize(e.target.value as FeePaymentPaperSize)}
+              onChange={(e) => onPaperChange(e.target.value as FeePaymentPaperSize)}
               options={PAPER_OPTIONS}
               className="w-28"
             />
           </div>
           <Btn variant="secondary" Icon={X} onClick={handleClose}>Close</Btn>
-          {current?.duplicate ? (
-            <Btn variant="secondary" disabled={busy} onClick={handleOriginal}>Show Original</Btn>
-          ) : (
-            <Btn variant="secondary" Icon={Copy} loading={busy} onClick={handleDuplicate}>
-              Duplicate Copy
-            </Btn>
-          )}
-          <Btn variant="primary" Icon={Printer} onClick={() => printFeeReceipt(paperSize)} disabled={!current}>
+          {allowDuplicate ? (
+            current?.duplicate ? (
+              <Btn variant="secondary" disabled={busy} onClick={handleOriginal}>Show Original</Btn>
+            ) : (
+              <Btn variant="secondary" Icon={Copy} loading={busy} onClick={handleDuplicate}>
+                Duplicate Copy
+              </Btn>
+            )
+          ) : null}
+          <Btn
+            variant="primary"
+            Icon={Printer}
+            onClick={() => current && printFeeReceipt(current, paperSize)}
+            disabled={!current}
+          >
             Print / PDF
           </Btn>
         </>
@@ -130,7 +143,9 @@ export function FeeReceiptPreviewModal({
     >
       {error ? <p className="mb-2 text-[13px] text-[var(--theme-danger)]">{error}</p> : null}
       {current ? (
-        <FeeReceiptDocument receipt={current} paperSize={paperSize} />
+        <div className="mx-auto max-w-[640px]">
+          <FeeReceiptDocument receipt={current} paperSize={paperSize} />
+        </div>
       ) : (
         <p className="py-8 text-center text-[13px] text-[var(--theme-text-muted)]">No receipt selected.</p>
       )}

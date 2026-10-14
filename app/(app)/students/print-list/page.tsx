@@ -96,7 +96,20 @@ export default function PrintBasicListPage() {
               >
                 <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               </button>
-              <Btn variant="primary" Icon={Printer} onClick={() => window.print()} disabled={list.length === 0}>
+              <Btn
+                variant="primary"
+                Icon={Printer}
+                disabled={list.length === 0}
+                onClick={() => {
+                  void import("@/lib/print-element").then(({ printElement }) => {
+                    const ok = printElement("[data-print-root='student-list']", {
+                      title: "Student List",
+                      pageCss: "@page { size: A4 portrait; margin: 12mm; }",
+                    });
+                    if (!ok) window.print();
+                  });
+                }}
+              >
                 Print List
               </Btn>
             </div>
@@ -148,7 +161,10 @@ export default function PrintBasicListPage() {
       </div>
 
       <div className="px-4 pb-24 sm:px-6">
-        <div className="print-area print-document mx-auto max-w-[210mm] bg-white p-8 text-black shadow-sm ring-1 ring-black/10 print:max-w-none print:p-0 print:shadow-none print:ring-0">
+        <div
+          data-print-root="student-list"
+          className="print-area print-document mx-auto max-w-[210mm] bg-white p-8 text-black shadow-sm ring-1 ring-black/10 print:max-w-none print:p-0 print:shadow-none print:ring-0"
+        >
           {showMeta && (
             <header className="mb-5 flex items-start justify-between gap-4 border-b-2 border-black pb-4">
               <div className="flex items-center gap-3">

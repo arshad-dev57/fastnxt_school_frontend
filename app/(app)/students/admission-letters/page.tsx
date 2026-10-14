@@ -76,7 +76,15 @@ export default function AdmissionLettersPage() {
     .filter((r) => (status ? r.status === status : true)),
   [rows, q, status]);
 
-  const doPrint = () => window.print();
+  const doPrint = () => {
+    void import("@/lib/print-element").then(({ printElement }) => {
+      const ok = printElement("[data-print-root='admission-letter']", {
+        title: preview ? `Admission Letter — ${preview.admissionNo}` : "Admission Letter",
+        pageCss: "@page { size: A4 portrait; margin: 14mm; }",
+      });
+      if (!ok) window.print();
+    });
+  };
 
   const handleGenerate = async () => {
     if (!selectedStudentName) return;
@@ -322,35 +330,37 @@ export default function AdmissionLettersPage() {
                 Customize layout
               </Link>
             </div>
-            <OfficialLetterDocument
-              template={template}
-              school={letterSchool || (school ? {
-                id: school.id || "",
-                name: school.name,
-                shortName: school.shortName,
-                address: school.address,
-                phone: school.phone,
-                email: school.email,
-                website: school.website,
-                principal: school.principal,
-                logoUrl: school.logoUrl,
-                academicSession: school.academicSession,
-              } : null)}
-              refNo={preview.admissionNo}
-              date={preview.date}
-              vars={{
-                studentName: preview.student,
-                classSection: `${preview.cls} (Section ${preview.section})`,
-              }}
-              detailRows={[
-                ["Student Name", preview.student],
-                ["Admission Number", preview.admissionNo],
-                ["Class / Section", `${preview.cls} - ${preview.section}`],
-                ["Academic Session", letterSchool?.academicSession || school?.academicSession || "2025-2026"],
-                ["Admission Date", preview.date],
-                ["Status", preview.status],
-              ]}
-            />
+            <div data-print-root="admission-letter">
+              <OfficialLetterDocument
+                template={template}
+                school={letterSchool || (school ? {
+                  id: school.id || "",
+                  name: school.name,
+                  shortName: school.shortName,
+                  address: school.address,
+                  phone: school.phone,
+                  email: school.email,
+                  website: school.website,
+                  principal: school.principal,
+                  logoUrl: school.logoUrl,
+                  academicSession: school.academicSession,
+                } : null)}
+                refNo={preview.admissionNo}
+                date={preview.date}
+                vars={{
+                  studentName: preview.student,
+                  classSection: `${preview.cls} (Section ${preview.section})`,
+                }}
+                detailRows={[
+                  ["Student Name", preview.student],
+                  ["Admission Number", preview.admissionNo],
+                  ["Class / Section", `${preview.cls} - ${preview.section}`],
+                  ["Academic Session", letterSchool?.academicSession || school?.academicSession || "2025-2026"],
+                  ["Admission Date", preview.date],
+                  ["Status", preview.status],
+                ]}
+              />
+            </div>
           </div>
         )}
       </Modal>

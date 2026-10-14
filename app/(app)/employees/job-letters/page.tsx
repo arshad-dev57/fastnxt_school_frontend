@@ -161,7 +161,11 @@ export default function JobLettersPage() {
                       <Td className="border-l border-[var(--theme-border)]"><Badge label={r.status} /></Td>
                       <Td className="gap-2 border-l border-[var(--theme-border)]">
                         <Btn size="sm" variant="secondary" Icon={Eye} onClick={() => openPreview(r)}>Preview</Btn>
-                        <Btn size="sm" variant="primary" Icon={Printer} onClick={() => { openPreview(r); setTimeout(() => window.print(), 300); }}>Print</Btn>
+                        <Btn size="sm" variant="primary" Icon={Printer} onClick={() => { openPreview(r); setTimeout(() => {
+                          void import("@/lib/print-element").then(({ printElement }) => {
+                            if (!printElement("[data-print-root='job-letter']", { title: `Job Letter — ${r.employee}`, pageCss: "@page { size: A4 portrait; margin: 14mm; }" })) window.print();
+                          });
+                        }, 350); }}>Print</Btn>
                       </Td>
                       <Td className="justify-center border-l border-[var(--theme-border)]">
                         <RowMenu items={[
@@ -187,7 +191,11 @@ export default function JobLettersPage() {
                       <p className="mt-2 text-[13px] text-[var(--theme-text-muted)]">{r.date}</p>
                       <div className="mt-3 flex gap-2">
                         <Btn size="sm" variant="secondary" Icon={Eye} onClick={() => openPreview(r)}>Preview</Btn>
-                        <Btn size="sm" variant="primary" Icon={Printer} onClick={() => { openPreview(r); setTimeout(() => window.print(), 300); }}>Print</Btn>
+                        <Btn size="sm" variant="primary" Icon={Printer} onClick={() => { openPreview(r); setTimeout(() => {
+                          void import("@/lib/print-element").then(({ printElement }) => {
+                            if (!printElement("[data-print-root='job-letter']", { title: `Job Letter — ${r.employee}`, pageCss: "@page { size: A4 portrait; margin: 14mm; }" })) window.print();
+                          });
+                        }, 350); }}>Print</Btn>
                       </div>
                     </div>
                   ))}
@@ -259,7 +267,21 @@ export default function JobLettersPage() {
             >
               Send email
             </Btn>
-            <Btn variant="primary" Icon={Printer} onClick={() => window.print()}>Print Letter</Btn>
+            <Btn
+              variant="primary"
+              Icon={Printer}
+              onClick={() => {
+                void import("@/lib/print-element").then(({ printElement }) => {
+                  const ok = printElement("[data-print-root='job-letter']", {
+                    title: preview ? `Job Letter — ${preview.employee}` : "Job Letter",
+                    pageCss: "@page { size: A4 portrait; margin: 14mm; }",
+                  });
+                  if (!ok) window.print();
+                });
+              }}
+            >
+              Print Letter
+            </Btn>
           </>
         }
       >
@@ -276,24 +298,26 @@ export default function JobLettersPage() {
                 />
               </Field>
             </div>
-            <OfficialLetterDocument
-              template={template}
-              school={letterSchool}
-              refNo={preview.id}
-              date={preview.date}
-              vars={{
-                employeeName: preview.employee,
-                designation: preview.designation,
-                department: preview.department,
-              }}
-              detailRows={[
-                ["Employee", preview.employee],
-                ["Designation", preview.designation],
-                ["Department", preview.department],
-                ["Letter date", preview.date],
-                ["Status", preview.status],
-              ]}
-            />
+            <div data-print-root="job-letter">
+              <OfficialLetterDocument
+                template={template}
+                school={letterSchool}
+                refNo={preview.id}
+                date={preview.date}
+                vars={{
+                  employeeName: preview.employee,
+                  designation: preview.designation,
+                  department: preview.department,
+                }}
+                detailRows={[
+                  ["Employee", preview.employee],
+                  ["Designation", preview.designation],
+                  ["Department", preview.department],
+                  ["Letter date", preview.date],
+                  ["Status", preview.status],
+                ]}
+              />
+            </div>
           </div>
         )}
       </Modal>

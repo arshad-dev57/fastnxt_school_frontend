@@ -181,6 +181,17 @@ body {
   .print-only { display: block !important; }
   .print-only-flex { display: flex !important; }
 
+  /* Never print floating chrome (AI assistant, toasts, notification floats). */
+  .ai-wrap,
+  .ai-float,
+  [aria-label="Open Bisons AI assistant"],
+  [aria-label="Bisons AI assistant preview"],
+  .notification-float,
+  .dashboard-float {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
   html, body { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
   .app-root { height: auto !important; overflow: visible !important; background: #fff !important; }
   .app-scroll { overflow: visible !important; height: auto !important; min-height: 0 !important; }

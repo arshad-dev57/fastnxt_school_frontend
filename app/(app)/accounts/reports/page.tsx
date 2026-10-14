@@ -30,7 +30,6 @@ const REPORTS_CATALOG: AccountReport[] = [
   { title: "Balance Sheet", desc: "Assets, liabilities and school equity fund", href: "/accounts/balance-sheet", icon: "building", group: "Financial Statements" },
   { title: "Cash Flow Statement", desc: "Operating, investing & financing flows", href: "/accounts/cash-flow", icon: "flow", group: "Financial Statements" },
   { title: "Cash & Bank Summary", desc: "Liquid cash registers and bank accounts", href: "/accounts/cash-bank", icon: "wallet", group: "Cash & Banking" },
-  { title: "Bank Reconciliation", desc: "Bank statement vs book transactions", href: "/accounts/bank-reconciliation", icon: "statement", group: "Cash & Banking" },
   { title: "Fee Receivables", desc: "Outstanding student dues and collection", href: "/accounts/fee-receivables", icon: "receipt", group: "Fee Accounting" },
   { title: "Income Accounts", desc: "Categorical income posting and vouchers", href: "/accounts/income", icon: "trend", group: "Transactions" },
   { title: "Expense Accounts", desc: "Categorical expenditure and payments", href: "/accounts/expense", icon: "trend", group: "Transactions" },
