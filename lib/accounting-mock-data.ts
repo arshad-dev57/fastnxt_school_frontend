@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — Accounting module mock data (UI only, no backend)
+   FastNxt — Accounting module mock data (UI only, no backend)
    ---------------------------------------------------------------------------
    ⚠️  Every figure is clearly FICTIONAL demo data for the prototype.
        Grouped + typed so the pages can later be wired to real APIs without

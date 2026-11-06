@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================================
-   BisonsEduCore360 — Branch Context / Provider
+   FastNxt — Branch Context / Provider
    Centralized branch state management for multi-campus support
    ========================================================================== */
 

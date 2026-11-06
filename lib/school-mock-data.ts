@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — School-module mock data (frontend prototype only)
+   FastNxt — School-module mock data (frontend prototype only)
    ---------------------------------------------------------------------------
    Every record carries a real `branchId` so branch isolation is a straight
    match (no hashing). Relationships stay realistic:

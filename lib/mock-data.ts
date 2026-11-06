@@ -1,5 +1,5 @@
 /* ============================================================================
-   Bisonseducore360 — mock data (frontend prototype only, no backend)
+   FastNxt — mock data (frontend prototype only, no backend)
    ========================================================================== */
 
 export const SESSIONS = ["2023-2024", "2024-2025", "2025-2026"];
@@ -83,18 +83,18 @@ export type EmployeeRow = {
 };
 
 export const EMPLOYEE_ROWS: EmployeeRow[] = [
-  { id: "EMP-001", name: "Amara Reyes", designation: "Principal", department: "Administration", phone: "0320-1112223", email: "amara.reyes@bisons.edu", joining: "2015-03-01", status: "Active" },
-  { id: "EMP-002", name: "Daniel Okafor", designation: "Vice Principal", department: "Administration", phone: "0321-2223334", email: "daniel.okafor@bisons.edu", joining: "2016-06-12", status: "Active" },
-  { id: "EMP-003", name: "Priya Nair", designation: "Senior Teacher", department: "Academics", phone: "0322-3334445", email: "priya.nair@bisons.edu", joining: "2017-08-20", status: "Active" },
-  { id: "EMP-004", name: "Liam Bennett", designation: "Teacher", department: "Academics", phone: "0323-4445556", email: "liam.bennett@bisons.edu", joining: "2018-09-05", status: "Active" },
-  { id: "EMP-005", name: "Sana Iqbal", designation: "Teacher", department: "Academics", phone: "0324-5556667", email: "sana.iqbal@bisons.edu", joining: "2019-04-02", status: "Active" },
-  { id: "EMP-006", name: "Bilal Raza", designation: "Teacher", department: "Academics", phone: "0325-6667778", email: "bilal.raza@bisons.edu", joining: "2020-01-15", status: "Active" },
-  { id: "EMP-007", name: "Maria Fernandes", designation: "Accountant", department: "Finance", phone: "0326-7778889", email: "maria.f@bisons.edu", joining: "2018-02-10", status: "Active" },
-  { id: "EMP-008", name: "Hassan Sheikh", designation: "Receptionist", department: "Front Office", phone: "0327-8889990", email: "hassan.s@bisons.edu", joining: "2021-05-22", status: "Active" },
-  { id: "EMP-009", name: "Nadia Rehman", designation: "Teacher", department: "Academics", phone: "0328-9990001", email: "nadia.rehman@bisons.edu", joining: "2019-08-30", status: "Inactive" },
-  { id: "EMP-010", name: "Kiran Shah", designation: "Lab Assistant", department: "Science Lab", phone: "0329-0001112", email: "kiran.shah@bisons.edu", joining: "2022-03-14", status: "Active" },
-  { id: "EMP-011", name: "Farhan Sheikh", designation: "IT Support", department: "Technology", phone: "0330-1112224", email: "farhan.s@bisons.edu", joining: "2020-11-08", status: "Active" },
-  { id: "EMP-012", name: "Ayesha Malik", designation: "Teacher", department: "Academics", phone: "0331-2223335", email: "ayesha.malik@bisons.edu", joining: "2021-09-01", status: "Active" },
+  { id: "EMP-001", name: "Amara Reyes", designation: "Principal", department: "Administration", phone: "0320-1112223", email: "amara.reyes@school.local", joining: "2015-03-01", status: "Active" },
+  { id: "EMP-002", name: "Daniel Okafor", designation: "Vice Principal", department: "Administration", phone: "0321-2223334", email: "daniel.okafor@school.local", joining: "2016-06-12", status: "Active" },
+  { id: "EMP-003", name: "Priya Nair", designation: "Senior Teacher", department: "Academics", phone: "0322-3334445", email: "priya.nair@school.local", joining: "2017-08-20", status: "Active" },
+  { id: "EMP-004", name: "Liam Bennett", designation: "Teacher", department: "Academics", phone: "0323-4445556", email: "liam.bennett@school.local", joining: "2018-09-05", status: "Active" },
+  { id: "EMP-005", name: "Sana Iqbal", designation: "Teacher", department: "Academics", phone: "0324-5556667", email: "sana.iqbal@school.local", joining: "2019-04-02", status: "Active" },
+  { id: "EMP-006", name: "Bilal Raza", designation: "Teacher", department: "Academics", phone: "0325-6667778", email: "bilal.raza@school.local", joining: "2020-01-15", status: "Active" },
+  { id: "EMP-007", name: "Maria Fernandes", designation: "Accountant", department: "Finance", phone: "0326-7778889", email: "maria.f@school.local", joining: "2018-02-10", status: "Active" },
+  { id: "EMP-008", name: "Hassan Sheikh", designation: "Receptionist", department: "Front Office", phone: "0327-8889990", email: "hassan.s@school.local", joining: "2021-05-22", status: "Active" },
+  { id: "EMP-009", name: "Nadia Rehman", designation: "Teacher", department: "Academics", phone: "0328-9990001", email: "nadia.rehman@school.local", joining: "2019-08-30", status: "Inactive" },
+  { id: "EMP-010", name: "Kiran Shah", designation: "Lab Assistant", department: "Science Lab", phone: "0329-0001112", email: "kiran.shah@school.local", joining: "2022-03-14", status: "Active" },
+  { id: "EMP-011", name: "Farhan Sheikh", designation: "IT Support", department: "Technology", phone: "0330-1112224", email: "farhan.s@school.local", joining: "2020-11-08", status: "Active" },
+  { id: "EMP-012", name: "Ayesha Malik", designation: "Teacher", department: "Academics", phone: "0331-2223335", email: "ayesha.malik@school.local", joining: "2021-09-01", status: "Active" },
 ];
 
 /* ---------------------------------------------------------------- Families */
@@ -216,14 +216,14 @@ export type UserRow = {
 };
 
 export const USER_ROWS: UserRow[] = [
-  { id: "USR-01", name: "Amara Reyes", email: "amara.reyes@bisons.edu", phone: "0300-1112233", role: "Super Admin", lastLogin: "2026-01-13 09:12", status: "Active" },
-  { id: "USR-02", name: "Daniel Okafor", email: "daniel.okafor@bisons.edu", phone: "0300-2223344", role: "Owner", lastLogin: "2026-01-13 08:40", status: "Active" },
-  { id: "USR-03", name: "Priya Nair", email: "priya.nair@bisons.edu", phone: "0300-3334455", role: "Branch Admin", lastLogin: "2026-01-12 15:22", status: "Active" },
-  { id: "USR-04", name: "Liam Bennett", email: "liam.bennett@bisons.edu", phone: "0300-4445566", role: "Teacher", lastLogin: "2026-01-12 11:05", status: "Active" },
-  { id: "USR-05", name: "Maria Fernandes", email: "maria.f@bisons.edu", phone: "0300-5556677", role: "Accountant", lastLogin: "2026-01-11 14:48", status: "Active" },
-  { id: "USR-06", name: "Hassan Sheikh", email: "hassan.s@bisons.edu", phone: "0300-6667788", role: "Receptionist", lastLogin: "2026-01-10 09:30", status: "Active" },
-  { id: "USR-07", name: "Nadia Rehman", email: "nadia.rehman@bisons.edu", phone: "0300-7778899", role: "Teacher", lastLogin: "2025-12-20 16:10", status: "Inactive" },
-  { id: "USR-08", name: "Farhan Sheikh", email: "farhan.s@bisons.edu", phone: "0300-8889900", role: "Branch Admin", lastLogin: "2026-01-09 10:02", status: "Active" },
+  { id: "USR-01", name: "Amara Reyes", email: "amara.reyes@school.local", phone: "0300-1112233", role: "Super Admin", lastLogin: "2026-01-13 09:12", status: "Active" },
+  { id: "USR-02", name: "Daniel Okafor", email: "daniel.okafor@school.local", phone: "0300-2223344", role: "Owner", lastLogin: "2026-01-13 08:40", status: "Active" },
+  { id: "USR-03", name: "Priya Nair", email: "priya.nair@school.local", phone: "0300-3334455", role: "Branch Admin", lastLogin: "2026-01-12 15:22", status: "Active" },
+  { id: "USR-04", name: "Liam Bennett", email: "liam.bennett@school.local", phone: "0300-4445566", role: "Teacher", lastLogin: "2026-01-12 11:05", status: "Active" },
+  { id: "USR-05", name: "Maria Fernandes", email: "maria.f@school.local", phone: "0300-5556677", role: "Accountant", lastLogin: "2026-01-11 14:48", status: "Active" },
+  { id: "USR-06", name: "Hassan Sheikh", email: "hassan.s@school.local", phone: "0300-6667788", role: "Receptionist", lastLogin: "2026-01-10 09:30", status: "Active" },
+  { id: "USR-07", name: "Nadia Rehman", email: "nadia.rehman@school.local", phone: "0300-7778899", role: "Teacher", lastLogin: "2025-12-20 16:10", status: "Inactive" },
+  { id: "USR-08", name: "Farhan Sheikh", email: "farhan.s@school.local", phone: "0300-8889900", role: "Branch Admin", lastLogin: "2026-01-09 10:02", status: "Active" },
 ];
 
 export const USER_ROLES: UserRole[] = ["Super Admin", "Owner", "Branch Admin", "Accountant", "Receptionist", "Teacher", "Student"];
@@ -348,14 +348,14 @@ export const EXPENSE_CATEGORIES = ["Salaries", "Utilities", "Supplies", "Transpo
 export const FREQUENCIES = ["Monthly", "Quarterly", "Annually", "One-time"];
 
 export const SCHOOL = {
-  name: "Bisons Educore360 School System",
-  shortName: "Bisons Educore360",
-  address: "12-A, Education Avenue, Gulberg III, Lahore, Pakistan",
-  phone: "+92 42 1234 5678",
-  email: "info@bisonseducore360.edu",
-  website: "www.bisonseducore360.edu",
-  instituteNo: "INST-2015-0091",
-  principal: "Amara Reyes",
+  name: "FastNxt School System",
+  shortName: "FastNxt",
+  address: "",
+  phone: "",
+  email: "",
+  website: "",
+  instituteNo: "",
+  principal: "",
   session: "2025-2026",
 };
 

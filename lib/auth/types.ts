@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — Shared authentication types
+   FastNxt — Shared authentication types
    ---------------------------------------------------------------------------
    Plain, dependency-free types shared by the client (React context, API
    client). Nothing here imports server-only code, so it is safe to pull into

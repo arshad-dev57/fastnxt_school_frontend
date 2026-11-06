@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================================
-   BisonsEduCore360 — Authentication context (real API session)
+   FastNxt — Authentication context (real API session)
    ---------------------------------------------------------------------------
    The session is owned by the API (../bisonseducore360_backend) and travels in
    the httpOnly `bisons_session` cookie, so nothing sensitive is ever kept in

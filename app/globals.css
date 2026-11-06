@@ -98,7 +98,7 @@ body {
   .sticker-pop { animation: none !important; }
 }
 
-/* -------------------------------------------------- Bisons AI assistant */
+/* -------------------------------------------------- FastNxt AI assistant */
 /* Self-contained, dependency-free AI emblem. GPU-friendly only
    (transform + opacity + gradients). Motion is opt-in via the guard below. */
 @keyframes ai-float {
@@ -184,8 +184,8 @@ body {
   /* Never print floating chrome (AI assistant, toasts, notification floats). */
   .ai-wrap,
   .ai-float,
-  [aria-label="Open Bisons AI assistant"],
-  [aria-label="Bisons AI assistant preview"],
+  [aria-label="Open FastNxt AI assistant"],
+  [aria-label="FastNxt AI assistant preview"],
   .notification-float,
   .dashboard-float {
     display: none !important;

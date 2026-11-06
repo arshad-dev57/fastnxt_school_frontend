@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — Authentication form helpers (frontend only)
+   FastNxt — Authentication form helpers (frontend only)
    ---------------------------------------------------------------------------
    Small, dependency-free helpers shared by the auth screens: email masking for
    the "verify your email" screen, lightweight client-side form validation and

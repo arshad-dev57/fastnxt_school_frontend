@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — dashboard analytics mock data (frontend only)
+   FastNxt — dashboard analytics mock data (frontend only)
    ---------------------------------------------------------------------------
    ⚠️  All numbers are clearly FICTIONAL demo values for the prototype.
        They are grouped by module and typed so they can be swapped 1:1 with API

@@ -27,22 +27,14 @@ const HIGHLIGHTS = [
 
 export function BrandLockup({ invert = false, className = "" }: { invert?: boolean; className?: string }) {
   return (
-    <Link href="/login" className={cn("inline-flex items-center gap-2.5", className)} aria-label="BisonsEduCore360 home">
+    <Link href="/login" className={cn("inline-flex items-center", className)} aria-label="FastNxt home">
       <span
         className={cn(
-          "flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl",
-          invert ? "bg-white/15 ring-1 ring-white/25" : "bg-[var(--theme-subtle)] ring-1 ring-[var(--theme-border)]"
+          "flex h-12 items-center overflow-hidden rounded-xl px-2 py-1",
+          invert ? "bg-white ring-1 ring-white/40" : "bg-white ring-1 ring-[var(--theme-border)]"
         )}
       >
-        <img src="/logo.png" alt="BisonsEduCore360 logo" className="h-9 w-9 object-contain" />
-      </span>
-      <span className="min-w-0 leading-tight">
-        <span className={cn("block truncate text-[19px] font-bold tracking-tight", invert ? "text-white" : "text-[var(--theme-text)]")}>
-          BisonsEduCore360
-        </span>
-        <span className={cn("block truncate text-[12px] font-medium", invert ? "text-white/70" : "text-[var(--theme-text-muted)]")}>
-          Complete School Management Platform
-        </span>
+        <img src="/logo.png" alt="FastNxt" className="h-10 w-auto max-w-[200px] object-contain object-left" />
       </span>
     </Link>
   );
@@ -77,7 +69,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
             Run your entire school from one calm dashboard.
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-white/80">
-            BisonsEduCore360 brings academics, finance, staff and communication together — so your teams
+            FastNxt brings academics, finance, staff and communication together — so your teams
             spend less time on paperwork and more time with students.
           </p>
 
@@ -97,7 +89,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
         </div>
 
         <p className="relative text-[12px] text-white/60">
-          © 2026 BisonsEduCore360 · School Management System
+          © 2026 FastNxt · School Management System
         </p>
       </aside>
 

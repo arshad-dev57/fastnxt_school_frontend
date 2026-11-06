@@ -124,7 +124,7 @@ export default function RegisterPage() {
   return (
     <AuthCard
       title="Create your school account"
-      subtitle="Set up BisonsEduCore360 for your institution. You can add students, teachers and staff right after."
+      subtitle="Set up FastNxt for your institution. You can add students, teachers and staff right after."
       footer={
         <span className="text-[var(--theme-text-muted)]">
           Already have an account?{" "}
@@ -140,7 +140,7 @@ export default function RegisterPage() {
             <IconInput
               icon={Building2}
               name="schoolName"
-              placeholder="e.g. Bisons Grammar School"
+              placeholder="e.g. City Grammar School"
               value={form.schoolName}
               onChange={(e) => set("schoolName", e.target.value)}
             />

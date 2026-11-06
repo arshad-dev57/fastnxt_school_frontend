@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — Branch-specific document numbering
+   FastNxt — Branch-specific document numbering
    ---------------------------------------------------------------------------
    Every branch owns its own document sequence (MAIN-STU-0001, GUL-STU-0001 …)
    so two campuses can never collide on a number. This is intentionally a

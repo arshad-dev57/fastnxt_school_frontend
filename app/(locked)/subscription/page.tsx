@@ -121,16 +121,18 @@ export default function SubscriptionPlanPage() {
         <div className="mt-5 rounded-xl border border-[var(--theme-primary)]/25 bg-[var(--theme-primary-soft)] p-4">
           <p className="text-[13px] font-medium text-[var(--theme-primary-hover)]">
             {active
-              ? "To change or renew your plan, contact BisonsTechs:"
-              : "To activate Monthly or Yearly access, contact BisonsTechs:"}
+              ? "To change or renew your plan, contact support."
+              : "To activate Monthly or Yearly access, contact support."}
           </p>
-          <a
-            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`${active ? "Change plan" : "Activate plan"} — ${schoolName}`)}`}
-            className="mt-2 inline-flex items-center gap-2 text-[15px] font-semibold text-[var(--theme-primary)] hover:underline"
-          >
-            <Mail className="h-4 w-4" />
-            {SUPPORT_EMAIL}
-          </a>
+          {SUPPORT_EMAIL ? (
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`${active ? "Change plan" : "Activate plan"} — ${schoolName}`)}`}
+              className="mt-2 inline-flex items-center gap-2 text-[15px] font-semibold text-[var(--theme-primary)] hover:underline"
+            >
+              <Mail className="h-4 w-4" />
+              {SUPPORT_EMAIL}
+            </a>
+          ) : null}
           {!active && (
             <p className="mt-2 text-[12px] text-[var(--theme-text-muted)]">
               Once your plan is activated, sign in again and you will return to the normal dashboard.
@@ -139,17 +141,19 @@ export default function SubscriptionPlanPage() {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          <Btn
-            variant="primary"
-            Icon={Mail}
-            onClick={() => {
-              window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-                `${active ? "Change plan" : "Activate plan"} — ${schoolName}`
-              )}`;
-            }}
-          >
-            Email support
-          </Btn>
+          {SUPPORT_EMAIL ? (
+            <Btn
+              variant="primary"
+              Icon={Mail}
+              onClick={() => {
+                window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+                  `${active ? "Change plan" : "Activate plan"} — ${schoolName}`
+                )}`;
+              }}
+            >
+              Email support
+            </Btn>
+          ) : null}
           {active ? (
             <Btn variant="secondary" Icon={ArrowLeft} onClick={() => router.push(postAuthRoute(user))}>
               Back to workspace

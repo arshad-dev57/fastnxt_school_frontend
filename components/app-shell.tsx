@@ -277,8 +277,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex-1" />
-            <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--theme-accent)] text-base font-extrabold text-white">
-              B
+            <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white ring-1 ring-[var(--theme-border)]">
+              <img src="/logo.png" alt="FastNxt" className="h-7 w-7 object-contain" />
             </div>
           </nav>
 
@@ -298,8 +298,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </div>
               <div className="relative px-3">
                 <button onClick={() => setBranchOpen((open) => !open)} aria-expanded={branchOpen} className="flex w-full items-center gap-2.5 rounded-lg bg-[var(--theme-surface)] px-3 py-2.5 text-left shadow-sm ring-1 ring-[var(--theme-border)] hover:ring-[var(--theme-border-strong)]">
-                  <span className="flex h-7 w-7 items-center justify-center rounded bg-[var(--theme-accent)] text-[14px] font-bold text-white">B</span>
-                  <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">BisonsEduCore360</span><span className="block truncate text-[11px] text-[var(--theme-text-muted)]">Campus: {currentBranch?.name ?? userBranches[0]?.name ?? "—"}</span></span>
+                  <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded bg-white ring-1 ring-[var(--theme-border)]">
+                    <img src="/logo.png" alt="" className="h-6 w-6 object-contain" />
+                  </span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">FastNxt</span><span className="block truncate text-[11px] text-[var(--theme-text-muted)]">Campus: {currentBranch?.name ?? userBranches[0]?.name ?? "—"}</span></span>
                   <ChevronDown className="h-5 w-5 text-[var(--theme-text-muted)]" />
                 </button>
                 {branchOpen && <><button aria-label="Close campus selector" className="fixed inset-0 z-30 cursor-default" onClick={() => setBranchOpen(false)} /><div className="absolute left-3 right-3 top-full z-40 mt-2 overflow-hidden rounded-lg bg-[var(--theme-surface)] p-1.5 shadow-xl ring-1 ring-[var(--theme-border)]">

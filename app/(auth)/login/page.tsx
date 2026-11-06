@@ -65,7 +65,7 @@ export default function LoginPage() {
 
   return (
     <AuthCard
-      title="Welcome to BisonsEduCore360"
+      title="Welcome to FastNxt"
       subtitle="Sign in with your school email — we'll open the right workspace for your account."
       footer={
         <span className="text-[var(--theme-text-muted)]">

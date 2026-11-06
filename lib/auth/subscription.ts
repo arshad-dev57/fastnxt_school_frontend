@@ -7,7 +7,7 @@ import { DEFAULT_PANEL, isPanelId, panelById } from "@/lib/auth/panels";
 import type { AuthSubscription, AuthUser } from "@/lib/auth/types";
 
 export const SUBSCRIPTION_PATH = "/subscription";
-export const SUPPORT_EMAIL = "info@bisonstechs.com";
+export const SUPPORT_EMAIL = "";
 
 /** Trial = 5 days; paid plans are Monthly / Yearly (server-enforced). */
 export const PLAN_INFO = [

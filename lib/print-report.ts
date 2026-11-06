@@ -232,7 +232,7 @@ export function openA4PrintWindow(opts: {
         <strong style="color:#000">Verified by</strong><br/>${esc(meta.principal || "Principal / Admin")}
       </div>
     </footer>
-    <p class="foot-note">Computer-generated report · ${esc(meta.schoolName)} · BisonsEduCore360<br/>
+    <p class="foot-note">Computer-generated report · ${esc(meta.schoolName)} · FastNxt<br/>
       Tip: choose "Save as PDF" or "Microsoft Print to PDF" for a full A4 document (not a thermal receipt printer).</p>
   </div>
 </body>

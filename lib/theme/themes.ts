@@ -1,7 +1,7 @@
 import type { Theme, ThemeColors, ThemeToken } from "./theme-types";
 
 /* ============================================================================
-   BisonsEduCore360 — GLOBAL THEME DEFINITIONS  (single source of truth)
+   FastNxt — GLOBAL THEME DEFINITIONS  (single source of truth)
 
    ✏️  Want to change a colour? Do it here (and nowhere else).
        • `BASE`        = the existing Default (light) design — must stay exact.
@@ -281,7 +281,7 @@ export const themes = {
   /* ---------------------------------------------------------- Light themes */
   default: {
     id: "default", name: "Default", scheme: "light",
-    description: "BisonsEduCore360 signature blue", swatch: [BASE.chrome, BASE.primary],
+    description: "FastNxt signature blue", swatch: [BASE.chrome, BASE.primary],
     colors: { ...BASE },
   },
   blue: {

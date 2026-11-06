@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — Role + Branch Access Control
+   FastNxt — Role + Branch Access Control
    ---------------------------------------------------------------------------
    Permissions are the combination of (module × action × branch scope).
    This is the single source of truth for the Role & Permissions screen and for

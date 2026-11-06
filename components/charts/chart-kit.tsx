@@ -6,7 +6,7 @@ import { Card, CardHead, EmptyState, cn, type IconType } from "@/components/ui";
 
 /* ============================================================================
    Reusable chart presentation kit — keeps every dashboard chart consistent
-   with the existing BisonsEduCore360 card / typography / spacing language.
+   with the existing FastNxt card / typography / spacing language.
    ========================================================================== */
 
 /** A themed card that frames a chart (title, description, optional filter). */

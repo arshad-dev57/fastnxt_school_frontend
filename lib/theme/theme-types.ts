@@ -1,5 +1,5 @@
 /* ============================================================================
-   Theme type definitions — the shape of a BisonsEduCore360 theme.
+   Theme type definitions — the shape of a FastNxt theme.
    Every colour the UI needs lives in `ThemeColors` so there is a single,
    centralized place to edit the whole visual system.
    ========================================================================== */

@@ -154,7 +154,7 @@ export function PrintDocument({
       ) : null}
 
       <p className="mt-6 text-center text-[10px] text-neutral-500">
-        Computer-generated report · {meta.schoolName} · BisonsEduCore360
+        Computer-generated report · {meta.schoolName} · FastNxt
       </p>
     </div>
   );

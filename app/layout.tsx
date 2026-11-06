@@ -7,7 +7,7 @@ import { MeetingsProvider } from "@/lib/meetings-store";
 import { DEFAULT_THEME, THEME_ORDER, THEME_STORAGE_KEY, buildThemeCss } from "@/lib/theme/themes";
 
 export const metadata: Metadata = {
-  title: "BisonsEduCore360",
+  title: "FastNxt",
   description: "School Management System",
 };
 

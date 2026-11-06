@@ -34,7 +34,7 @@ export const DEFAULT_PDF_REPORT_SETTINGS: PdfReportSettings = {
   layout: "classic",
   logoPosition: "left",
   headerSubtitle: "",
-  footerText: "Computer-generated report · BisonsEduCore360",
+  footerText: "Computer-generated report · FastNxt",
   accentColor: "#1e3a8a",
   signatureLabel: "Authorized Signature",
 };

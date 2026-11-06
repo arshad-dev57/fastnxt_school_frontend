@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — MEETINGS MODULE DATA (frontend-only)
+   FastNxt — MEETINGS MODULE DATA (frontend-only)
 
    Two meeting flows live here:
      • Admin   → Teachers   (staff briefing, department / academic meetings)
@@ -121,11 +121,11 @@ export const MEETING_DURATIONS = [15, 30, 45, 60, 90, 120];
 
 /** Fallback join links keyed by platform so the demo always has something to copy. */
 const SAMPLE_LINKS: Record<string, string> = {
-  Zoom: "https://zoom.us/j/98765432101?pwd=bisons",
+  Zoom: "https://zoom.us/j/98765432101",
   "Google Meet": "https://meet.google.com/bnq-xyza-mkt",
-  "Microsoft Teams": "https://teams.microsoft.com/l/meetup-join/19:bisons-educore",
+  "Microsoft Teams": "https://teams.microsoft.com/l/meetup-join/19:meeting",
   "In-person": "",
-  Other: "https://meet.bisonseducore360.edu/room",
+  Other: "",
 };
 
 export const meetingLinkFor = (platform: MeetingPlatform): string => SAMPLE_LINKS[platform] ?? SAMPLE_LINKS.Other;
@@ -406,7 +406,7 @@ export const seedMeetings: Meeting[] = [
   {
     id: "MTG-1007",
     title: "New Teacher Orientation",
-    agenda: "Onboarding walkthrough: attendance workflow, homework module and the BisonsEduCore360 portals.",
+    agenda: "Onboarding walkthrough: attendance workflow, homework module and the FastNxt portals.",
     type: "Training / Workshop",
     scope: "admin",
     audience: "teachers",

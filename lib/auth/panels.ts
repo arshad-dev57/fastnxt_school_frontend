@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — Panel registry (single source of truth)
+   FastNxt — Panel registry (single source of truth)
    ---------------------------------------------------------------------------
    The three workspaces a signed-in user can open. Shared by the Panel Switcher
    and post-login redirects, so the panel list and landing route live in one place.

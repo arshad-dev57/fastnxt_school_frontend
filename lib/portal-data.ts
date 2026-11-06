@@ -54,7 +54,7 @@ export const PORTAL_TEACHER: PortalTeacherProfile = {
   dob: "1988-07-24",
   cnic: "35202-1847265-7",
   phone: "0325-6667778",
-  email: "bilal.raza@bisons.edu",
+  email: "bilal.raza@school.local",
   address: "House 24, Street 7, Johar Town, Lahore",
   photo: "bilal-raza.png",
   employeeId: "EMP-006",

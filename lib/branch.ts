@@ -1,5 +1,5 @@
 /* ============================================================================
-   BisonsEduCore360 — Multi-Branch / Multi-Campus Types & Context
+   FastNxt — Multi-Branch / Multi-Campus Types & Context
    ========================================================================== */
 
 export type BranchStatus = "Active" | "Inactive" | "Archived";

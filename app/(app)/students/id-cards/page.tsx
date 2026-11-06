@@ -70,9 +70,9 @@ export default function StudentIdCardsPage() {
   const toggle = (id: string) => setSelected((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const selectedStudents = students.filter((s) => selected.includes(s.id));
 
-  const schoolName = school?.name || "BisonsEduCore360 Academy";
+  const schoolName = school?.name || "FastNxt Academy";
   const schoolShortName = school?.shortName || schoolName.split(" ")[0] || "ACADEMY";
-  const schoolPhone = school?.phone || "0300-1234567";
+  const schoolPhone = school?.phone || "";
 
   return (
     <>

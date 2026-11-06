@@ -246,7 +246,7 @@ export default function PrintBasicListPage() {
             </div>
           </footer>
           <p className="mt-6 text-center text-[10px] text-neutral-500">
-            Computer-generated document · {schoolName} · BisonsEduCore360
+            Computer-generated document · {schoolName} · FastNxt
           </p>
         </div>
       </div>

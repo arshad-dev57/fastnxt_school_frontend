@@ -7,7 +7,7 @@ import { cn } from "@/components/ui";
    Educational empty-state art.
 
    All illustrations live in /public/images/education as hand-authored SVG
-   (self-created for BisonsEduCore360 — no third-party licence or attribution
+   (self-created for FastNxt — no third-party licence or attribution
    required). They share one flat visual language: soft gradient background,
    white cards, brand blue / purple / green accents.
    ========================================================================== */

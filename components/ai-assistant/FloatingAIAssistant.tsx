@@ -5,7 +5,7 @@ import { X, ArrowUp } from "lucide-react";
 import { cn } from "@/components/ui";
 
 /* ============================================================================
-   Floating "Bisons AI" assistant  (components/ai-assistant/FloatingAIAssistant)
+   Floating "FastNxt AI" assistant  (components/ai-assistant/FloatingAIAssistant)
    ---------------------------------------------------------------------------
    One globally-mounted, dependency-free AI emblem:
      • multi-colour gradient orb (rotating conic gradient) + soft pulsing glow
@@ -68,7 +68,7 @@ export default function FloatingAIAssistant() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          aria-label="Open Bisons AI assistant"
+          aria-label="Open FastNxt AI assistant"
           aria-haspopup="dialog"
           aria-expanded={open}
           className={cn(
@@ -86,24 +86,24 @@ export default function FloatingAIAssistant() {
 
         <span role="tooltip"
           className="pointer-events-none absolute bottom-full left-1/2 mb-3 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--theme-text)] px-2.5 py-1 text-[12px] font-medium text-[var(--theme-surface)] opacity-0 shadow-lg transition-opacity duration-150 group-hover/ai:opacity-100 group-focus-within/ai:opacity-100">
-          Ask Bisons AI
+          Ask FastNxt AI
         </span>
       </div>
 
       {open && (
         <>
           <div className="no-print fixed inset-0 z-30" onClick={() => setOpen(false)} aria-hidden="true" />
-          <div role="dialog" aria-label="Bisons AI assistant preview"
+          <div role="dialog" aria-label="FastNxt AI assistant preview"
             className="no-print fixed bottom-[152px] right-[18px] z-40 w-[320px] max-w-[calc(100vw-36px)] overflow-hidden rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-2xl ring-1 ring-[var(--theme-border)] md:bottom-[92px] md:right-6">
             <div className="flex items-center gap-2.5 border-b border-[var(--theme-border)] px-4 py-3">
               <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundImage: AI_GRADIENT }}>
                 <AiMark className="h-4 w-4 text-white" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-semibold">Bisons AI</p>
+                <p className="truncate text-[14px] font-semibold">FastNxt AI</p>
                 <p className="truncate text-[12px] text-[var(--theme-text-muted)]">Assistant preview</p>
               </div>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close Bisons AI assistant"
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close FastNxt AI assistant"
                 className="ic-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--theme-text-muted)] transition-colors hover:bg-[var(--theme-hover)] hover:text-[var(--theme-text)]">
                 <X className="ic-hover h-4 w-4" />
               </button>
@@ -115,7 +115,7 @@ export default function FloatingAIAssistant() {
                   <AiMark className="h-3.5 w-3.5 text-white" />
                 </span>
                 <p className="rounded-2xl rounded-tl-sm bg-[var(--theme-hover)] px-3 py-2 text-[13px] leading-relaxed">
-                  Hi! I&apos;m <span className="font-semibold">Bisons AI</span>. Ask me about students, fees, classes or reports.
+                  Hi! I&apos;m <span className="font-semibold">FastNxt AI</span>. Ask me about students, fees, classes or reports.
                 </p>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -127,7 +127,7 @@ export default function FloatingAIAssistant() {
 
             <div className="border-t border-[var(--theme-border)] p-3">
               <div className="flex items-center gap-2 rounded-xl border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 py-2">
-                <input disabled placeholder="Ask Bisons AI… (coming soon)"
+                <input disabled placeholder="Ask FastNxt AI… (coming soon)"
                   className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--theme-text)] outline-none placeholder:text-[var(--theme-text-faint)]" />
                 <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white" style={{ backgroundImage: AI_GRADIENT }}>
                   <ArrowUp className="h-4 w-4" />

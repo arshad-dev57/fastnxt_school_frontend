@@ -1,6 +1,6 @@
 /* ============================================================================
-   BisonsEduCore360 — Branch Mock Data
-   Multi-campus demo data for Bisons School System
+   FastNxt — Branch Mock Data
+   Multi-campus demo data for FastNxt School System
    ========================================================================== */
 
 import { type Branch, type UserBranchAccess } from "@/lib/branch";
@@ -14,7 +14,7 @@ export const BRANCHES: Branch[] = [
     address: "12-A, Education Avenue, Gulberg III",
     city: "Lahore",
     phone: "+92 42 1234 5678",
-    email: "main@bisons.edu",
+    email: "main@school.local",
     principal: "Amara Reyes",
     logo: "",
     timezone: "Asia/Karachi",
@@ -22,7 +22,7 @@ export const BRANCHES: Branch[] = [
     academicCalendar: "2025-2026",
     openingDate: "2015-03-01",
     status: "Active",
-    description: "The flagship campus of Bisons School System, offering Nursery through Grade 10 with full academic and extracurricular facilities.",
+    description: "The flagship campus of FastNxt School System, offering Nursery through Grade 10 with full academic and extracurricular facilities.",
     createdAt: "2015-03-01",
     updatedAt: "2026-01-15",
   },
@@ -33,7 +33,7 @@ export const BRANCHES: Branch[] = [
     address: "45-B, Gulshan-e-Iqbal, Block 13",
     city: "Karachi",
     phone: "+92 21 9876 5432",
-    email: "gulshan@bisons.edu",
+    email: "gulshan@school.local",
     principal: "Hassan Mahmood",
     logo: "",
     timezone: "Asia/Karachi",
@@ -52,7 +52,7 @@ export const BRANCHES: Branch[] = [
     address: "78-C, North Nazimabad, Sector 11",
     city: "Karachi",
     phone: "+92 21 4567 8901",
-    email: "north@bisons.edu",
+    email: "north@school.local",
     principal: "Fatima Siddiqui",
     logo: "",
     timezone: "Asia/Karachi",
@@ -71,7 +71,7 @@ export const BRANCHES: Branch[] = [
     address: "Phase 5, DHA, Khayaban-e-Shamsheer",
     city: "Lahore",
     phone: "+92 42 2345 6789",
-    email: "dha@bisons.edu",
+    email: "dha@school.local",
     principal: "Omar Khalid",
     logo: "",
     timezone: "Asia/Karachi",
@@ -90,7 +90,7 @@ export const BRANCHES: Branch[] = [
     address: "23, Old Anarkali, Walled City",
     city: "Lahore",
     phone: "+92 42 3456 7890",
-    email: "old@bisons.edu",
+    email: "old@school.local",
     principal: "N/A",
     logo: "",
     timezone: "Asia/Karachi",
