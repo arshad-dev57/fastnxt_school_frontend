@@ -242,6 +242,7 @@ export default function InstituteProfilePage() {
               <p className="flex items-center gap-2"><UserCog className="h-4 w-4 shrink-0" /> {f.principal}</p>
             </div>
           </Card>
+
           <Card pad={false}>
             <CardHead title="Cloud storage" subtitle="Files hosted on Cloudinary for this school" Icon={HardDrive} />
             <div className="space-y-3 p-4">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { UserPlus, DoorOpen, Plus, Pencil, Trash2, UserCheck, Users } from "lucide-react";
 import { BranchBoard } from "@/components/branch/branch-board";
 import { StatusPill } from "@/components/board-kit";
@@ -15,6 +16,7 @@ const COLORS: Record<string, string> = {
 };
 
 export default function AdmissionsPage() {
+  const router = useRouter();
   const { currentBranchId } = useBranch();
   const [rows, setRows] = useState<(AdmissionEnquiryItem & { branchId: string })[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,11 @@ export default function AdmissionsPage() {
         }
         menu={(r) => [
           { label: "Edit", Icon: Pencil, onClick: () => setModal({ mode: "edit", row: r }) },
+          {
+            label: "Open Admission Form",
+            Icon: UserCheck,
+            onClick: () => router.push(`/students/new?enquiryId=${encodeURIComponent(r.id)}`),
+          },
           { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
         ]}
         columns={[

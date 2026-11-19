@@ -174,6 +174,62 @@ export const authApi = {
   health: (signal?: AbortSignal) => request<HealthResponse>("/health", { signal }),
 };
 
+/** Per-school admission application form config (standard vs A+ IT & Law). */
+export type AdmissionFormConfig = {
+  variant: "standard" | "apl-legal-it" | string;
+  instituteTitle: string;
+  formTitle: string;
+  programs: string[];
+  documentChecklist: string[];
+  showQualificationTable: boolean;
+  showFeeDetails: boolean;
+  requireLatForLlb: boolean;
+};
+
+export type AdmissionFormConfigResponse = {
+  config: AdmissionFormConfig;
+  school: {
+    id: string;
+    name: string;
+    shortName?: string | null;
+    address?: string | null;
+    phone?: string;
+    email?: string;
+    website?: string | null;
+    principal?: string | null;
+    logoUrl?: string | null;
+    academicSession?: string | null;
+  };
+};
+
+export type StudentAdmissionExtras = {
+  formNo?: string;
+  cnic?: string;
+  guardianCnic?: string;
+  altPhone?: string;
+  programOther?: string;
+  documentOther?: string;
+  programs?: string[];
+  qualifications?: {
+    level: string;
+    board: string;
+    year: string;
+    totalMarks: string;
+    obtainedMarks: string;
+    percentage: string;
+  }[];
+  documentsChecklist?: string[];
+  fees?: {
+    admissionFee?: string;
+    courseFee?: string;
+    monthlyFee?: string;
+    discount?: string;
+    receiptNo?: string;
+    paymentDate?: string;
+    remarks?: string;
+  };
+};
+
 /** School profile endpoints. */
 export const schoolApi = {
   /** GET /api/school/profile — fetch the signed-in school's profile. */
@@ -183,6 +239,17 @@ export const schoolApi = {
   /** PATCH /api/school/profile — update the school's profile (partial). */
   updateProfile: (updates: Partial<SchoolProfile>) =>
     request<SchoolProfileResponse>("/school/profile", { method: "PATCH", body: updates }),
+
+  /** GET /api/school/admission-form-config — which admission form this school uses. */
+  getAdmissionFormConfig: (signal?: AbortSignal) =>
+    request<AdmissionFormConfigResponse>("/school/admission-form-config", { signal }),
+
+  /** PATCH /api/school/admission-form-config — set variant for this school only. */
+  updateAdmissionFormConfig: (updates: Partial<AdmissionFormConfig>) =>
+    request<AdmissionFormConfigResponse>("/school/admission-form-config", {
+      method: "PATCH",
+      body: updates,
+    }),
 
   /** POST /api/school/logo — upload institute logo to Cloudinary. */
   uploadLogo: (file: File) => {
@@ -960,6 +1027,7 @@ export type StudentItem = {
   prevSchool?: string;
   medical?: string;
   notes?: string;
+  admissionExtras?: StudentAdmissionExtras | null;
   documents?: StudentDocItem[];
   status: "Active" | "Inactive";
   branchId?: string | null;
@@ -993,6 +1061,7 @@ export type CreateStudentInput = {
   prevSchool?: string;
   medical?: string;
   notes?: string;
+  admissionExtras?: StudentAdmissionExtras | null;
   documents?: StudentDocItem[];
   status?: string;
   branchId?: string | null;
