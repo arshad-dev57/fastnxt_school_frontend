@@ -379,7 +379,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 <ChevronRight className="h-5 w-5" />
               </button>
             )}
-            <div className="app-scroll min-h-0 flex-1 overflow-y-auto">{children}</div>
+            <div className="app-scroll min-h-0 flex-1 overflow-auto">{children}</div>
           </main>
         </div>
 

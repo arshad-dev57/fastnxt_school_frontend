@@ -408,7 +408,7 @@ export default function AplInstituteAdmissionForm({
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 pb-10">
+    <div className="mx-auto min-w-[960px] space-y-4 pb-10">
       <PageHeader
         title="Admission Form"
         subtitle={`${schoolTitle} — customized IT & Law application`}
@@ -434,7 +434,7 @@ export default function AplInstituteAdmissionForm({
 
       <form
         onSubmit={handleSubmit}
-        className="overflow-hidden rounded-md border-2 border-[#1e4b8f] bg-white shadow-sm print:border print:shadow-none"
+        className="min-w-[960px] rounded-md border-2 border-[#1e4b8f] bg-white shadow-sm print:min-w-0 print:border print:shadow-none"
       >
         {/* Header bar */}
         <div className="flex items-stretch border-b-2 border-[#1e4b8f]">
