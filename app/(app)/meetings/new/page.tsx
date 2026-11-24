@@ -22,6 +22,7 @@ import {
   type EmployeeItem,
 } from "@/lib/auth/api-client";
 import { useMeetings } from "@/lib/meetings-store";
+import { matchesStudentSearch } from "@/lib/student-directory";
 import {
   MEETING_DURATIONS, MEETING_MODES, MEETING_PLATFORMS, MEETING_TYPES,
   addMinutesToClock, formatClock, formatMeetingDate,
@@ -861,10 +862,7 @@ function ParticipantsFlowPicker({
       if (studentClassFilter && s.cls !== studentClassFilter && !`${s.cls}-${s.section}`.includes(studentClassFilter)) {
         return false;
       }
-      if (studentSearch.trim()) {
-        const q = studentSearch.toLowerCase();
-        return s.name.toLowerCase().includes(q) || (s.studentId && s.studentId.toLowerCase().includes(q));
-      }
+      if (studentSearch.trim()) return matchesStudentSearch(s, studentSearch);
       return true;
     });
   }, [studentsList, studentClassFilter, studentSearch]);

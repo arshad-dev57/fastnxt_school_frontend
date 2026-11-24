@@ -27,6 +27,7 @@ import {
   type FeeVoucherTemplate,
   type StudentItem,
 } from "@/lib/auth/api-client";
+import { courseNamesFrom, studentTrackLabel } from "@/lib/student-directory";
 
 function cashBankLabel(a: CashBankAccountItem) {
   const num = a.number && a.number !== "—" ? a.number : "";
@@ -51,6 +52,7 @@ export default function FeeInvoicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("");
+  const [course, setCourse] = useState("");
   const [status, setStatus] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
@@ -125,13 +127,16 @@ export default function FeeInvoicesPage() {
           r.studentCode || "",
           student?.admissionNo || "",
           student?.studentId || "",
+          student?.course || "",
+          student ? studentTrackLabel(student) : "",
         ].join(" ").toLowerCase();
         return hay.includes(term);
       })
       .filter((r) => (cls ? r.cls === cls : true))
+      .filter((r) => (course ? students.find((s) => s.id === r.studentId)?.course === course : true))
       .filter((r) => (status ? r.status === status : true))
       .sort((a, b) => (sortAsc ? a.student.localeCompare(b.student) : b.student.localeCompare(a.student)));
-  }, [rows, q, cls, status, sortAsc, students]);
+  }, [rows, q, cls, course, status, sortAsc, students]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / STEPS));
   const current = Math.min(page, pages);
@@ -247,8 +252,9 @@ export default function FeeInvoicesPage() {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 pb-3">
-          <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Student, admission, ID or invoice #" className="w-full sm:w-72" />
+          <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Student, course, Law, IT, Nursing or invoice #" className="w-full sm:w-80" />
           <Select value={cls} onChange={(e) => { setCls(e.target.value); setPage(1); }} options={classOptions} placeholder="All Classes" className="w-36" />
+          <Select value={course} onChange={(e) => { setCourse(e.target.value); setPage(1); }} options={courseNamesFrom(students)} placeholder="All Courses" className="w-44" />
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} options={STATUSES} placeholder="All Status" className="w-40" />
           <Btn variant="secondary" Icon={ArrowUpDown} onClick={() => setSortAsc((s) => !s)}>{sortAsc ? "A–Z" : "Z–A"}</Btn>
           <Btn variant="secondary" Icon={Filter} className="hidden lg:inline-flex" onClick={() => setShowFilters((v) => !v)}>
@@ -257,7 +263,7 @@ export default function FeeInvoicesPage() {
         </div>
         {showFilters ? (
           <p className="pb-2 text-[12px] text-[var(--theme-text-muted)]">
-            Searching name, admission number, student ID and invoice number. Status and class filters apply above.
+            Searching name, course, Law, IT, Nursing, admission number and invoice number. Class, course and status filters apply above.
           </p>
         ) : null}
 
@@ -288,7 +294,13 @@ export default function FeeInvoicesPage() {
                     {paged.map((r) => (
                       <div key={r.id} className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] text-[13.5px] last:border-b-0 hover:bg-[var(--theme-hover)]")}>
                         <Td className="border-l border-[var(--theme-border)] font-mono text-[12.5px] text-[var(--theme-text-muted)]">{r.invoiceNo}</Td>
-                        <Td className="border-l border-[var(--theme-border)] font-medium"><span className="truncate">{r.student}</span></Td>
+                        <Td className="border-l border-[var(--theme-border)] font-medium">
+                          {r.studentId ? (
+                            <Link href={`/students/${r.studentId}`} className="truncate hover:underline">{r.student}</Link>
+                          ) : (
+                            <span className="truncate">{r.student}</span>
+                          )}
+                        </Td>
                         <Td className="border-l border-[var(--theme-border)]">{r.cls}-{r.section}</Td>
                         <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.period}</Td>
                         <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.issue}</Td>
@@ -321,7 +333,11 @@ export default function FeeInvoicesPage() {
                   <div key={r.id} className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3 shadow-sm" style={{ borderLeft: "6px solid var(--theme-info)" }}>
                     <div className="flex items-start gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[15px] font-medium">{r.student}</p>
+                        {r.studentId ? (
+                          <Link href={`/students/${r.studentId}`} className="block truncate text-[15px] font-medium hover:underline">{r.student}</Link>
+                        ) : (
+                          <p className="truncate text-[15px] font-medium">{r.student}</p>
+                        )}
                         <p className="font-mono text-[12px] text-[var(--theme-text-faint)]">{r.invoiceNo}</p>
                       </div>
                       <StatusPill label={r.status} />

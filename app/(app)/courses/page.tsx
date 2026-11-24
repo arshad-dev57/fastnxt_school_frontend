@@ -8,6 +8,7 @@ import { coursesApi, describeApiError, type CourseItem } from "@/lib/auth/api-cl
 
 const CATEGORIES = [
   { value: "general", label: "General" },
+  { value: "law", label: "Law" },
   { value: "it", label: "IT" },
   { value: "nursing", label: "Nursing" },
 ];

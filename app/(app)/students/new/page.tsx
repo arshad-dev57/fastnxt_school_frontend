@@ -8,7 +8,7 @@ import StudentForm from "../student-form";
 import AplInstituteAdmissionForm from "@/components/admissions/apl-institute-admission-form";
 import { PageHeader } from "@/components/ui";
 import { describeApiError, schoolApi, type AdmissionFormConfig } from "@/lib/auth/api-client";
-import { APL_CATEGORIES, isAplCategory, isAplVariant, isNursingTrack, looksLikeAplSchool, NURSING_TRACKS } from "@/lib/apl-admission";
+import { APL_CATEGORIES, asAplCategory, isAplVariant, isNursingTrack, looksLikeAplSchool, NURSING_TRACKS } from "@/lib/apl-admission";
 import { useAuth } from "@/lib/auth/auth-context";
 
 function AplCategoryPicker({ instituteTitle }: { instituteTitle: string }) {
@@ -163,16 +163,17 @@ function NewAdmissionRouter() {
   }
 
   if (config && isAplVariant(config.variant)) {
-    if (!isAplCategory(selectedCategory)) {
+    const category = asAplCategory(selectedCategory);
+    if (!category) {
       return <AplCategoryPicker instituteTitle={config.instituteTitle || user?.school?.name || "A Plus Institute"} />;
     }
-    if (selectedCategory === "nursing" && !isNursingTrack(selectedTrack)) {
+    if (category === "nursing" && !isNursingTrack(selectedTrack)) {
       return <NursingTrackPicker instituteTitle={config.instituteTitle || user?.school?.name || "A Plus Institute"} />;
     }
     return (
       <AplInstituteAdmissionForm
         config={config}
-        category={selectedCategory}
+        category={category}
         nursingTrackId={isNursingTrack(selectedTrack) ? selectedTrack : undefined}
       />
     );

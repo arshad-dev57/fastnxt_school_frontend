@@ -12,6 +12,7 @@ import {
   type SchoolProfile,
 } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
+import { ADMISSION_TRACKS, courseNamesFrom, studentTrackLabel } from "@/lib/student-directory";
 
 const GENDERS = ["Male", "Female"];
 
@@ -23,6 +24,8 @@ export default function PrintBasicListPage() {
   const [loading, setLoading] = useState(true);
 
   const [cls, setCls] = useState("");
+  const [course, setCourse] = useState("");
+  const [program, setProgram] = useState("");
   const [section, setSection] = useState("");
   const [gender, setGender] = useState("");
   const [status, setStatus] = useState("");
@@ -57,16 +60,21 @@ export default function PrintBasicListPage() {
     ? currentClassObj.sections
     : Array.from(new Set(students.map((s) => s.section).filter(Boolean))).sort();
 
+  const courseNames = courseNamesFrom(students);
   const list = useMemo(() => students
     .filter((s) => !currentBranchId || currentBranchId === "all" || !s.branchId || s.branchId === currentBranchId)
     .filter((s) => (cls ? s.cls === cls : true))
+    .filter((s) => (course ? s.course === course : true))
+    .filter((s) => (program ? studentTrackLabel(s) === program : true))
     .filter((s) => (section ? s.section === section : true))
     .filter((s) => (gender ? s.gender === gender : true))
     .filter((s) => (status ? s.status === status : true)),
-  [students, currentBranchId, cls, section, gender, status]);
+  [students, currentBranchId, cls, course, program, section, gender, status]);
 
   const activeFilters = [
     cls && `Class: ${cls}`,
+    program && `Program: ${program}`,
+    course && `Course: ${course}`,
     section && `Section: ${section}`,
     gender && `Gender: ${gender}`,
     status && `Status: ${status}`,
@@ -119,7 +127,7 @@ export default function PrintBasicListPage() {
         <div className="px-4 pb-6 sm:px-6">
           <Card pad={false}>
             <CardHead title="Filters" subtitle="Choose the criteria for the printed list" Icon={SlidersHorizontal} />
-            <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
               <Select
                 value={cls}
                 onChange={(e) => {
@@ -130,6 +138,8 @@ export default function PrintBasicListPage() {
                 placeholder="All Classes"
               />
               <Select value={section} onChange={(e) => setSection(e.target.value)} options={["", ...availableSections]} placeholder="All Sections" />
+              <Select value={program} onChange={(e) => setProgram(e.target.value)} options={["", ...ADMISSION_TRACKS]} placeholder="All Programs" />
+              <Select value={course} onChange={(e) => setCourse(e.target.value)} options={["", ...courseNames]} placeholder="All Courses" />
               <Select value={gender} onChange={(e) => setGender(e.target.value)} options={["", ...GENDERS]} placeholder="All Genders" />
               <Select value={status} onChange={(e) => setStatus(e.target.value)} options={["", "Active", "Inactive"]} placeholder="All Status" />
             </div>
@@ -213,6 +223,7 @@ export default function PrintBasicListPage() {
                   <th className="px-2 py-2 font-semibold">Student Name</th>
                   <th className="px-2 py-2 font-semibold">Gender</th>
                   <th className="px-2 py-2 font-semibold">Class</th>
+                  <th className="px-2 py-2 font-semibold">Course</th>
                   <th className="px-2 py-2 font-semibold">Sec</th>
                   <th className="px-2 py-2 font-semibold">Contact</th>
                 </tr>
@@ -225,6 +236,7 @@ export default function PrintBasicListPage() {
                     <td className="px-2 py-1.5 font-medium">{s.name}</td>
                     <td className="px-2 py-1.5">{s.gender || "—"}</td>
                     <td className="px-2 py-1.5">{s.cls}</td>
+                    <td className="px-2 py-1.5">{s.course || studentTrackLabel(s) || "—"}</td>
                     <td className="px-2 py-1.5">{s.section}</td>
                     <td className="px-2 py-1.5">{s.phone || "—"}</td>
                   </tr>

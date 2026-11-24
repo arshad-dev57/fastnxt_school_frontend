@@ -12,6 +12,7 @@ import {
   type SchoolProfile,
 } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
+import { ADMISSION_TRACKS, courseNamesFrom, matchesStudentSearch, studentTrackLabel } from "@/lib/student-directory";
 
 export default function StudentIdCardsPage() {
   const { currentBranchId } = useBranch();
@@ -22,6 +23,8 @@ export default function StudentIdCardsPage() {
 
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("");
+  const [course, setCourse] = useState("");
+  const [program, setProgram] = useState("");
   const [section, setSection] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -60,12 +63,15 @@ export default function StudentIdCardsPage() {
     ? currentClassObj.sections
     : Array.from(new Set(students.map((s) => s.section).filter(Boolean))).sort();
 
+  const courseNames = useMemo(() => courseNamesFrom(students), [students]);
   const list = useMemo(() => students
     .filter((s) => !currentBranchId || currentBranchId === "all" || !s.branchId || s.branchId === currentBranchId)
-    .filter((s) => s.name.toLowerCase().includes(q.toLowerCase()) || s.studentId.toLowerCase().includes(q.toLowerCase()))
+    .filter((s) => matchesStudentSearch(s, q))
     .filter((s) => (cls ? s.cls === cls : true))
+    .filter((s) => (course ? s.course === course : true))
+    .filter((s) => (program ? studentTrackLabel(s) === program : true))
     .filter((s) => (section ? s.section === section : true)),
-  [students, currentBranchId, q, cls, section]);
+  [students, currentBranchId, q, cls, course, program, section]);
 
   const toggle = (id: string) => setSelected((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const selectedStudents = students.filter((s) => selected.includes(s.id));
@@ -114,7 +120,7 @@ export default function StudentIdCardsPage() {
 
         <div className="px-4 pb-24 sm:px-6">
           <div className="flex flex-wrap items-center gap-2 py-3">
-            <SearchBox value={q} onChange={setQ} placeholder="Search students by name or ID" className="w-full sm:w-72" />
+            <SearchBox value={q} onChange={setQ} placeholder="Search name, ID, course, Law, IT or Nursing" className="w-full sm:w-80" />
             <Select
               value={cls}
               onChange={(e) => {
@@ -126,6 +132,8 @@ export default function StudentIdCardsPage() {
               className="w-36"
             />
             <Select value={section} onChange={(e) => setSection(e.target.value)} options={["", ...availableSections]} placeholder="All Sections" className="w-32" />
+            <Select value={program} onChange={(e) => setProgram(e.target.value)} options={["", ...ADMISSION_TRACKS]} placeholder="All Programs" className="w-36" />
+            <Select value={course} onChange={(e) => setCourse(e.target.value)} options={["", ...courseNames]} placeholder="All Courses" className="w-44" />
           </div>
 
           <Card pad={false}>

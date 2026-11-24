@@ -19,6 +19,7 @@ import {
   type StudentItem,
   type SubjectAssignmentItem,
 } from "@/lib/auth/api-client";
+import { ADMISSION_TRACKS, courseNamesFrom, studentTrackLabel } from "@/lib/student-directory";
 
 /* ============================================================================
    My Students — Teacher Portal
@@ -47,6 +48,8 @@ export default function TeacherStudentsPage() {
 
   // Section filter UI
   const [sectionFilter, setSectionFilter] = useState("");
+  const [courseFilter, setCourseFilter] = useState("");
+  const [programFilter, setProgramFilter] = useState("");
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -142,15 +145,21 @@ export default function TeacherStudentsPage() {
   }, [students, assignedPairs]);
 
   /* ── Section-filtered view ── */
+  const courseNames = useMemo(() => courseNamesFrom(myStudents), [myStudents]);
   const filteredStudents = useMemo(() => {
-    if (!sectionFilter) return myStudents;
-    const [filterCls, filterSec] = sectionFilter.split("-");
-    return myStudents.filter(
-      (s) =>
-        s.cls.toLowerCase() === (filterCls || "").toLowerCase() &&
-        s.section.toLowerCase() === (filterSec || "").toLowerCase()
-    );
-  }, [myStudents, sectionFilter]);
+    const sectioned = !sectionFilter
+      ? myStudents
+      : myStudents.filter((s) => {
+          const [filterCls, filterSec] = sectionFilter.split("-");
+          return (
+            s.cls.toLowerCase() === (filterCls || "").toLowerCase() &&
+            s.section.toLowerCase() === (filterSec || "").toLowerCase()
+          );
+        });
+    return sectioned
+      .filter((s) => (courseFilter ? s.course === courseFilter : true))
+      .filter((s) => (programFilter ? studentTrackLabel(s) === programFilter : true));
+  }, [myStudents, sectionFilter, courseFilter, programFilter]);
 
   /* ── Gender counts ── */
   const maleCount   = useMemo(() => filteredStudents.filter((s) => s.gender === "Male").length,   [filteredStudents]);
@@ -371,12 +380,18 @@ export default function TeacherStudentsPage() {
             keyOf={(r) => r.id}
             nameOf={(r) => r.name}
             subtitleOf={(r) =>
-              `${r.cls} - Section ${r.section} · ${r.studentId || r.admissionNo}`
+              `${r.cls} - Section ${r.section}${r.course ? ` · ${r.course}` : ""} · ${r.studentId || r.admissionNo}`
             }
             searchTextOf={(r) =>
-              `${r.name} ${r.studentId} ${r.admissionNo} ${r.cls} ${r.section} ${r.father} ${r.guardian} ${r.phone}`
+              `${r.name} ${r.studentId} ${r.admissionNo} ${r.cls} ${r.section} ${r.course || ""} ${studentTrackLabel(r)} ${r.father} ${r.guardian} ${r.phone}`
             }
-            searchPlaceholder="Search by name, ID, class or guardian…"
+            searchPlaceholder="Search name, ID, course, Law, IT or Nursing…"
+            toolbar={
+              <div className="flex flex-wrap gap-2">
+                <Select value={programFilter} onChange={(e) => setProgramFilter(e.target.value)} options={["", ...ADMISSION_TRACKS]} placeholder="All programs" className="w-36" />
+                <Select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)} options={["", ...courseNames]} placeholder="All courses" className="w-44" />
+              </div>
+            }
             scopeLabel={sectionFilter || "All my sections"}
             countNoun="students"
             groupBy={(r) => `${r.cls} — Section ${r.section}`}
@@ -404,6 +419,12 @@ export default function TeacherStudentsPage() {
                 label: "Class & Section",
                 width: "140px",
                 cell: (r) => `${r.cls} (${r.section})`,
+              },
+              {
+                key: "course",
+                label: "Course",
+                width: "160px",
+                cell: (r) => r.course || studentTrackLabel(r) || "—",
               },
               {
                 key: "gender",
@@ -463,6 +484,8 @@ export default function TeacherStudentsPage() {
                 ),
               },
               { label: "Class",          value: `${r.cls} — Section ${r.section}` },
+              { label: "Program",        value: studentTrackLabel(r) || "—" },
+              { label: "Course",         value: r.course || "—" },
               { label: "Gender",         value: r.gender || "—" },
               { label: "Father Name",    value: r.father || "—" },
               { label: "Guardian",       value: r.guardian || "—" },

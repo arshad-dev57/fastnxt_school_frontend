@@ -119,7 +119,7 @@ export default function FeeReceiptsPage() {
           <SearchBox
             value={q}
             onChange={(v) => { setQ(v); setPage(1); }}
-            placeholder="Name, admission, student ID, receipt or invoice #"
+            placeholder="Name, course, Law, IT, Nursing, receipt or invoice #"
             className="w-full sm:w-80"
           />
           <Select value={method} onChange={(e) => { setMethod(e.target.value); setPage(1); }} options={METHODS} placeholder="All Methods" className="w-36" />

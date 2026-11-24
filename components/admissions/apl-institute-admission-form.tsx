@@ -25,7 +25,8 @@ import {
   blankFees,
   blankQualifications,
   calcPercentage,
-  isAplCategory,
+  asAplCategory,
+  LAW_TRACKS,
   nursingTrack,
   NURSING_TRACKS,
   type AplAdmissionCategory,
@@ -52,6 +53,10 @@ type FormState = {
   course: string;
   courseId: string;
   nursingNote: string;
+  lawNote: string;
+  latRollNo: string;
+  latScore: string;
+  latYear: string;
   qualifications: AplQualificationRow[];
   fees: AplFeeState;
   documentsChecklist: string[];
@@ -62,7 +67,7 @@ type FormState = {
   status: string;
 };
 
-function blankForm(session?: string, category: AplAdmissionCategory = "general", courseName = ""): FormState {
+function blankForm(session?: string, category: AplAdmissionCategory = "law", courseName = ""): FormState {
   return {
     formNo: "",
     admissionDate: new Date().toISOString().slice(0, 10),
@@ -82,6 +87,10 @@ function blankForm(session?: string, category: AplAdmissionCategory = "general",
     course: courseName,
     courseId: "",
     nursingNote: "",
+    lawNote: "",
+    latRollNo: "",
+    latScore: "",
+    latYear: "",
     qualifications: blankQualifications(aplCategoryPreset(category).qualificationLevels),
     fees: blankFees(),
     documentsChecklist: [],
@@ -93,7 +102,7 @@ function blankForm(session?: string, category: AplAdmissionCategory = "general",
   };
 }
 
-function fromStudent(s: StudentItem, category: AplAdmissionCategory = "general"): FormState {
+function fromStudent(s: StudentItem, category: AplAdmissionCategory = "law"): FormState {
   const x = s.admissionExtras || {};
   const quals = blankQualifications(aplCategoryPreset(category).qualificationLevels).map((row) => {
     const found = (x.qualifications || []).find((q) => q.level === row.level);
@@ -124,9 +133,13 @@ function fromStudent(s: StudentItem, category: AplAdmissionCategory = "general")
     address: s.address || "",
     programs: x.programs || (s.course ? [s.course] : s.cls ? [s.cls] : []),
     programOther: x.programOther || "",
-    course: s.course || x.nursingProgram || "",
+    course: s.course || x.lawProgram || x.nursingProgram || "",
     courseId: s.courseId || "",
     nursingNote: x.nursingNote || "",
+    lawNote: x.lawNote || "",
+    latRollNo: x.latRollNo || "",
+    latScore: x.latScore || "",
+    latYear: x.latYear || "",
     qualifications: quals,
     fees: {
       ...blankFees(),
@@ -164,7 +177,7 @@ const inputClass =
 export default function AplInstituteAdmissionForm({
   studentId,
   config,
-  category: categoryProp = "general",
+  category: categoryProp = "law",
   nursingTrackId,
 }: {
   studentId?: string;
@@ -183,13 +196,9 @@ export default function AplInstituteAdmissionForm({
   const initialTrack = nursingTrack(nursingTrackId);
   const [courses, setCourses] = useState<CourseItem[]>([]);
 
-  const programs =
-    category === "general" && config.programs?.length ? config.programs : preset.programs;
-  const checklist =
-    category === "general" && config.documentChecklist?.length
-      ? config.documentChecklist
-      : preset.documents;
-  const requireLat = category === "general" && config.requireLatForLlb !== false && preset.requireLatForLlb;
+  const programs = preset.programs;
+  const checklist = preset.documents;
+  const requireLat = category === "law" && preset.requireLatForLlb;
 
   const [f, setF] = useState<FormState>(() => blankForm(undefined, categoryProp, initialTrack?.courseName || ""));
   const [loading, setLoading] = useState(true);
@@ -201,7 +210,7 @@ export default function AplInstituteAdmissionForm({
   const set = (patch: Partial<FormState>) => setF((p) => ({ ...p, ...patch }));
 
   const primaryProgram = useMemo(() => {
-    if (category === "it" || category === "nursing") return f.course.trim();
+    if (category === "law" || category === "it" || category === "nursing") return f.course.trim();
     const selected = f.programs.filter((p) => p !== "Other");
     if (selected.length) return selected[0];
     if (f.programs.includes("Other") && f.programOther.trim()) return f.programOther.trim();
@@ -230,7 +239,7 @@ export default function AplInstituteAdmissionForm({
         if (studentId) {
           const res = await studentsApi.get(studentId);
           const saved = res.student.admissionExtras?.category;
-          const nextCategory = isAplCategory(saved) ? saved : categoryProp;
+          const nextCategory = asAplCategory(saved) || categoryProp;
           if (!cancelled) {
             setCategory(nextCategory);
             setF(fromStudent(res.student, nextCategory));
@@ -248,7 +257,7 @@ export default function AplInstituteAdmissionForm({
               const me = await studentsApi.me();
               if (!cancelled && me.student) {
                 const saved = me.student.admissionExtras?.category;
-                const nextCategory = isAplCategory(saved) ? saved : categoryProp;
+                const nextCategory = asAplCategory(saved) || categoryProp;
                 setCategory(nextCategory);
                 setF(fromStudent(me.student, nextCategory));
                 setSchoolTitle(config.instituteTitle || user.school?.name || schoolTitle);
@@ -296,16 +305,6 @@ export default function AplInstituteAdmissionForm({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId, enquiryId, user?.id]);
-
-  const toggleProgram = (label: string) => {
-    setF((prev) => {
-      const has = prev.programs.includes(label);
-      return {
-        ...prev,
-        programs: has ? prev.programs.filter((p) => p !== label) : [...prev.programs, label],
-      };
-    });
-  };
 
   const toggleDoc = (label: string) => {
     setF((prev) => {
@@ -357,17 +356,24 @@ export default function AplInstituteAdmissionForm({
       alert("Please select at least one program / course.");
       return;
     }
-    if (requireLat && f.programs.includes("LLB")) {
+    if (requireLat && !f.latScore.trim()) {
       const lat = f.qualifications.find((q) => q.level.startsWith("LAT"));
       if (!lat?.obtainedMarks && !f.documentsChecklist.some((d) => d.toLowerCase().includes("lat"))) {
-        alert("LLB applicants should fill LAT marks or tick LAT Result in documents.");
+        alert("Law applicants need a LAT score, LAT marks, or the LAT Result Card ticked.");
         return;
       }
     }
 
+    const selectedLaw = LAW_TRACKS.find((track) => track.courseName === f.course);
     const selectedNursing = NURSING_TRACKS.find((track) => track.courseName === f.course) || initialTrack;
     const extras: StudentAdmissionExtras = {
       category,
+      lawProgram: category === "law" ? f.course || undefined : undefined,
+      lawDuration: category === "law" ? selectedLaw?.duration : undefined,
+      lawNote: f.lawNote.trim() || undefined,
+      latRollNo: f.latRollNo.trim() || undefined,
+      latScore: f.latScore.trim() || undefined,
+      latYear: f.latYear.trim() || undefined,
       nursingProgram: category === "nursing" ? f.course || undefined : undefined,
       nursingDuration: category === "nursing" ? selectedNursing?.duration : undefined,
       nursingNote: f.nursingNote.trim() || undefined,
@@ -377,7 +383,7 @@ export default function AplInstituteAdmissionForm({
       altPhone: f.altPhone.trim() || undefined,
       programOther: f.programOther.trim() || undefined,
       documentOther: f.documentOther.trim() || undefined,
-      programs: category === "general" ? f.programs : f.course ? [f.course] : f.programs,
+      programs: f.course ? [f.course] : f.programs,
       qualifications: f.qualifications,
       documentsChecklist: f.documentsChecklist,
       fees: f.fees,
@@ -406,6 +412,8 @@ export default function AplInstituteAdmissionForm({
       notes: [
         `Category: ${preset.title}`,
         f.course ? `Course: ${f.course}` : "",
+        f.latScore ? `LAT score: ${f.latScore}` : "",
+        f.lawNote ? `Law note: ${f.lawNote}` : "",
         f.nursingNote ? `Nursing note: ${f.nursingNote}` : "",
         f.programs.length ? `Programs: ${f.programs.join(", ")}` : "",
         f.programOther ? `Other program: ${f.programOther}` : "",
@@ -646,37 +654,56 @@ export default function AplInstituteAdmissionForm({
           ) : (
             <section className="space-y-3">
               <h3 className="border-b border-[#1e4b8f]/pb-1 text-[13px] font-bold uppercase tracking-wide text-[#1e4b8f]">
-                Program / Course Applying For
+                Law program
               </h3>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {programs.map((label) => (
-                  <label key={label} className="flex items-center gap-2 text-[13px] text-slate-800">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-[#1e4b8f]"
-                      checked={f.programs.includes(label)}
-                      onChange={() => toggleProgram(label)}
-                    />
-                    <span>{label}</span>
-                    {label === "Other" && f.programs.includes("Other") ? (
+              <p className="text-[12px] text-slate-500">
+                Choose the LLB duration. This admission is stored as a law student.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {LAW_TRACKS.map((track) => (
+                  <label
+                    key={track.id}
+                    className={`flex cursor-pointer flex-col gap-1 rounded border px-3 py-3 ${
+                      f.course === track.courseName ? "border-[#1e4b8f] bg-blue-50" : "border-slate-300"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-[14px] font-semibold text-slate-900">
                       <input
-                        className="ml-1 min-w-0 flex-1 border-b border-slate-300 bg-transparent text-[13px] outline-none"
-                        value={f.programOther}
-                        onChange={(e) => set({ programOther: e.target.value })}
-                        placeholder="Specify"
+                        type="radio"
+                        name="law-track"
+                        className="h-4 w-4 accent-[#1e4b8f]"
+                        checked={f.course === track.courseName}
+                        onChange={() => {
+                          const match = courses.find((course) => course.name === track.courseName);
+                          set({ course: track.courseName, courseId: match?.id || "", programs: [track.courseName] });
+                        }}
                       />
-                    ) : null}
+                      {track.title}
+                    </span>
+                    <span className="pl-6 text-[12px] text-slate-600">Duration: {track.duration}</span>
+                    <span className="pl-6 text-[12px] text-slate-500">{track.description}</span>
                   </label>
                 ))}
               </div>
-              <CoursePicker
-                courses={courses}
-                value={f.course}
-                category="general"
-                label="Course from the school list"
-                onChange={(course) => set({ course: course?.name || "", courseId: course?.id || "" })}
-                onCreated={(course) => setCourses((prev) => [course, ...prev.filter((row) => row.id !== course.id)])}
-              />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <LineField label="LAT Roll No.">
+                  <input className={inputClass} value={f.latRollNo} onChange={(e) => set({ latRollNo: e.target.value })} />
+                </LineField>
+                <LineField label="LAT Score">
+                  <input className={inputClass} value={f.latScore} onChange={(e) => set({ latScore: e.target.value })} />
+                </LineField>
+                <LineField label="LAT Year">
+                  <input className={inputClass} value={f.latYear} onChange={(e) => set({ latYear: e.target.value })} />
+                </LineField>
+              </div>
+              <LineField label="Note">
+                <input
+                  className={inputClass}
+                  value={f.lawNote}
+                  onChange={(e) => set({ lawNote: e.target.value })}
+                  placeholder="College preference, shift, or previous degree"
+                />
+              </LineField>
             </section>
           )}
 

@@ -13,6 +13,7 @@ import {
   type StudentItem,
 } from "@/lib/auth/api-client";
 import { useBranch } from "@/lib/branch-context";
+import { ADMISSION_TRACKS, courseNamesFrom, matchesStudentSearch, studentTrackLabel } from "@/lib/student-directory";
 
 const SESSIONS = ["2023-2024", "2024-2025", "2025-2026", "2026-2027"];
 
@@ -33,6 +34,9 @@ export default function PromoteStudentsPage() {
   const [curSession, setCurSession] = useState("2024-2025");
   const [curClass, setCurClass] = useState("");
   const [curSection, setCurSection] = useState("");
+  const [curCourse, setCurCourse] = useState("");
+  const [curProgram, setCurProgram] = useState("");
+  const [pickQuery, setPickQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [newSession, setNewSession] = useState("2025-2026");
   const [newClass, setNewClass] = useState("");
@@ -75,11 +79,15 @@ export default function PromoteStudentsPage() {
   const newClassObj = classes.find((c) => c.name === newClass);
   const newSections = newClassObj?.sections?.length ? newClassObj.sections : ["A", "B", "C", "D"];
 
+  const courseNames = useMemo(() => courseNamesFrom(students), [students]);
   const candidates = useMemo(() => students
     .filter((s) => !currentBranchId || currentBranchId === "all" || !s.branchId || s.branchId === currentBranchId)
     .filter((s) => (curClass ? s.cls === curClass : true))
-    .filter((s) => (curSection ? s.section === curSection : true)),
-  [students, currentBranchId, curClass, curSection]);
+    .filter((s) => (curSection ? s.section === curSection : true))
+    .filter((s) => (curCourse ? s.course === curCourse : true))
+    .filter((s) => (curProgram ? studentTrackLabel(s) === curProgram : true))
+    .filter((s) => matchesStudentSearch(s, pickQuery)),
+  [students, currentBranchId, curClass, curSection, curCourse, curProgram, pickQuery]);
 
   const toggle = (id: string) => setSelected((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const canNext = step === 1 ? !!(curClass && curSection) : step === 2 ? selected.length > 0 : step === 3 ? !!(newClass && newSection) : true;
@@ -186,6 +194,28 @@ export default function PromoteStudentsPage() {
                   placeholder="Select section"
                 />
               </Field>
+              <Field label="Program">
+                <Select
+                  options={["", ...ADMISSION_TRACKS]}
+                  value={curProgram}
+                  onChange={(e) => {
+                    setCurProgram(e.target.value);
+                    setSelected([]);
+                  }}
+                  placeholder="All programs"
+                />
+              </Field>
+              <Field label="Course">
+                <Select
+                  options={["", ...courseNames]}
+                  value={curCourse}
+                  onChange={(e) => {
+                    setCurCourse(e.target.value);
+                    setSelected([]);
+                  }}
+                  placeholder="All courses"
+                />
+              </Field>
             </div>
             {curClass && curSection && (
               <p className="px-4 pb-4 text-[13px] text-[var(--theme-text-muted)]">
@@ -211,6 +241,16 @@ export default function PromoteStudentsPage() {
                 </Btn>
               }
             />
+            <div className="px-4 pt-4">
+              <Field label="Search students">
+                <input
+                  value={pickQuery}
+                  onChange={(e) => setPickQuery(e.target.value)}
+                  placeholder="Name, ID, course, Law, IT or Nursing"
+                  className="h-10 w-full rounded border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 text-[14px]"
+                />
+              </Field>
+            </div>
             <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
               {candidates.map((s) => (
                 <StudentPick key={s.id} s={s} checked={selected.includes(s.id)} onToggle={() => toggle(s.id)} />
@@ -331,7 +371,7 @@ function StudentPick({ s, checked, onToggle }: { s: StudentItem; checked: boolea
       <Avatar name={s.name} size={36} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14px] font-medium">{s.name}</p>
-        <p className="text-[12px] text-[var(--theme-text-muted)] font-mono">{s.studentId} · {s.cls}-{s.section}</p>
+        <p className="text-[12px] text-[var(--theme-text-muted)] font-mono">{s.studentId} · {s.cls}-{s.section}{s.course ? ` · ${s.course}` : ""}</p>
       </div>
     </button>
   );

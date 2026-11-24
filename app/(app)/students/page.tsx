@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, Pencil, Trash2, IdCard, UserPlus, Plus, ArrowUpDown, Layers, Filter, User, RefreshCw } from "lucide-react";
+import { Eye, Pencil, Trash2, IdCard, UserPlus, Plus, ArrowUpDown, Layers, Filter, RefreshCw } from "lucide-react";
 import {
-  Avatar, Btn, ConfirmDialog, EmptyState, Modal, RowMenu, Td, Th, cn,
+  Avatar, ConfirmDialog, EmptyState, RowMenu, Td, Th, cn,
 } from "@/components/ui";
 import { Board, BoardBar, BoardBody, BoardHead, GroupHead, GroupTable, BarCell } from "@/components/board";
 import {
@@ -16,6 +16,7 @@ import { CalendarBoard, KanbanBoard, MobileItem } from "@/components/board-views
 import { BoardPageSkeleton } from "@/components/skeleton";
 import { useBranch } from "@/lib/branch-context";
 import { studentsApi, classesApi, type StudentItem, type ClassItem } from "@/lib/auth/api-client";
+import { ADMISSION_TRACKS, courseNamesFrom, matchesStudentSearch, studentTrackLabel } from "@/lib/student-directory";
 const COL_META: { key: string; label: string; width: string }[] = [
   { key: "studentId", label: "Student ID", width: "120px" },
   { key: "cls", label: "Class", width: "120px" },
@@ -48,6 +49,7 @@ export default function AllStudentsPage() {
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("");
   const [course, setCourse] = useState("");
+  const [program, setProgram] = useState("");
   const [section, setSection] = useState("");
   const [status, setStatus] = useState("");
   const [gender, setGender] = useState("");
@@ -57,7 +59,6 @@ export default function AllStudentsPage() {
   const [hidden, setHidden] = useState<string[]>([]);
   const [view, setView] = useState<BoardView>("table");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [detail, setDetail] = useState<StudentItem | null>(null);
   const [toDelete, setToDelete] = useState<StudentItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -85,11 +86,7 @@ export default function AllStudentsPage() {
   }, [loadData]);
 
   const classNames = useMemo(() => classes.map((c) => c.name), [classes]);
-  const courseNames = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach((r) => r.course && set.add(r.course));
-    return Array.from(set).sort();
-  }, [rows]);
+  const courseNames = useMemo(() => courseNamesFrom(rows), [rows]);
   const sectionOptions = useMemo(() => {
     const set = new Set<string>();
     classes.forEach((c) => (c.sections || []).forEach((s) => set.add(s)));
@@ -99,9 +96,10 @@ export default function AllStudentsPage() {
 
   const filtered = useMemo(() => rows
     .filter((r) => !currentBranchId || currentBranchId === "all" || !r.branchId || r.branchId === currentBranchId)
-    .filter((r) => `${r.name} ${r.studentId} ${r.guardian || ''} ${r.phone || ''} ${r.admissionNo || ''} ${r.course || ''}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((r) => matchesStudentSearch(r, q))
     .filter((r) => (cls ? r.cls === cls : true))
     .filter((r) => (course ? r.course === course : true))
+    .filter((r) => (program ? studentTrackLabel(r) === program : true))
     .filter((r) => (section ? r.section === section : true))
     .filter((r) => (status ? r.status === status : true))
     .filter((r) => (gender ? r.gender === gender : true))
@@ -109,7 +107,7 @@ export default function AllStudentsPage() {
       const key = sort === "Name" ? "name" : sort === "Student ID" ? "studentId" : sort === "Class" ? "cls" : "admissionDate";
       const c = String(a[key as keyof StudentItem] || '').localeCompare(String(b[key as keyof StudentItem] || ''));
       return sortAsc ? c : -c;
-    }), [rows, currentBranchId, q, cls, course, section, status, gender, sort, sortAsc]);
+    }), [rows, currentBranchId, q, cls, course, program, section, status, gender, sort, sortAsc]);
 
   const groups = useMemo(() => {
     const map = new Map<string, StudentItem[]>();
@@ -128,7 +126,7 @@ export default function AllStudentsPage() {
   const latestMonth = useMemo(() => filtered.map((r) => r.admissionDate).filter(Boolean).sort().slice(-1)[0]?.slice(0, 7), [filtered]);
 
   const rowMenu = (r: StudentItem) => [
-    { label: "View Details", Icon: Eye, onClick: () => setDetail(r) },
+    { label: "View Details", Icon: Eye, onClick: () => router.push(`/students/${r.id}`) },
     { label: "Edit Student", Icon: Pencil, onClick: () => router.push(`/students/${r.id}/edit`) },
     { label: "Delete", Icon: Trash2, danger: true, onClick: () => setToDelete(r) },
   ];
@@ -154,7 +152,7 @@ export default function AllStudentsPage() {
       <BoardBar>
         <BoardHead
           title="All Students"
-          subtitle="Complete student directory with class, section and guardian details."
+          subtitle="Search and filter by class, course, Law, IT, or Nursing."
           Icon={UserPlus}
           actions={
             <div className="flex items-center gap-2">
@@ -178,8 +176,9 @@ export default function AllStudentsPage() {
         />
 
         <BoardToolbarBar>
-          <BoardInlineSearch value={q} onChange={setQ} placeholder="Search name, ID, guardian or course…" />
+          <BoardInlineSearch value={q} onChange={setQ} placeholder="Search name, ID, course, Law, IT or Nursing…" />
           <ToolDropdown Icon={Filter} label="Class" options={classNames} value={cls} onChange={setCls} allLabel="All Classes" />
+          <ToolDropdown Icon={Filter} label="Program" options={ADMISSION_TRACKS} value={program} onChange={setProgram} allLabel="All Programs" />
           <ToolDropdown Icon={Filter} label="Course" options={courseNames} value={course} onChange={setCourse} allLabel="All Courses" />
           <ToolDropdown Icon={ArrowUpDown} label="Sort" options={SORTS} value={sort} onChange={(v) => { setSort((v || "Name") as SortLabel); setSortAsc(true); }} allLabel="Name" />
           <ColumnsDropdown columns={COL_META} hidden={hidden} onToggle={(k) => setHidden((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]))} />
@@ -230,7 +229,7 @@ export default function AllStudentsPage() {
                               <Th className="border-l border-[var(--theme-border)]"><span className="sr-only">Actions</span></Th>
                             </div>
                             {g.items.map((r) => (
-                              <div key={r.id} onClick={() => setDetail(r)}
+                              <div key={r.id} onClick={() => router.push(`/students/${r.id}`)}
                                 className="row grid cursor-pointer border-b border-[var(--theme-border)] text-[15px] transition-colors last:border-b-0 hover:bg-[var(--theme-hover)]"
                                 style={{ gridTemplateColumns: tmpl }}>
                                 <BarCell color={g.color} className="py-2.5"><Avatar name={r.name} src={r.photo} size={30} /></BarCell>
@@ -251,14 +250,16 @@ export default function AllStudentsPage() {
                         </div>
                         <div className="space-y-3 md:hidden">
                           {g.items.map((r) => (
-                            <MobileItem key={r.id} name={r.name} subtitle={`${r.studentId} · ${r.cls}-${r.section}${r.course ? ` · ${r.course}` : ""}`}
-                              actions={<RowMenu items={rowMenu(r)} />}
+                            <div key={r.id} role="link" tabIndex={0} onClick={() => router.push(`/students/${r.id}`)} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/students/${r.id}`); }} className="cursor-pointer">
+                            <MobileItem name={r.name} subtitle={`${r.studentId} · ${r.cls}-${r.section}${r.course ? ` · ${r.course}` : ""}`}
+                              actions={<span onClick={(e) => e.stopPropagation()}><RowMenu items={rowMenu(r)} /></span>}
                               rows={[
                                 { label: "Status", value: <StatusPill label={r.status} /> },
                                 { label: "Guardian", value: r.guardian || r.father || '—' },
                                 { label: "Phone", value: r.phone || '—' },
                                 { label: "Admission", value: r.admissionDate },
                               ]} />
+                            </div>
                           ))}
                         </div>
                       </>
@@ -275,7 +276,7 @@ export default function AllStudentsPage() {
             columns={groups.map((g) => ({ key: g.key, label: g.label, color: g.color, items: g.items }))}
             keyOf={(r) => r.id}
             renderCard={(r) => (
-              <button type="button" onClick={() => setDetail(r)}
+              <button type="button" onClick={() => router.push(`/students/${r.id}`)}
                 className="w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3 text-left shadow-sm transition-colors hover:bg-[var(--theme-hover)]">
                 <span className="flex items-start gap-2">
                   <Avatar name={r.name} src={r.photo} size={30} />
@@ -296,7 +297,7 @@ export default function AllStudentsPage() {
         {view === "calendar" && (
           <CalendarBoard items={filtered} getDate={(r) => r.admissionDate} initialMonth={latestMonth}
             renderChip={(r) => (
-              <button type="button" onClick={() => setDetail(r)} title={`${r.name} · ${r.cls}-${r.section}`}
+              <button type="button" onClick={() => router.push(`/students/${r.id}`)} title={`${r.name} · ${r.cls}-${r.section}`}
                 className="flex w-full items-center gap-1.5 rounded bg-[var(--theme-hover)] px-1.5 py-1 text-left text-[11px] transition-colors hover:bg-[var(--theme-border)]">
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: statusColor(r.status) }} />
                 <span className="truncate">{r.name}</span>
@@ -305,67 +306,6 @@ export default function AllStudentsPage() {
           />
         )}
       </BoardBody>
-
-      {/* VIEW DETAIL MODAL */}
-      <Modal open={!!detail} onClose={() => setDetail(null)} title={detail?.name ?? ""} subtitle="Student profile & details"
-        footer={
-          <>
-            <Btn variant="secondary" onClick={() => setDetail(null)}>Close</Btn>
-            {detail && (
-              <Btn
-                variant="primary"
-                Icon={Pencil}
-                onClick={() => {
-                  const id = detail.id;
-                  setDetail(null);
-                  router.push(`/students/${id}/edit`);
-                }}
-              >
-                Edit Student
-              </Btn>
-            )}
-          </>
-        }>
-        {detail && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Avatar name={detail.name} src={detail.photo} size={52} />
-              <div className="min-w-0">
-                <p className="truncate text-[16px] font-semibold">{detail.name}</p>
-                <p className="truncate text-[13px] text-[var(--theme-text-muted)]">{detail.cls}-{detail.section} · {detail.gender}</p>
-                <div className="mt-1"><StatusPill label={detail.status} /></div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Info label="Student ID" value={detail.studentId} />
-              <Info label="Admission No" value={detail.admissionNo || "—"} />
-              <Info label="Admission Date" value={detail.admissionDate || "—"} />
-              <Info label="Session" value={detail.session || "—"} />
-              <Info label="Guardian" value={detail.guardian || detail.father || "—"} />
-              <Info label="Phone / Contact" value={detail.phone || "—"} />
-              <Info label="Class" value={detail.cls} />
-              <Info label="Course" value={detail.course || "—"} />
-              <Info label="Section" value={detail.section} />
-              {detail.dob && <Info label="Date of Birth" value={detail.dob} />}
-              {detail.blood && <Info label="Blood Group" value={detail.blood} />}
-              {detail.email && <Info label="Email" value={detail.email} />}
-              {detail.address && <div className="col-span-2"><Info label="Address" value={detail.address} /></div>}
-            </div>
-            <div className="rounded-lg border border-[var(--theme-border)] px-3 py-2">
-              <p className="text-[11px] uppercase tracking-wide text-[var(--theme-text-faint)]">Fee receipts</p>
-              <p className="mt-1 text-[13px] text-[var(--theme-text-muted)]">
-                View and reprint this student&apos;s saved fee payment receipts.
-              </p>
-              <a
-                href={`/fees/receipts?q=${encodeURIComponent(detail.admissionNo || detail.studentId || detail.name)}`}
-                className="mt-2 inline-flex text-[13px] font-medium text-[var(--theme-primary)] hover:underline"
-              >
-                Open fee receipt history →
-              </a>
-            </div>
-          </div>
-        )}
-      </Modal>
 
       {/* CONFIRM DELETE DIALOG */}
       <ConfirmDialog
@@ -380,12 +320,4 @@ export default function AllStudentsPage() {
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-[var(--theme-border)] px-3 py-2">
-      <p className="text-[11px] uppercase tracking-wide text-[var(--theme-text-faint)]">{label}</p>
-      <p className="truncate text-[14px] font-medium">{value}</p>
-    </div>
-  );
-}
 

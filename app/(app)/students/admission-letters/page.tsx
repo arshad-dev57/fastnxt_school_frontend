@@ -20,6 +20,7 @@ import {
 import { OfficialLetterDocument, letterHtmlForEmail } from "@/components/letters/official-letter";
 import { useBranch } from "@/lib/branch-context";
 import Link from "next/link";
+import { courseNamesFrom } from "@/lib/student-directory";
 
 const COLS = "grid-cols-[minmax(170px,1.3fr)_150px_120px_120px_120px_150px_64px]";
 
@@ -36,6 +37,7 @@ export default function AdmissionLettersPage() {
   const [emailing, setEmailing] = useState(false);
 
   const [q, setQ] = useState("");
+  const [course, setCourse] = useState("");
   const [status, setStatus] = useState("");
   const [preview, setPreview] = useState<AdmissionLetterItem | null>(null);
   const [gen, setGen] = useState(false);
@@ -71,10 +73,12 @@ export default function AdmissionLettersPage() {
     loadData();
   }, [loadData]);
 
+  const courseNames = useMemo(() => courseNamesFrom(rows), [rows]);
   const filtered = useMemo(() => rows
-    .filter((r) => `${r.student} ${r.admissionNo} ${r.course || ""}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((r) => `${r.student} ${r.admissionNo} ${r.cls} ${r.course || ""}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((r) => (course ? r.course === course : true))
     .filter((r) => (status ? r.status === status : true)),
-  [rows, q, status]);
+  [rows, q, course, status]);
 
   const doPrint = () => {
     void import("@/lib/print-element").then(({ printElement }) => {
@@ -88,7 +92,10 @@ export default function AdmissionLettersPage() {
 
   const handleGenerate = async () => {
     if (!selectedStudentName) return;
-    const s = students.find((x) => x.name === selectedStudentName);
+    const s = students.find((x) => {
+      const label = x.course ? `${x.name} — ${x.course}` : x.name;
+      return label === selectedStudentName || x.name === selectedStudentName;
+    });
     if (!s) return;
 
     try {
@@ -136,7 +143,7 @@ export default function AdmissionLettersPage() {
     }
   };
 
-  const studentOptions = students.map((s) => s.name);
+  const studentOptions = students.map((s) => (s.course ? `${s.name} — ${s.course}` : s.name));
 
   return (
     <>
@@ -170,7 +177,8 @@ export default function AdmissionLettersPage() {
           )}
 
           <div className="flex flex-wrap items-center gap-2 py-3">
-            <SearchBox value={q} onChange={setQ} placeholder="Search student or admission no" className="w-full sm:w-72" />
+            <SearchBox value={q} onChange={setQ} placeholder="Search student, admission no or course" className="w-full sm:w-80" />
+            <Select value={course} onChange={(e) => setCourse(e.target.value)} options={["", ...courseNames]} placeholder="All Courses" className="w-44" />
             <Select value={status} onChange={(e) => setStatus(e.target.value)} options={["Generated", "Pending", "Printed"]} placeholder="All Status" className="w-40" />
           </div>
 

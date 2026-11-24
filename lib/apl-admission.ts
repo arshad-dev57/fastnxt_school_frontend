@@ -1,8 +1,13 @@
 /** A Plus Institute — admission form defaults & helpers. */
 
-export const APL_QUAL_LEVELS = ["Matric / SSC", "Intermediate / HSSC", "LAT (for LLB)"] as const;
+export const APL_QUAL_LEVELS = [
+  "Matric / SSC",
+  "Intermediate / HSSC",
+  "Bachelor's Degree",
+  "LAT (Law Admission Test)",
+] as const;
 
-export type AplAdmissionCategory = "general" | "it" | "nursing";
+export type AplAdmissionCategory = "law" | "it" | "nursing";
 
 export type AplCategoryPreset = {
   id: AplAdmissionCategory;
@@ -15,28 +20,21 @@ export type AplCategoryPreset = {
   requireLatForLlb: boolean;
 };
 
-/** Category 1 is the form already built for this institute. */
+/** Category 1 is the law admission form. */
 export const APL_CATEGORIES: AplCategoryPreset[] = [
   {
-    id: "general",
-    title: "Current admission form",
-    description: "The admission form already set up for A Plus Institute.",
-    formTitle: "ADMISSION FORM",
-    programs: [
-      "LLB",
-      "IT / E-Commerce",
-      "9th Class",
-      "10th Class",
-      "Computer / OMC",
-      "Graphic / Web",
-      "Digital Marketing",
-      "Other",
-    ],
+    id: "law",
+    title: "Law",
+    description: "LLB admission. Five years after Intermediate, or three years after a bachelor's degree.",
+    formTitle: "LAW ADMISSION FORM",
+    programs: ["LLB (5 Years)", "LLB (3 Years)"],
     documents: [
       "CNIC / B-Form Copy",
       "Matric Result Card",
       "Intermediate Result Card",
-      "LAT Result (LLB)",
+      "Bachelor Degree / Transcript",
+      "LAT Result Card",
+      "Domicile",
       "Passport Size Photos",
       "Other",
     ],
@@ -122,8 +120,32 @@ export function nursingTrack(value?: string | null) {
   return NURSING_TRACKS.find((track) => track.id === value) || null;
 }
 
+export const LAW_TRACKS = [
+  {
+    id: "llb-5",
+    title: "LLB (5 Years)",
+    duration: "5 years",
+    courseName: "LLB (5 Years)",
+    description: "After Intermediate / HSSC. LAT is required.",
+  },
+  {
+    id: "llb-3",
+    title: "LLB (3 Years)",
+    duration: "3 years",
+    courseName: "LLB (3 Years)",
+    description: "After a bachelor's degree. LAT is required.",
+  },
+] as const;
+
+/** Older records used "general" for this same law form. */
+export function asAplCategory(value?: string | null): AplAdmissionCategory | null {
+  if (value === "law" || value === "general") return "law";
+  if (value === "it" || value === "nursing") return value;
+  return null;
+}
+
 export function isAplCategory(value?: string | null): value is AplAdmissionCategory {
-  return value === "general" || value === "it" || value === "nursing";
+  return asAplCategory(value) !== null;
 }
 
 export function aplCategoryPreset(category?: string | null): AplCategoryPreset {

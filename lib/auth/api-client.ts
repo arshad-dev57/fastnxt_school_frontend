@@ -203,8 +203,14 @@ export type AdmissionFormConfigResponse = {
 };
 
 export type StudentAdmissionExtras = {
-  /** A Plus Institute category: general (existing form), it, or nursing. */
+  /** A Plus Institute category: law, it, or nursing. */
   category?: string;
+  lawProgram?: string;
+  lawDuration?: string;
+  lawNote?: string;
+  latRollNo?: string;
+  latScore?: string;
+  latYear?: string;
   nursingProgram?: string;
   nursingDuration?: string;
   nursingNote?: string;
@@ -828,7 +834,7 @@ export type CreateClassInput = {
 export type CourseItem = {
   id: string;
   name: string;
-  category: "general" | "it" | "nursing" | string;
+  category: "general" | "law" | "it" | "nursing" | string;
   duration?: string;
   status: string;
 };
@@ -2548,11 +2554,12 @@ export const examsApi = {
     ),
 
   listResults: async (
-    params?: { examId?: string; cls?: string; section?: string; branchId?: string; publishedOnly?: boolean },
+    params?: { examId?: string; studentId?: string; cls?: string; section?: string; branchId?: string; publishedOnly?: boolean },
     signal?: AbortSignal
   ) => {
     const query = new URLSearchParams();
     if (params?.examId) query.set("examId", params.examId);
+    if (params?.studentId) query.set("studentId", params.studentId);
     if (params?.cls) query.set("cls", params.cls);
     if (params?.section) query.set("section", params.section);
     if (params?.branchId && params.branchId !== "all") query.set("branchId", params.branchId);
