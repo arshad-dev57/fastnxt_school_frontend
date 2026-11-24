@@ -19,6 +19,7 @@ import { studentsApi, classesApi, type StudentItem, type ClassItem } from "@/lib
 const COL_META: { key: string; label: string; width: string }[] = [
   { key: "studentId", label: "Student ID", width: "120px" },
   { key: "cls", label: "Class", width: "120px" },
+  { key: "course", label: "Course", width: "160px" },
   { key: "section", label: "Section", width: "96px" },
   { key: "guardian", label: "Guardian", width: "minmax(150px,1fr)" },
   { key: "phone", label: "Phone", width: "150px" },
@@ -31,7 +32,7 @@ const PALETTE = [
   "var(--theme-accent-2)", "var(--theme-success-text)"
 ];
 const SORTS = ["Name", "Student ID", "Class", "Admission Date"] as const;
-const GROUP_BY = ["Status", "Class", "Section", "Gender"] as const;
+const GROUP_BY = ["Status", "Class", "Course", "Section", "Gender"] as const;
 
 type SortLabel = (typeof SORTS)[number];
 type GroupLabel = (typeof GROUP_BY)[number];
@@ -46,6 +47,7 @@ export default function AllStudentsPage() {
 
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("");
+  const [course, setCourse] = useState("");
   const [section, setSection] = useState("");
   const [status, setStatus] = useState("");
   const [gender, setGender] = useState("");
@@ -83,6 +85,11 @@ export default function AllStudentsPage() {
   }, [loadData]);
 
   const classNames = useMemo(() => classes.map((c) => c.name), [classes]);
+  const courseNames = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => r.course && set.add(r.course));
+    return Array.from(set).sort();
+  }, [rows]);
   const sectionOptions = useMemo(() => {
     const set = new Set<string>();
     classes.forEach((c) => (c.sections || []).forEach((s) => set.add(s)));
@@ -92,8 +99,9 @@ export default function AllStudentsPage() {
 
   const filtered = useMemo(() => rows
     .filter((r) => !currentBranchId || currentBranchId === "all" || !r.branchId || r.branchId === currentBranchId)
-    .filter((r) => `${r.name} ${r.studentId} ${r.guardian || ''} ${r.phone || ''} ${r.admissionNo || ''}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((r) => `${r.name} ${r.studentId} ${r.guardian || ''} ${r.phone || ''} ${r.admissionNo || ''} ${r.course || ''}`.toLowerCase().includes(q.toLowerCase()))
     .filter((r) => (cls ? r.cls === cls : true))
+    .filter((r) => (course ? r.course === course : true))
     .filter((r) => (section ? r.section === section : true))
     .filter((r) => (status ? r.status === status : true))
     .filter((r) => (gender ? r.gender === gender : true))
@@ -101,12 +109,12 @@ export default function AllStudentsPage() {
       const key = sort === "Name" ? "name" : sort === "Student ID" ? "studentId" : sort === "Class" ? "cls" : "admissionDate";
       const c = String(a[key as keyof StudentItem] || '').localeCompare(String(b[key as keyof StudentItem] || ''));
       return sortAsc ? c : -c;
-    }), [rows, currentBranchId, q, cls, section, status, gender, sort, sortAsc]);
+    }), [rows, currentBranchId, q, cls, course, section, status, gender, sort, sortAsc]);
 
   const groups = useMemo(() => {
     const map = new Map<string, StudentItem[]>();
     for (const r of filtered) {
-      const k = group === "Status" ? r.status : group === "Class" ? r.cls : group === "Section" ? `Section ${r.section}` : (r.gender || 'Other');
+      const k = group === "Status" ? r.status : group === "Class" ? r.cls : group === "Course" ? (r.course || "No course") : group === "Section" ? `Section ${r.section}` : (r.gender || 'Other');
       map.set(k, [...(map.get(k) ?? []), r]);
     }
     return [...map.keys()].sort().map((k, i) => ({
@@ -170,8 +178,9 @@ export default function AllStudentsPage() {
         />
 
         <BoardToolbarBar>
-          <BoardInlineSearch value={q} onChange={setQ} placeholder="Search students, ID or guardian…" />
+          <BoardInlineSearch value={q} onChange={setQ} placeholder="Search name, ID, guardian or course…" />
           <ToolDropdown Icon={Filter} label="Class" options={classNames} value={cls} onChange={setCls} allLabel="All Classes" />
+          <ToolDropdown Icon={Filter} label="Course" options={courseNames} value={course} onChange={setCourse} allLabel="All Courses" />
           <ToolDropdown Icon={ArrowUpDown} label="Sort" options={SORTS} value={sort} onChange={(v) => { setSort((v || "Name") as SortLabel); setSortAsc(true); }} allLabel="Name" />
           <ColumnsDropdown columns={COL_META} hidden={hidden} onToggle={(k) => setHidden((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]))} />
           <ToolDropdown Icon={Layers} label="Group by" options={GROUP_BY} value={group} onChange={(v) => setGroup((v || "Status") as GroupLabel)} allLabel="Status" />
@@ -242,7 +251,7 @@ export default function AllStudentsPage() {
                         </div>
                         <div className="space-y-3 md:hidden">
                           {g.items.map((r) => (
-                            <MobileItem key={r.id} name={r.name} subtitle={`${r.studentId} · ${r.cls}-${r.section}`}
+                            <MobileItem key={r.id} name={r.name} subtitle={`${r.studentId} · ${r.cls}-${r.section}${r.course ? ` · ${r.course}` : ""}`}
                               actions={<RowMenu items={rowMenu(r)} />}
                               rows={[
                                 { label: "Status", value: <StatusPill label={r.status} /> },
@@ -272,7 +281,7 @@ export default function AllStudentsPage() {
                   <Avatar name={r.name} src={r.photo} size={30} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-medium">{r.name}</span>
-                    <span className="block truncate text-[12px] text-[var(--theme-text-muted)]">{r.studentId} · {r.cls}-{r.section}</span>
+                    <span className="block truncate text-[12px] text-[var(--theme-text-muted)]">{r.studentId} · {r.cls}-{r.section}{r.course ? ` · ${r.course}` : ""}</span>
                   </span>
                 </span>
                 <span className="mt-2 flex items-center gap-2">
@@ -335,6 +344,7 @@ export default function AllStudentsPage() {
               <Info label="Guardian" value={detail.guardian || detail.father || "—"} />
               <Info label="Phone / Contact" value={detail.phone || "—"} />
               <Info label="Class" value={detail.cls} />
+              <Info label="Course" value={detail.course || "—"} />
               <Info label="Section" value={detail.section} />
               {detail.dob && <Info label="Date of Birth" value={detail.dob} />}
               {detail.blood && <Info label="Blood Group" value={detail.blood} />}

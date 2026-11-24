@@ -46,6 +46,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     k: "admissions_students", label: "Admissions & Students", Icon: UserPlus, children: [
       { label: "Admission Pipeline (Leads)", href: "/admissions", module: "admissions" },
       { label: "New Student Admission", href: "/students/new", module: "students" },
+      { label: "Courses", href: "/courses", module: "students" },
       { label: "Front Office & Visitors", href: "/front-office", module: "frontoffice" },
       { label: "All Enrolled Students", href: "/students", module: "students" },
       { label: "Admission Letters", href: "/students/admission-letters", module: "students" },

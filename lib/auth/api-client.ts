@@ -203,6 +203,11 @@ export type AdmissionFormConfigResponse = {
 };
 
 export type StudentAdmissionExtras = {
+  /** A Plus Institute category: general (existing form), it, or nursing. */
+  category?: string;
+  nursingProgram?: string;
+  nursingDuration?: string;
+  nursingNote?: string;
   formNo?: string;
   cnic?: string;
   guardianCnic?: string;
@@ -820,6 +825,31 @@ export type CreateClassInput = {
   branchId?: string | null;
 };
 
+export type CourseItem = {
+  id: string;
+  name: string;
+  category: "general" | "it" | "nursing" | string;
+  duration?: string;
+  status: string;
+};
+
+export const coursesApi = {
+  list: (params?: { q?: string; category?: string; status?: string }, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.category) query.set("category", params.category);
+    if (params?.status) query.set("status", params.status);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ courses: CourseItem[] }>(`/courses${qs}`, { signal });
+  },
+  create: (data: { name: string; category?: string; duration?: string }) =>
+    request<{ course: CourseItem }>("/courses", { method: "POST", body: data }),
+  update: (id: string, data: Partial<{ name: string; category: string; duration: string; status: string }>) =>
+    request<{ course: CourseItem }>(`/courses/${id}`, { method: "PATCH", body: data }),
+  remove: (id: string) =>
+    request<{ deleted: boolean }>(`/courses/${id}`, { method: "DELETE" }),
+};
+
 export const classesApi = {
   list: (params?: { q?: string; section?: string; status?: string; branchId?: string }, signal?: AbortSignal) => {
     const query = new URLSearchParams();
@@ -1016,6 +1046,8 @@ export type StudentItem = {
   session: string;
   cls: string;
   classId?: string | null;
+  course?: string;
+  courseId?: string | null;
   section: string;
   father?: string;
   mother?: string;
@@ -1049,6 +1081,8 @@ export type CreateStudentInput = {
   session?: string;
   cls: string;
   classId?: string | null;
+  course?: string;
+  courseId?: string | null;
   section?: string;
   father?: string;
   mother?: string;
@@ -1073,6 +1107,7 @@ export type AdmissionLetterItem = {
   student: string;
   admissionNo: string;
   cls: string;
+  course?: string;
   section: string;
   date: string;
   status: "Generated" | "Pending" | "Printed";
@@ -1086,6 +1121,7 @@ export type CreateAdmissionLetterInput = {
   studentId?: string | null;
   admissionNo?: string;
   cls?: string;
+  course?: string;
   section?: string;
   date?: string;
   branchId?: string | null;

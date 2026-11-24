@@ -4,7 +4,7 @@ import { Suspense, use, useEffect, useState } from "react";
 import StudentForm from "../../student-form";
 import AplInstituteAdmissionForm from "@/components/admissions/apl-institute-admission-form";
 import { schoolApi, type AdmissionFormConfig } from "@/lib/auth/api-client";
-import { isAplVariant } from "@/lib/apl-admission";
+import { isAplVariant, looksLikeAplSchool } from "@/lib/apl-admission";
 import { useAuth } from "@/lib/auth/auth-context";
 
 function EditAdmissionRouter({ studentId }: { studentId: string }) {
@@ -19,13 +19,11 @@ function EditAdmissionRouter({ studentId }: { studentId: string }) {
         const res = await schoolApi.getAdmissionFormConfig();
         if (!cancelled) setConfig(res.config);
       } catch {
-        const name = `${user?.school?.name || ""} ${user?.school?.shortName || ""}`.toUpperCase();
         if (!cancelled) {
           setConfig({
-            variant:
-              name.includes("IT & LAW") || name.includes("A+ INSTITUTE") || name.includes("IT AND LAW")
-                ? "apl-legal-it"
-                : "standard",
+            variant: looksLikeAplSchool(user?.school?.name, user?.school?.shortName)
+              ? "apl-legal-it"
+              : "standard",
             instituteTitle: user?.school?.name || "A+ INSTITUTE IT & LAW",
             formTitle: "ADMISSION FORM",
             programs: [],

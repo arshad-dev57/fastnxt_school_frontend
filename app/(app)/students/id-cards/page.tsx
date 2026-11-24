@@ -170,7 +170,7 @@ export default function StudentIdCardsPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-medium">{s.name}</p>
                       <p className="text-[12px] text-[var(--theme-text-muted)] font-mono">
-                        {s.studentId} · {s.cls}-{s.section}
+                        {s.studentId} · {s.cls}-{s.section}{s.course ? ` · ${s.course}` : ""}
                       </p>
                     </div>
                     {selected.includes(s.id) && <Check className="h-4 w-4 shrink-0 text-[var(--theme-primary)]" />}
@@ -283,6 +283,11 @@ function IdCardView({
           <p className="text-neutral-600">
             <span className="font-medium text-black">Class:</span> {s.cls} (Sec {s.section})
           </p>
+          {s.course ? (
+            <p className="text-neutral-600">
+              <span className="font-medium text-black">Course:</span> {s.course}
+            </p>
+          ) : null}
           <p className="text-neutral-600">
             <span className="font-medium text-black">Gender:</span> {s.gender || "Male"}
           </p>

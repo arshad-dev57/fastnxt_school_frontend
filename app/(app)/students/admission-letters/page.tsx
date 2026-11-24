@@ -72,7 +72,7 @@ export default function AdmissionLettersPage() {
   }, [loadData]);
 
   const filtered = useMemo(() => rows
-    .filter((r) => r.student.toLowerCase().includes(q.toLowerCase()) || r.admissionNo.toLowerCase().includes(q.toLowerCase()))
+    .filter((r) => `${r.student} ${r.admissionNo} ${r.course || ""}`.toLowerCase().includes(q.toLowerCase()))
     .filter((r) => (status ? r.status === status : true)),
   [rows, q, status]);
 
@@ -99,6 +99,7 @@ export default function AdmissionLettersPage() {
         studentId: s.id,
         admissionNo: s.admissionNo || `ADM-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
         cls: s.cls,
+        course: s.course || undefined,
         section: s.section,
         date: new Date().toISOString().slice(0, 10),
         branchId: branchScope,
@@ -209,7 +210,10 @@ export default function AdmissionLettersPage() {
                         {r.student}
                       </Td>
                       <Td className="border-l border-[var(--theme-border)] font-mono text-[13px] text-[var(--theme-text-muted)]">{r.admissionNo}</Td>
-                      <Td className="border-l border-[var(--theme-border)]">{r.cls}</Td>
+                      <Td className="border-l border-[var(--theme-border)]">
+                        <span className="block">{r.cls}</span>
+                        {r.course ? <span className="block text-[12px] text-[var(--theme-text-muted)]">{r.course}</span> : null}
+                      </Td>
                       <Td className="border-l border-[var(--theme-border)]"><Badge label={r.section} tone="gray" /></Td>
                       <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.date}</Td>
                       <Td className="border-l border-[var(--theme-border)]">
@@ -290,13 +294,15 @@ export default function AdmissionLettersPage() {
                         template.bodyIntro
                           .replace(/\{studentName\}/g, preview.student)
                           .replace(/\{schoolName\}/g, letterSchool?.name || school?.name || "School")
-                          .replace(/\{classSection\}/g, `${preview.cls} (Section ${preview.section})`),
+                          .replace(/\{classSection\}/g, `${preview.cls} (Section ${preview.section})`)
+                          .replace(/\{course\}/g, preview.course || ""),
                         template.bodyClosing,
                       ],
                       details: [
                         ["Student", preview.student],
                         ["Admission No", preview.admissionNo],
                         ["Class / Section", `${preview.cls} - ${preview.section}`],
+                        ["Course", preview.course || "—"],
                         ["Date", preview.date],
                       ],
                     }),
@@ -350,11 +356,13 @@ export default function AdmissionLettersPage() {
                 vars={{
                   studentName: preview.student,
                   classSection: `${preview.cls} (Section ${preview.section})`,
+                  course: preview.course || "",
                 }}
                 detailRows={[
                   ["Student Name", preview.student],
                   ["Admission Number", preview.admissionNo],
                   ["Class / Section", `${preview.cls} - ${preview.section}`],
+                  ["Course", preview.course || "—"],
                   ["Academic Session", letterSchool?.academicSession || school?.academicSession || "2025-2026"],
                   ["Admission Date", preview.date],
                   ["Status", preview.status],

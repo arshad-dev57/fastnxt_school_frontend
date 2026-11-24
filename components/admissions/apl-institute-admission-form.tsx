@@ -7,20 +7,28 @@ import { ChevronLeft, ImagePlus, Save } from "lucide-react";
 import { Btn, PageHeader } from "@/components/ui";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useBranch } from "@/lib/branch-context";
+import { CoursePicker } from "@/components/courses/course-picker";
 import {
   admissionsApi,
+  coursesApi,
   describeApiError,
   studentsApi,
   uploadsApi,
   type AdmissionFormConfig,
+  type CourseItem,
   type CreateStudentInput,
   type StudentAdmissionExtras,
   type StudentItem,
 } from "@/lib/auth/api-client";
 import {
+  aplCategoryPreset,
   blankFees,
   blankQualifications,
   calcPercentage,
+  isAplCategory,
+  nursingTrack,
+  NURSING_TRACKS,
+  type AplAdmissionCategory,
   type AplFeeState,
   type AplQualificationRow,
 } from "@/lib/apl-admission";
@@ -41,6 +49,9 @@ type FormState = {
   address: string;
   programs: string[];
   programOther: string;
+  course: string;
+  courseId: string;
+  nursingNote: string;
   qualifications: AplQualificationRow[];
   fees: AplFeeState;
   documentsChecklist: string[];
@@ -51,7 +62,7 @@ type FormState = {
   status: string;
 };
 
-function blankForm(session?: string): FormState {
+function blankForm(session?: string, category: AplAdmissionCategory = "general", courseName = ""): FormState {
   return {
     formNo: "",
     admissionDate: new Date().toISOString().slice(0, 10),
@@ -66,9 +77,12 @@ function blankForm(session?: string): FormState {
     email: "",
     dob: "",
     address: "",
-    programs: [],
+    programs: courseName ? [courseName] : [],
     programOther: "",
-    qualifications: blankQualifications(),
+    course: courseName,
+    courseId: "",
+    nursingNote: "",
+    qualifications: blankQualifications(aplCategoryPreset(category).qualificationLevels),
     fees: blankFees(),
     documentsChecklist: [],
     documentOther: "",
@@ -79,9 +93,9 @@ function blankForm(session?: string): FormState {
   };
 }
 
-function fromStudent(s: StudentItem): FormState {
+function fromStudent(s: StudentItem, category: AplAdmissionCategory = "general"): FormState {
   const x = s.admissionExtras || {};
-  const quals = blankQualifications().map((row) => {
+  const quals = blankQualifications(aplCategoryPreset(category).qualificationLevels).map((row) => {
     const found = (x.qualifications || []).find((q) => q.level === row.level);
     return found
       ? {
@@ -108,8 +122,11 @@ function fromStudent(s: StudentItem): FormState {
     email: s.email || "",
     dob: s.dob || "",
     address: s.address || "",
-    programs: x.programs || (s.cls ? [s.cls] : []),
+    programs: x.programs || (s.course ? [s.course] : s.cls ? [s.cls] : []),
     programOther: x.programOther || "",
+    course: s.course || x.nursingProgram || "",
+    courseId: s.courseId || "",
+    nursingNote: x.nursingNote || "",
     qualifications: quals,
     fees: {
       ...blankFees(),
@@ -147,9 +164,13 @@ const inputClass =
 export default function AplInstituteAdmissionForm({
   studentId,
   config,
+  category: categoryProp = "general",
+  nursingTrackId,
 }: {
   studentId?: string;
   config: AdmissionFormConfig;
+  category?: AplAdmissionCategory;
+  nursingTrackId?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -157,31 +178,20 @@ export default function AplInstituteAdmissionForm({
   const { user } = useAuth();
   const { currentBranchId } = useBranch();
   const isEdit = Boolean(studentId);
+  const [category, setCategory] = useState<AplAdmissionCategory>(categoryProp);
+  const preset = aplCategoryPreset(category);
+  const initialTrack = nursingTrack(nursingTrackId);
+  const [courses, setCourses] = useState<CourseItem[]>([]);
 
-  const programs = config.programs?.length
-    ? config.programs
-    : [
-        "LLB",
-        "IT / E-Commerce",
-        "9th Class",
-        "10th Class",
-        "Computer / OMC",
-        "Graphic / Web",
-        "Digital Marketing",
-        "Other",
-      ];
-  const checklist = config.documentChecklist?.length
-    ? config.documentChecklist
-    : [
-        "CNIC / B-Form Copy",
-        "Matric Result Card",
-        "Intermediate Result Card",
-        "LAT Result (LLB)",
-        "Passport Size Photos",
-        "Other",
-      ];
+  const programs =
+    category === "general" && config.programs?.length ? config.programs : preset.programs;
+  const checklist =
+    category === "general" && config.documentChecklist?.length
+      ? config.documentChecklist
+      : preset.documents;
+  const requireLat = category === "general" && config.requireLatForLlb !== false && preset.requireLatForLlb;
 
-  const [f, setF] = useState<FormState>(() => blankForm(config.instituteTitle ? undefined : undefined));
+  const [f, setF] = useState<FormState>(() => blankForm(undefined, categoryProp, initialTrack?.courseName || ""));
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -191,11 +201,24 @@ export default function AplInstituteAdmissionForm({
   const set = (patch: Partial<FormState>) => setF((p) => ({ ...p, ...patch }));
 
   const primaryProgram = useMemo(() => {
+    if (category === "it" || category === "nursing") return f.course.trim();
     const selected = f.programs.filter((p) => p !== "Other");
     if (selected.length) return selected[0];
     if (f.programs.includes("Other") && f.programOther.trim()) return f.programOther.trim();
-    return "";
-  }, [f.programs, f.programOther]);
+    return f.course.trim();
+  }, [category, f.course, f.programs, f.programOther]);
+
+  useEffect(() => {
+    let cancelled = false;
+    coursesApi.list()
+      .then((res) => {
+        if (!cancelled) setCourses(res.courses || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,11 +229,16 @@ export default function AplInstituteAdmissionForm({
 
         if (studentId) {
           const res = await studentsApi.get(studentId);
-          if (!cancelled) setF(fromStudent(res.student));
+          const saved = res.student.admissionExtras?.category;
+          const nextCategory = isAplCategory(saved) ? saved : categoryProp;
+          if (!cancelled) {
+            setCategory(nextCategory);
+            setF(fromStudent(res.student, nextCategory));
+          }
           return;
         }
 
-        const next = blankForm();
+        const next = blankForm(undefined, categoryProp, initialTrack?.courseName || "");
         next.session = "2025-2026";
 
         // Prefill from logged-in user / linked student profile
@@ -219,7 +247,10 @@ export default function AplInstituteAdmissionForm({
             try {
               const me = await studentsApi.me();
               if (!cancelled && me.student) {
-                setF(fromStudent(me.student));
+                const saved = me.student.admissionExtras?.category;
+                const nextCategory = isAplCategory(saved) ? saved : categoryProp;
+                setCategory(nextCategory);
+                setF(fromStudent(me.student, nextCategory));
                 setSchoolTitle(config.instituteTitle || user.school?.name || schoolTitle);
                 return;
               }
@@ -326,7 +357,7 @@ export default function AplInstituteAdmissionForm({
       alert("Please select at least one program / course.");
       return;
     }
-    if (config.requireLatForLlb && f.programs.includes("LLB")) {
+    if (requireLat && f.programs.includes("LLB")) {
       const lat = f.qualifications.find((q) => q.level.startsWith("LAT"));
       if (!lat?.obtainedMarks && !f.documentsChecklist.some((d) => d.toLowerCase().includes("lat"))) {
         alert("LLB applicants should fill LAT marks or tick LAT Result in documents.");
@@ -334,14 +365,19 @@ export default function AplInstituteAdmissionForm({
       }
     }
 
+    const selectedNursing = NURSING_TRACKS.find((track) => track.courseName === f.course) || initialTrack;
     const extras: StudentAdmissionExtras = {
+      category,
+      nursingProgram: category === "nursing" ? f.course || undefined : undefined,
+      nursingDuration: category === "nursing" ? selectedNursing?.duration : undefined,
+      nursingNote: f.nursingNote.trim() || undefined,
       formNo: f.formNo.trim() || undefined,
       cnic: f.cnic.trim() || undefined,
       guardianCnic: f.guardianCnic.trim() || undefined,
       altPhone: f.altPhone.trim() || undefined,
       programOther: f.programOther.trim() || undefined,
       documentOther: f.documentOther.trim() || undefined,
-      programs: f.programs,
+      programs: category === "general" ? f.programs : f.course ? [f.course] : f.programs,
       qualifications: f.qualifications,
       documentsChecklist: f.documentsChecklist,
       fees: f.fees,
@@ -360,12 +396,17 @@ export default function AplInstituteAdmissionForm({
       father: f.father.trim() || undefined,
       guardian: f.father.trim() || undefined,
       cls: primaryProgram,
+      course: f.course || primaryProgram || undefined,
+      courseId: f.courseId || undefined,
       section: f.section || "A",
       session: f.session || "2025-2026",
       status: f.status || "Active",
       admissionExtras: extras,
       branchId: currentBranchId && currentBranchId !== "all" ? currentBranchId : undefined,
       notes: [
+        `Category: ${preset.title}`,
+        f.course ? `Course: ${f.course}` : "",
+        f.nursingNote ? `Nursing note: ${f.nursingNote}` : "",
         f.programs.length ? `Programs: ${f.programs.join(", ")}` : "",
         f.programOther ? `Other program: ${f.programOther}` : "",
         f.fees.remarks ? `Fee remarks: ${f.fees.remarks}` : "",
@@ -410,11 +451,11 @@ export default function AplInstituteAdmissionForm({
   return (
     <div className="mx-auto min-w-[960px] space-y-4 pb-10">
       <PageHeader
-        title="Admission Form"
-        subtitle={`${schoolTitle} — customized IT & Law application`}
+        title={preset.formTitle}
+        subtitle={`${schoolTitle} — ${preset.title}`}
         back={
           <Link
-            href="/students"
+            href={isEdit ? "/students" : "/students/new"}
             className="flex h-9 w-9 items-center justify-center rounded text-[var(--theme-text-muted)] hover:bg-[var(--theme-hover)]"
             aria-label="Back"
           >
@@ -440,7 +481,7 @@ export default function AplInstituteAdmissionForm({
         <div className="flex items-stretch border-b-2 border-[#1e4b8f]">
           <div className="flex flex-1 flex-col justify-center bg-[#1e4b8f] px-4 py-3 text-white sm:px-6">
             <div className="text-lg font-bold tracking-wide sm:text-xl">{schoolTitle}</div>
-            <div className="text-xs uppercase tracking-[0.2em] text-blue-100">{config.formTitle || "ADMISSION FORM"}</div>
+            <div className="text-xs uppercase tracking-[0.2em] text-blue-100">{preset.formTitle}</div>
           </div>
           <div className="hidden w-40 flex-col justify-center gap-1 border-l-2 border-[#1e4b8f] bg-slate-50 px-3 py-2 text-[12px] sm:flex">
             <div>
@@ -527,33 +568,117 @@ export default function AplInstituteAdmissionForm({
             </LineField>
           </section>
 
-          {/* Programs */}
-          <section className="space-y-3">
-            <h3 className="border-b border-[#1e4b8f]/pb-1 text-[13px] font-bold uppercase tracking-wide text-[#1e4b8f]">
-              Program / Course Applying For
-            </h3>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {programs.map((label) => (
-                <label key={label} className="flex items-center gap-2 text-[13px] text-slate-800">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-[#1e4b8f]"
-                    checked={f.programs.includes(label)}
-                    onChange={() => toggleProgram(label)}
-                  />
-                  <span>{label}</span>
-                  {label === "Other" && f.programs.includes("Other") ? (
+          {category === "nursing" ? (
+            <section className="space-y-3">
+              <h3 className="border-b border-[#1e4b8f]/pb-1 text-[13px] font-bold uppercase tracking-wide text-[#1e4b8f]">
+                Nursing form
+              </h3>
+              <p className="text-[12px] text-slate-500">
+                Choose the nursing program so this admission is stored as the right form.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {NURSING_TRACKS.map((track) => (
+                  <label
+                    key={track.id}
+                    className={`flex cursor-pointer flex-col gap-1 rounded border px-3 py-3 ${
+                      f.course === track.courseName ? "border-[#1e4b8f] bg-blue-50" : "border-slate-300"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-[14px] font-semibold text-slate-900">
+                      <input
+                        type="radio"
+                        name="nursing-track"
+                        className="h-4 w-4 accent-[#1e4b8f]"
+                        checked={f.course === track.courseName}
+                        onChange={() => {
+                          const match = courses.find((course) => course.name === track.courseName);
+                          set({ course: track.courseName, courseId: match?.id || "", programs: [track.courseName] });
+                        }}
+                      />
+                      {track.title}
+                    </span>
+                    <span className="pl-6 text-[12px] text-slate-600">Duration: {track.duration}</span>
+                    <span className="pl-6 text-[12px] text-slate-500">{track.description}</span>
+                  </label>
+                ))}
+              </div>
+              <LineField label="Note">
+                <input
+                  className={inputClass}
+                  value={f.nursingNote}
+                  onChange={(e) => set({ nursingNote: e.target.value })}
+                  placeholder="Batch, shift, or previous institute"
+                />
+              </LineField>
+            </section>
+          ) : category === "it" ? (
+            <section className="space-y-3">
+              <h3 className="border-b border-[#1e4b8f]/pb-1 text-[13px] font-bold uppercase tracking-wide text-[#1e4b8f]">
+                IT course
+              </h3>
+              <CoursePicker
+                courses={
+                  courses.some((course) => course.category === "it")
+                    ? courses
+                    : preset.programs.map((name) => ({
+                        id: name,
+                        name,
+                        category: "it",
+                        status: "Active",
+                        duration: "",
+                      }))
+                }
+                value={f.course}
+                category="it"
+                required
+                label="Course"
+                onChange={(course) => set({
+                  course: course?.name || "",
+                  courseId: courses.find((row) => row.name === course?.name)?.id || "",
+                  programs: course ? [course.name] : [],
+                })}
+                onCreated={(course) => {
+                  setCourses((prev) => [course, ...prev.filter((row) => row.id !== course.id)]);
+                  set({ course: course.name, courseId: course.id, programs: [course.name] });
+                }}
+              />
+            </section>
+          ) : (
+            <section className="space-y-3">
+              <h3 className="border-b border-[#1e4b8f]/pb-1 text-[13px] font-bold uppercase tracking-wide text-[#1e4b8f]">
+                Program / Course Applying For
+              </h3>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {programs.map((label) => (
+                  <label key={label} className="flex items-center gap-2 text-[13px] text-slate-800">
                     <input
-                      className="ml-1 min-w-0 flex-1 border-b border-slate-300 bg-transparent text-[13px] outline-none"
-                      value={f.programOther}
-                      onChange={(e) => set({ programOther: e.target.value })}
-                      placeholder="Specify"
+                      type="checkbox"
+                      className="h-4 w-4 accent-[#1e4b8f]"
+                      checked={f.programs.includes(label)}
+                      onChange={() => toggleProgram(label)}
                     />
-                  ) : null}
-                </label>
-              ))}
-            </div>
-          </section>
+                    <span>{label}</span>
+                    {label === "Other" && f.programs.includes("Other") ? (
+                      <input
+                        className="ml-1 min-w-0 flex-1 border-b border-slate-300 bg-transparent text-[13px] outline-none"
+                        value={f.programOther}
+                        onChange={(e) => set({ programOther: e.target.value })}
+                        placeholder="Specify"
+                      />
+                    ) : null}
+                  </label>
+                ))}
+              </div>
+              <CoursePicker
+                courses={courses}
+                value={f.course}
+                category="general"
+                label="Course from the school list"
+                onChange={(course) => set({ course: course?.name || "", courseId: course?.id || "" })}
+                onCreated={(course) => setCourses((prev) => [course, ...prev.filter((row) => row.id !== course.id)])}
+              />
+            </section>
+          )}
 
           {/* Qualifications */}
           {config.showQualificationTable !== false ? (

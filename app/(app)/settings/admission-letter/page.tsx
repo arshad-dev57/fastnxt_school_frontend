@@ -63,7 +63,7 @@ export default function AdmissionLetterSettingsPage() {
     <>
       <PageHeader
         title="Admission Letter Layout"
-        subtitle="Customize the admission letter wording, signatures and branding. Placeholders: {studentName}, {schoolName}, {classSection}."
+        subtitle="Customize the admission letter wording, signatures and branding. Placeholders: {studentName}, {schoolName}, {classSection}, {course}."
         actions={
           <Btn variant="primary" Icon={Save} loading={saving} loadingLabel="Saving…" onClick={save}>
             {saved ? "Saved" : "Save Layout"}

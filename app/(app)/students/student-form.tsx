@@ -7,12 +7,15 @@ import { ChevronLeft, Save, User, GraduationCap, Users2, FileText, ImagePlus, Pl
 import { Btn, Card, CardHead, Field, Input, PageHeader, Select, Textarea, Avatar, type IconType } from "@/components/ui";
 import PasswordInput from "@/components/auth/password-input";
 import { ClassFormModal } from "@/components/classes/class-form-modal";
+import { CoursePicker } from "@/components/courses/course-picker";
 import {
   classesApi,
+  coursesApi,
   describeApiError,
   studentsApi,
   uploadsApi,
   type ClassItem,
+  type CourseItem,
   type CreateStudentInput,
   type StudentDocItem,
   type StudentItem,
@@ -47,6 +50,8 @@ type FormState = {
   admissionDate: string;
   session: string;
   cls: string;
+  course: string;
+  courseId: string;
   section: string;
   father: string;
   mother: string;
@@ -81,6 +86,8 @@ function blankForm(): FormState {
     admissionDate: new Date().toISOString().slice(0, 10),
     session: "2025-2026",
     cls: "",
+    course: "",
+    courseId: "",
     section: "A",
     father: "",
     mother: "",
@@ -110,6 +117,8 @@ function fromStudent(s: StudentItem): FormState {
     admissionDate: s.admissionDate || new Date().toISOString().slice(0, 10),
     session: s.session || "2025-2026",
     cls: s.cls || "",
+    course: s.course || "",
+    courseId: s.courseId || "",
     section: s.section || "A",
     father: s.father || "",
     mother: s.mother || "",
@@ -131,6 +140,7 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
   const isEdit = Boolean(studentId);
 
   const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [courses, setCourses] = useState<CourseItem[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingStudent, setLoadingStudent] = useState(isEdit);
@@ -155,6 +165,8 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
         ]);
         const list = classRes.classes || [];
         setClasses(list);
+        const courseRes = await coursesApi.list().catch(() => ({ courses: [] as CourseItem[] }));
+        setCourses(courseRes.courses || []);
         setTeachers(teacherRes.teachers || []);
         if (!isEdit && list.length > 0) {
           setF((p) =>
@@ -302,6 +314,8 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
         session: f.session,
         cls: f.cls,
         classId: selectedClassObj?.id || undefined,
+        course: f.course || undefined,
+        courseId: f.courseId || undefined,
         section: f.section,
         father: f.father.trim() || undefined,
         mother: f.mother.trim() || undefined,
@@ -481,6 +495,13 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
                   </p>
                 ) : null}
               </Field>
+              <CoursePicker
+                courses={courses}
+                value={f.course}
+                category="general"
+                onChange={(course) => set({ course: course?.name || "", courseId: course?.id || "" })}
+                onCreated={(course) => setCourses((prev) => [course, ...prev.filter((row) => row.id !== course.id)])}
+              />
               <Field label="Section *">
                 <Select
                   options={availableSections}
@@ -653,6 +674,7 @@ export default function StudentForm({ studentId }: { studentId?: string }) {
               <Row label="Admission Date" value={f.admissionDate} />
               <Row label="Session" value={f.session} />
               <Row label="Class & Sec" value={`${f.cls || "—"} (Sec ${f.section})`} />
+              {f.course ? <Row label="Course" value={f.course} /> : null}
               <Row label="Guardian" value={f.guardian || f.father || "—"} />
               <Row label="Phone" value={f.phone || "—"} />
               <Row label="Documents" value={`${documents.length} attached`} />
