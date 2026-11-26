@@ -34,8 +34,12 @@ export type UserBranchAccess = {
 export type UserRole =
   | "Super Admin"
   | "Owner"
+  | "Admin"
   | "Branch Admin"
+  | "Account"
   | "Accountant"
+  | "Admission"
+  | "HR"
   | "Receptionist"
   | "Teacher"
   | "Student";

@@ -154,6 +154,7 @@ export default function StudentRecordPage({ params }: { params: Promise<{ id: st
             <Info label="Date of birth" value={student.dob || "—"} />
             <Info label="Blood group" value={student.blood || "—"} />
             <Info label="Phone" value={student.phone || "—"} />
+            <Info label="WhatsApp" value={extras?.whatsapp || "—"} />
             <Info label="Email" value={student.email || "—"} />
             <Info label="CNIC" value={extras?.cnic || "—"} />
             <Info label="Father" value={student.father || "—"} />

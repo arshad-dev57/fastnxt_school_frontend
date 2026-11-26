@@ -7,6 +7,7 @@ import type {
   FeeVoucherTemplate,
 } from "@/lib/auth/api-client";
 import { DEFAULT_FEE_VOUCHER_TEMPLATE } from "@/lib/auth/api-client";
+import { FeePaymentQr, InvoiceBarcode } from "@/components/fees/payment-codes";
 
 type CopyKind = "bank" | "student" | "school";
 
@@ -109,17 +110,18 @@ function VoucherCopy({
             </p>
           </div>
         </div>
-        <div className="shrink-0 text-right">
+        <div className="flex shrink-0 flex-col items-end gap-1 text-right">
           <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: accent }}>
             {t.title}
           </p>
           <p
-            className="mt-1 inline-block rounded px-2 py-0.5 text-[10px] font-bold text-white"
+            className="inline-block rounded px-2 py-0.5 text-[10px] font-bold text-white"
             style={{ background: accent }}
           >
             {copyLabel}
           </p>
-          <p className="mt-1 font-mono text-[11px] font-semibold">{invoice.invoiceNo}</p>
+          <p className="font-mono text-[11px] font-semibold">{invoice.invoiceNo}</p>
+          {t.showInvoiceBarcode ? <InvoiceBarcode value={invoice.invoiceNo} accent={accent} /> : null}
         </div>
       </div>
 
@@ -139,16 +141,33 @@ function VoucherCopy({
         {invoice.studentCode ? <Meta label="Student ID" value={invoice.studentCode} /> : null}
       </div>
 
-      {(t.bankName || t.bankAccountNo || t.bankAccountTitle || t.bankBranch) && (
+      {(t.bankName || t.bankAccountNo || t.bankAccountTitle || t.bankBranch || t.paymentMobile || t.paymentLink || t.showPaymentQr) && (
         <div className="mb-2 rounded border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-[11px]">
-          <p className="mb-0.5 font-semibold" style={{ color: accent }}>
-            Bank Deposit Details
-          </p>
-          <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
-            {t.bankName ? <Meta label="Bank" value={t.bankName} /> : null}
-            {t.bankAccountTitle ? <Meta label="A/C Title" value={t.bankAccountTitle} /> : null}
-            {t.bankAccountNo ? <Meta label="A/C No" value={t.bankAccountNo} /> : null}
-            {t.bankBranch ? <Meta label="Branch" value={t.bankBranch} /> : null}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="mb-0.5 font-semibold" style={{ color: accent }}>
+                Payment Details
+              </p>
+              <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+                {t.bankName ? <Meta label="Bank" value={t.bankName} /> : null}
+                {t.bankAccountTitle ? <Meta label="A/C Title" value={t.bankAccountTitle} /> : null}
+                {t.bankAccountNo ? <Meta label="A/C No" value={t.bankAccountNo} /> : null}
+                {t.bankBranch ? <Meta label="Branch" value={t.bankBranch} /> : null}
+                {t.paymentMobile ? <Meta label="JazzCash / EasyPaisa" value={t.paymentMobile} /> : null}
+                {t.paymentLink ? <Meta label="Pay link" value={t.paymentLink} /> : null}
+              </div>
+              {t.showPaymentQr ? (
+                <p className="mt-1 text-[10px] text-neutral-600">
+                  Scan QR to open school payment details for this voucher.
+                </p>
+              ) : null}
+            </div>
+            {t.showPaymentQr ? (
+              <div className="shrink-0 text-center">
+                <FeePaymentQr invoice={invoice} template={t} schoolName={schoolName} size={88} />
+                <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-neutral-500">Scan to pay</p>
+              </div>
+            ) : null}
           </div>
         </div>
       )}

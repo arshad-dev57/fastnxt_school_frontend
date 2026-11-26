@@ -245,16 +245,16 @@ export default function AssignSubjectsPage() {
             <div className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
               <ClipboardList className="h-[18px] w-[18px] text-[var(--theme-primary)]" /> New assignment
               <span className="text-[13px] font-normal text-[var(--theme-text-muted)]">
-                Select class, section, subject and teacher from database
+                Select class / course, section, subject and teacher from database
               </span>
             </div>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <Field label="Class *">
+              <Field label="Class / Course *">
                 <Select
                   options={classOptions}
                   value={cls}
                   onChange={(e) => handleClassChange(e.target.value)}
-                  placeholder={loading ? "Loading classes..." : classOptions.length > 0 ? "Select class" : "No classes found"}
+                  placeholder={loading ? "Loading…" : classOptions.length > 0 ? "Select class / course" : "No classes / courses found"}
                   disabled={loading || classOptions.length === 0}
                 />
               </Field>

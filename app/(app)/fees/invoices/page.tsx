@@ -253,7 +253,7 @@ export default function FeeInvoicesPage() {
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 pb-3">
           <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Student, course, Law, IT, Nursing or invoice #" className="w-full sm:w-80" />
-          <Select value={cls} onChange={(e) => { setCls(e.target.value); setPage(1); }} options={classOptions} placeholder="All Classes" className="w-36" />
+          <Select value={cls} onChange={(e) => { setCls(e.target.value); setPage(1); }} options={classOptions} placeholder="All Classes / Courses" className="w-44" />
           <Select value={course} onChange={(e) => { setCourse(e.target.value); setPage(1); }} options={courseNamesFrom(students)} placeholder="All Courses" className="w-44" />
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} options={STATUSES} placeholder="All Status" className="w-40" />
           <Btn variant="secondary" Icon={ArrowUpDown} onClick={() => setSortAsc((s) => !s)}>{sortAsc ? "A–Z" : "Z–A"}</Btn>
@@ -280,7 +280,7 @@ export default function FeeInvoicesPage() {
                     <div className={cn("sticky top-0 z-10 grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-sm")}>
                       <Th className="border-l border-[var(--theme-border)]">Invoice No</Th>
                       <Th className="border-l border-[var(--theme-border)]">Student</Th>
-                      <Th className="border-l border-[var(--theme-border)]">Class</Th>
+                      <Th className="border-l border-[var(--theme-border)]">Class / Course</Th>
                       <Th className="border-l border-[var(--theme-border)]">Period</Th>
                       <Th className="border-l border-[var(--theme-border)]">Issue</Th>
                       <Th className="border-l border-[var(--theme-border)]">Due</Th>
@@ -301,7 +301,16 @@ export default function FeeInvoicesPage() {
                             <span className="truncate">{r.student}</span>
                           )}
                         </Td>
-                        <Td className="border-l border-[var(--theme-border)]">{r.cls}-{r.section}</Td>
+                        <Td className="border-l border-[var(--theme-border)]">
+                          {r.course && r.course !== r.cls ? (
+                            <span className="block truncate" title={`${r.course} · ${r.cls}-${r.section}`}>
+                              {r.course}
+                              <span className="block text-[11px] text-[var(--theme-text-faint)]">{r.cls}-{r.section}</span>
+                            </span>
+                          ) : (
+                            `${r.cls}-${r.section}`
+                          )}
+                        </Td>
                         <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.period}</Td>
                         <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.issue}</Td>
                         <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{r.due}</Td>
@@ -343,7 +352,7 @@ export default function FeeInvoicesPage() {
                       <StatusPill label={r.status} />
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
-                      <Info label="Class" value={`${r.cls}-${r.section}`} />
+                      <Info label="Class / Course" value={r.course && r.course !== r.cls ? `${r.course} · ${r.cls}-${r.section}` : `${r.cls}-${r.section}`} />
                       <Info label="Period" value={r.period} />
                       <Info label="Total" value={rs(r.total)} />
                       <Info label="Balance" value={rs(r.balance)} />
@@ -566,6 +575,16 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
+function studentInvoiceLabel(s: StudentItem): string {
+  const bits = [
+    s.name,
+    s.studentId ? `#${s.studentId}` : "",
+    `${s.cls}-${s.section}`,
+    s.course || "",
+  ].filter(Boolean);
+  return bits.join(" · ");
+}
+
 function CreateInvoice({ open, onClose, onCreated, students, discounts, branchId }: {
   open: boolean;
   onClose: () => void;
@@ -575,6 +594,9 @@ function CreateInvoice({ open, onClose, onCreated, students, discounts, branchId
   branchId?: string;
 }) {
   const [studentId, setStudentId] = useState("");
+  const [filterCls, setFilterCls] = useState("");
+  const [filterCourse, setFilterCourse] = useState("");
+  const [studentQuery, setStudentQuery] = useState("");
   const [session, setSession] = useState("2025-2026");
   const [period, setPeriod] = useState(() => new Date().toLocaleString("en-US", { month: "short", year: "numeric" }));
   const [issue, setIssue] = useState(new Date().toISOString().slice(0, 10));
@@ -588,11 +610,41 @@ function CreateInvoice({ open, onClose, onCreated, students, discounts, branchId
   const [wasOpen, setWasOpen] = useState(open);
 
   const selected = students.find((s) => s.id === studentId) || null;
+  const classOptions = useMemo(
+    () => Array.from(new Set(students.map((s) => s.cls).filter(Boolean))).sort(),
+    [students],
+  );
+  const courseOptions = useMemo(
+    () => Array.from(new Set(students.map((s) => s.course).filter((c): c is string => Boolean(c)))).sort(),
+    [students],
+  );
+  const filteredStudents = useMemo(() => {
+    const q = studentQuery.trim().toLowerCase();
+    return students.filter((s) => {
+      if (filterCls && s.cls !== filterCls) return false;
+      if (filterCourse && s.course !== filterCourse) return false;
+      if (!q) return true;
+      return [
+        s.name,
+        s.studentId,
+        s.admissionNo,
+        s.phone,
+        s.course,
+        s.cls,
+        s.section,
+        s.guardian,
+        s.father,
+      ].join(" ").toLowerCase().includes(q);
+    });
+  }, [students, filterCls, filterCourse, studentQuery]);
 
   if (wasOpen !== open) {
     setWasOpen(open);
     if (open) {
       setStudentId("");
+      setFilterCls("");
+      setFilterCourse("");
+      setStudentQuery("");
       setSession("2025-2026");
       setPeriod(new Date().toLocaleString("en-US", { month: "short", year: "numeric" }));
       setStructure([]);
@@ -686,25 +738,74 @@ function CreateInvoice({ open, onClose, onCreated, students, discounts, branchId
   };
 
   return (
-    <Modal open={open} onClose={onClose} width="max-w-xl" title="Create Fee Invoice" subtitle="Fees come from the class fee structure"
+    <Modal open={open} onClose={onClose} width="max-w-xl" title="Create Fee Invoice" subtitle="Fees come from the class / course fee structure"
       footer={<><Btn variant="secondary" onClick={onClose}>Cancel</Btn>
         <Btn variant="primary" loading={saving} disabled={!studentId || lines.length === 0 || total === 0} onClick={create}>Create Invoice</Btn></>}>
       <div className="space-y-4">
         {error ? <p className="text-[13px] text-[var(--theme-danger)]">{error}</p> : null}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Student" className="sm:col-span-2">
+          <Field label="Class / Course">
             <Select
-              options={students.map((s) => `${s.name} (${s.cls}-${s.section})`)}
-              value={selected ? `${selected.name} (${selected.cls}-${selected.section})` : ""}
+              options={classOptions}
+              value={filterCls}
               onChange={(e) => {
-                const label = e.target.value;
-                const st = students.find((s) => `${s.name} (${s.cls}-${s.section})` === label);
-                setStudentId(st?.id || "");
-                if (st?.session && SESSIONS.includes(st.session)) setSession(st.session);
+                setFilterCls(e.target.value);
+                setStudentId("");
               }}
-              placeholder={students.length ? "Select student" : "No students found"}
+              placeholder="All classes / courses"
             />
           </Field>
+          <Field label="Course">
+            <Select
+              options={courseOptions}
+              value={filterCourse}
+              onChange={(e) => {
+                setFilterCourse(e.target.value);
+                setStudentId("");
+              }}
+              placeholder="All courses"
+            />
+          </Field>
+          <Field label="Search student" className="sm:col-span-2">
+            <input
+              value={studentQuery}
+              onChange={(e) => {
+                setStudentQuery(e.target.value);
+                setStudentId("");
+              }}
+              placeholder="Name, student ID, admission no, phone or course"
+              className="h-10 w-full rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3 text-[14px]"
+            />
+          </Field>
+          <Field label="Student" className="sm:col-span-2">
+            <Select
+              options={filteredStudents.map((s) => studentInvoiceLabel(s))}
+              value={selected ? studentInvoiceLabel(selected) : ""}
+              onChange={(e) => {
+                const label = e.target.value;
+                const st = filteredStudents.find((s) => studentInvoiceLabel(s) === label)
+                  || students.find((s) => studentInvoiceLabel(s) === label);
+                setStudentId(st?.id || "");
+                if (st?.session && SESSIONS.includes(st.session)) setSession(st.session);
+                if (st?.cls) setFilterCls(st.cls);
+                if (st?.course) setFilterCourse(st.course);
+              }}
+              placeholder={
+                filteredStudents.length
+                  ? `Select student (${filteredStudents.length})`
+                  : students.length
+                    ? "No student matches filters"
+                    : "No students found"
+              }
+            />
+          </Field>
+          {selected ? (
+            <div className="sm:col-span-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-sidebar)] px-3 py-2 text-[13px] text-[var(--theme-text-muted)]">
+              {selected.studentId} · {selected.cls}-{selected.section}
+              {selected.course ? ` · ${selected.course}` : ""}
+              {selected.phone ? ` · ${selected.phone}` : ""}
+            </div>
+          ) : null}
           <Field label="Session">
             <Select options={SESSIONS} value={session} onChange={(e) => setSession(e.target.value)} />
           </Field>

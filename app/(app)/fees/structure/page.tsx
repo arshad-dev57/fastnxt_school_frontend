@@ -152,7 +152,7 @@ export default function FeeStructurePage() {
     <>
       <PageHeader
         title="Fee Structure"
-        subtitle="Configure the fee heads applicable to each class and section."
+        subtitle="Configure fee heads for each class / course and section (Law, IT, Nursing courses included)."
         actions={
           <Link href="/fees/invoices" className="inline-flex items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3.5 py-2 text-[14px] hover:bg-[var(--theme-hover)]">
             <FileText className="h-[18px] w-[18px]" /> Fee Invoices
@@ -164,13 +164,13 @@ export default function FeeStructurePage() {
         <div className="space-y-5">
           {error ? <p className="text-[13px] text-[var(--theme-danger)]">{error}</p> : null}
           <Card pad={false}>
-            <CardHead title="Scope" subtitle="Select the class & section to configure" Icon={Layers} />
+            <CardHead title="Scope" subtitle="Select the class / course & section to configure" Icon={Layers} />
             <div className="space-y-4 p-4">
               <Field label="Academic Session"><Select options={SESSIONS} value={session} onChange={(e) => setSession(e.target.value)} /></Field>
-              <Field label="Class">
+              <Field label="Class / Course">
                 <Select
-                  options={classNames.length ? classNames : ["No classes"]}
-                  value={cls || "No classes"}
+                  options={classNames.length ? classNames : ["No classes / courses"]}
+                  value={cls || "No classes / courses"}
                   onChange={(e) => setCls(e.target.value)}
                   disabled={!classNames.length}
                 />
@@ -222,7 +222,7 @@ export default function FeeStructurePage() {
             {loading ? (
               <p className="px-4 py-8 text-center text-[13px] text-[var(--theme-text-muted)]">Loading…</p>
             ) : rows.length === 0 ? (
-              <EmptyState Icon={Receipt} title="No fee lines" message="Add fee particulars for this class and section." />
+              <EmptyState Icon={Receipt} title="No fee lines" message="Add fee particulars for this class / course and section." />
             ) : (
               <div className="hidden md:block">
                 <div className={cn("grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)]")}>

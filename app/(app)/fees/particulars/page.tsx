@@ -103,7 +103,7 @@ export default function FeeParticularsPage() {
 
   return (
     <>
-      <PageHeader title="Fees Particulars" subtitle="Define the individual fee heads charged by the school."
+      <PageHeader title="Fees Particulars" subtitle="Global fee heads (Tuition, Admission…). Assign amounts per class / course under Fee Structure."
         actions={
           <>
             <Link href="/fees/structure" className="hidden items-center gap-2 rounded border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-3.5 py-2 text-[14px] hover:bg-[var(--theme-hover)] sm:inline-flex">

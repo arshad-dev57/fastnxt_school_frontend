@@ -218,6 +218,8 @@ export type StudentAdmissionExtras = {
   cnic?: string;
   guardianCnic?: string;
   altPhone?: string;
+  /** Separate WhatsApp number for A Plus admission forms. */
+  whatsapp?: string;
   programOther?: string;
   documentOther?: string;
   programs?: string[];
@@ -1955,6 +1957,7 @@ export type FeeInvoiceItem = {
   admissionNo?: string | null;
   cls: string;
   section: string;
+  course?: string | null;
   session?: string | null;
   period: string;
   issue: string;
@@ -1984,6 +1987,7 @@ export type FeePaymentItem = {
   admissionNo?: string | null;
   cls: string;
   section: string;
+  course?: string | null;
   session?: string | null;
   period: string;
   amount: number;
@@ -2220,6 +2224,10 @@ export type FeeVoucherTemplate = {
   bankAccountTitle: string;
   bankAccountNo: string;
   bankBranch: string;
+  /** JazzCash / EasyPaisa / WhatsApp pay number shown on voucher + QR. */
+  paymentMobile: string;
+  /** Optional online payment URL encoded in the QR. */
+  paymentLink: string;
   signatureLeft: string;
   signatureCenter: string;
   signatureRight: string;
@@ -2233,6 +2241,8 @@ export type FeeVoucherTemplate = {
   showWebsite: boolean;
   showDiscount: boolean;
   showPaidBalance: boolean;
+  showPaymentQr: boolean;
+  showInvoiceBarcode: boolean;
   accentColor: string;
 };
 
@@ -2251,11 +2261,13 @@ export const DEFAULT_FEE_VOUCHER_TEMPLATE: FeeVoucherTemplate = {
   title: "FEE VOUCHER",
   headerNote: "",
   footerNote: "This is a computer-generated fee voucher. Please retain for your records.",
-  instructions: "Deposit the amount in the designated bank and submit the school copy at the accounts office.",
+  instructions: "Deposit the amount in the designated bank and submit the school copy at the accounts office. Parents can also scan the QR for payment details.",
   bankName: "",
   bankAccountTitle: "",
   bankAccountNo: "",
   bankBranch: "",
+  paymentMobile: "",
+  paymentLink: "",
   signatureLeft: "Received By",
   signatureCenter: "Cashier",
   signatureRight: "Authorized Signatory",
@@ -2269,6 +2281,8 @@ export const DEFAULT_FEE_VOUCHER_TEMPLATE: FeeVoucherTemplate = {
   showWebsite: true,
   showDiscount: true,
   showPaidBalance: true,
+  showPaymentQr: true,
+  showInvoiceBarcode: true,
   accentColor: "#1e3a8a",
 };
 
@@ -3072,6 +3086,7 @@ export type ReceivableItem = {
   sid: string;
   cls: string;
   section: string;
+  course?: string | null;
   invoice: string;
   dueDate: string;
   total: number;

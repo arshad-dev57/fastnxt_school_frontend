@@ -271,7 +271,7 @@ export default function FeeReceivablesPage() {
       width: "minmax(140px,1.2fr)",
       cell: (r) => <span className="font-medium">{r.student}</span>,
     },
-    { key: "cls", label: "Class", width: "120px", cell: (r) => `${r.cls}-${r.section}` },
+    { key: "cls", label: "Class / Course", width: "160px", cell: (r) => r.course && r.course !== r.cls ? `${r.course} · ${r.cls}-${r.section}` : `${r.cls}-${r.section}` },
     { key: "invoice", label: "Invoice", width: "130px", cell: (r) => r.invoice },
     {
       key: "due",
@@ -385,7 +385,7 @@ export default function FeeReceivablesPage() {
         minWidth={1380}
         keyOf={(r) => r.id}
         nameOf={(r) => r.invoice}
-        subtitleOf={(r) => `${r.student} · ${r.cls}-${r.section}`}
+        subtitleOf={(r) => `${r.student} · ${r.course || r.cls}-${r.section}`}
         menu={(r) => [
           ...(r.outstanding > 0
             ? [{ label: "Collect Fee", Icon: CheckCircle2, onClick: () => openCollect(r) }]
@@ -396,7 +396,7 @@ export default function FeeReceivablesPage() {
         ]}
         mobileRows={(r) => [
           { label: "Student", value: r.student },
-          { label: "Class", value: `${r.cls}-${r.section}` },
+          { label: "Class / Course", value: r.course && r.course !== r.cls ? `${r.course} · ${r.cls}-${r.section}` : `${r.cls}-${r.section}` },
           { label: "Due Date", value: r.dueDate },
           { label: "Outstanding", value: money(r.outstanding) },
           { label: "Status", value: <StatusPill label={r.status} /> },
@@ -416,11 +416,11 @@ export default function FeeReceivablesPage() {
             {classList.length > 0 && (
               <ToolDropdown
                 Icon={Filter}
-                label="Class"
+                label="Class / Course"
                 options={classList}
                 value={cls}
                 onChange={setCls}
-                allLabel="All Classes"
+                allLabel="All Classes / Courses"
               />
             )}
           </>

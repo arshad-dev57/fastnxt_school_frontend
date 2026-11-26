@@ -25,9 +25,9 @@ export const APL_CATEGORIES: AplCategoryPreset[] = [
   {
     id: "law",
     title: "Law",
-    description: "LLB admission. Five years after Intermediate, or three years after a bachelor's degree.",
+    description: "LLB admission. Five years after Intermediate, or four years after a bachelor's degree.",
     formTitle: "LAW ADMISSION FORM",
-    programs: ["LLB (5 Years)", "LLB (3 Years)"],
+    programs: ["LLB (5 Years)", "LLB (4 Years)"],
     documents: [
       "CNIC / B-Form Copy",
       "Matric Result Card",
@@ -129,10 +129,10 @@ export const LAW_TRACKS = [
     description: "After Intermediate / HSSC. LAT is required.",
   },
   {
-    id: "llb-3",
-    title: "LLB (3 Years)",
-    duration: "3 years",
-    courseName: "LLB (3 Years)",
+    id: "llb-4",
+    title: "LLB (4 Years)",
+    duration: "4 years",
+    courseName: "LLB (4 Years)",
     description: "After a bachelor's degree. LAT is required.",
   },
 ] as const;

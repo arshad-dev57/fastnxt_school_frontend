@@ -13,6 +13,7 @@ const ROUTE_MODULES: { prefix: string; module: AccessModule | null }[] = [
   { prefix: "/admissions", module: "admissions" },
   { prefix: "/front-office", module: "frontoffice" },
   { prefix: "/courses", module: "students" },
+  { prefix: "/brochure", module: "students" },
   { prefix: "/students", module: "students" },
   { prefix: "/certificates", module: "certificates" },
   { prefix: "/classes", module: "classes" },

@@ -142,8 +142,8 @@ export default function AllClassesPage() {
       <BoardBar>
         <BoardHead
           Icon={School}
-          title="All Classes"
-          subtitle="Manage school classes, sections and class teachers."
+          title="All Classes / Courses"
+          subtitle="Manage classes / courses, sections and teachers. Institute courses sync here automatically."
           actions={
             <>
               <div className="hidden -space-x-2 md:flex">
@@ -161,7 +161,7 @@ export default function AllClassesPage() {
         <BoardTabs tabs={TABS} value={tab} onChange={setTab} />
         <BoardToolbar>
           <SplitButton label="Add Class" Icon={Plus} onClick={() => setModal({ mode: "add" })} />
-          <BoardSearch value={q} onChange={setQ} placeholder="Search classes" />
+          <BoardSearch value={q} onChange={setQ} placeholder="Search classes / courses" />
           <ToolbarBtn Icon={ArrowUpDown} label={sortAsc ? "A–Z" : "Z–A"} onClick={() => setSortAsc((s) => !s)} />
           <div className="shrink-0"><Select value={section} onChange={(e) => setSection(e.target.value)} options={SECTIONS_ALL} placeholder="All Sections" className="h-9 w-36" /></div>
           <ToolbarBtn Icon={RefreshCw} label="Refresh" onClick={fetchData} />

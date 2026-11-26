@@ -44,6 +44,7 @@ type FormState = {
   cnic: string;
   guardianCnic: string;
   phone: string;
+  whatsapp: string;
   altPhone: string;
   email: string;
   dob: string;
@@ -78,6 +79,7 @@ function blankForm(session?: string, category: AplAdmissionCategory = "law", cou
     cnic: "",
     guardianCnic: "",
     phone: "",
+    whatsapp: "",
     altPhone: "",
     email: "",
     dob: "",
@@ -127,6 +129,7 @@ function fromStudent(s: StudentItem, category: AplAdmissionCategory = "law"): Fo
     cnic: x.cnic || "",
     guardianCnic: x.guardianCnic || "",
     phone: s.phone || "",
+    whatsapp: x.whatsapp || "",
     altPhone: x.altPhone || "",
     email: s.email || "",
     dob: s.dob || "",
@@ -381,6 +384,7 @@ export default function AplInstituteAdmissionForm({
       cnic: f.cnic.trim() || undefined,
       guardianCnic: f.guardianCnic.trim() || undefined,
       altPhone: f.altPhone.trim() || undefined,
+      whatsapp: f.whatsapp.trim() || undefined,
       programOther: f.programOther.trim() || undefined,
       documentOther: f.documentOther.trim() || undefined,
       programs: f.course ? [f.course] : f.programs,
@@ -558,8 +562,11 @@ export default function AplInstituteAdmissionForm({
               <LineField label="Father / Guardian CNIC">
                 <input className={inputClass} value={f.guardianCnic} onChange={(e) => set({ guardianCnic: e.target.value })} placeholder="xxxxx-xxxxxxx-x" />
               </LineField>
-              <LineField label="Mobile / WhatsApp">
-                <input className={inputClass} value={f.phone} onChange={(e) => set({ phone: e.target.value })} />
+              <LineField label="Phone Number">
+                <input className={inputClass} value={f.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="03xxxxxxxxx" />
+              </LineField>
+              <LineField label="WhatsApp Number">
+                <input className={inputClass} value={f.whatsapp} onChange={(e) => set({ whatsapp: e.target.value })} placeholder="03xxxxxxxxx" />
               </LineField>
               <LineField label="Alternate Contact">
                 <input className={inputClass} value={f.altPhone} onChange={(e) => set({ altPhone: e.target.value })} />

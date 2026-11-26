@@ -106,12 +106,18 @@ export default function FeeVoucherSettingsPage() {
           </Card>
 
           <Card pad={false}>
-            <CardHead title="Bank details" />
+            <CardHead title="Bank & payment details" subtitle="These details print on the voucher and inside the payment QR" />
             <div className="grid gap-3 p-4 sm:grid-cols-2">
               <Field label="Bank name"><Input value={form.bankName} onChange={(e) => set({ bankName: e.target.value })} /></Field>
               <Field label="Branch"><Input value={form.bankBranch} onChange={(e) => set({ bankBranch: e.target.value })} /></Field>
               <Field label="Account title"><Input value={form.bankAccountTitle} onChange={(e) => set({ bankAccountTitle: e.target.value })} /></Field>
               <Field label="Account number"><Input value={form.bankAccountNo} onChange={(e) => set({ bankAccountNo: e.target.value })} /></Field>
+              <Field label="JazzCash / EasyPaisa number">
+                <Input value={form.paymentMobile} onChange={(e) => set({ paymentMobile: e.target.value })} placeholder="03xxxxxxxxx" />
+              </Field>
+              <Field label="Payment link (optional)">
+                <Input value={form.paymentLink} onChange={(e) => set({ paymentLink: e.target.value })} placeholder="https://…" />
+              </Field>
             </div>
           </Card>
 
@@ -136,6 +142,8 @@ export default function FeeVoucherSettingsPage() {
                   ["showWebsite", "Website"],
                   ["showDiscount", "Discount"],
                   ["showPaidBalance", "Paid / Balance"],
+                  ["showPaymentQr", "Payment QR"],
+                  ["showInvoiceBarcode", "Invoice barcode"],
                 ] as const
               ).map(([key, label]) => (
                 <label key={key} className="flex items-center gap-2 rounded border border-[var(--theme-border)] px-3 py-2">

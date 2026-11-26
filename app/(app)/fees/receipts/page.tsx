@@ -154,7 +154,7 @@ export default function FeeReceiptsPage() {
                     <div className={cn("sticky top-0 z-10 grid", COLS, "border-b border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-sm")}>
                       <Th className="border-l border-[var(--theme-border)]">Receipt No</Th>
                       <Th className="border-l border-[var(--theme-border)]">Student</Th>
-                      <Th className="border-l border-[var(--theme-border)]">Class</Th>
+                      <Th className="border-l border-[var(--theme-border)]">Class / Course</Th>
                       <Th className="border-l border-[var(--theme-border)]">Invoice</Th>
                       <Th className="border-l border-[var(--theme-border)]">Date</Th>
                       <Th className="border-l border-[var(--theme-border)]">Amount</Th>
@@ -174,7 +174,16 @@ export default function FeeReceiptsPage() {
                             </span>
                           ) : null}
                         </Td>
-                        <Td className="border-l border-[var(--theme-border)]">{r.cls}-{r.section}</Td>
+                        <Td className="border-l border-[var(--theme-border)]">
+                          {r.course && r.course !== r.cls ? (
+                            <span className="block truncate" title={`${r.course} · ${r.cls}-${r.section}`}>
+                              {r.course}
+                              <span className="block text-[11px] text-[var(--theme-text-faint)]">{r.cls}-{r.section}</span>
+                            </span>
+                          ) : (
+                            `${r.cls}-${r.section}`
+                          )}
+                        </Td>
                         <Td className="border-l border-[var(--theme-border)] font-mono text-[12px] text-[var(--theme-text-muted)]">{r.invoiceNo}</Td>
                         <Td className="border-l border-[var(--theme-border)] text-[var(--theme-text-muted)]">{formatPaidAt(r.paidAt)}</Td>
                         <Td className="border-l border-[var(--theme-border)] font-medium text-[var(--theme-success-text)]">{rs(r.amount)}</Td>

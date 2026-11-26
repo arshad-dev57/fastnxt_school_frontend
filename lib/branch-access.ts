@@ -123,6 +123,19 @@ export const ROLE_DEFS: RoleDef[] = [
     modules: "*", defaultActions: FULL,
   },
   {
+    role: "Admin", label: "Admin", scope: "branch",
+    description: "School admin — academics, students, fees and day-to-day operations (not user management).",
+    modules: [
+      ...ACADEMIC_MODULES,
+      "settings",
+    ],
+    actions: {
+      fees: ["view", "create", "edit", "approve", "export"],
+      settings: ["view", "edit"],
+    },
+    defaultActions: ACADEMIC,
+  },
+  {
     role: "Branch Admin", label: "Branch Admin", scope: "branch",
     description: "Day-to-day administration of one campus: academics, staff, fees and reports.",
     modules: ACADEMIC_MODULES,
@@ -130,11 +143,30 @@ export const ROLE_DEFS: RoleDef[] = [
     defaultActions: ACADEMIC,
   },
   {
+    role: "Account", label: "Account", scope: "multiple",
+    description: "Accounts desk — fees, receipts, accounting and payroll only.",
+    modules: ["dashboard", "fees", "accounts", "payroll", "reports", "students"],
+    actions: { students: ["view", "export"] },
+    defaultActions: ["view", "create", "edit", "export"],
+  },
+  {
     role: "Accountant", label: "Accountant", scope: "multiple",
     description: "Fees, receipts and accounting for assigned campuses.",
     modules: ["dashboard", "fees", "accounts", "payroll", "reports", "students"],
     actions: { students: ["view", "export"] },
     defaultActions: ["view", "create", "edit", "export"],
+  },
+  {
+    role: "Admission", label: "Admission", scope: "branch",
+    description: "Admissions desk — enquiries, new admissions and student records.",
+    modules: ["dashboard", "admissions", "students", "families", "frontoffice", "certificates", "communication", "tasks", "events"],
+    defaultActions: ["view", "create", "edit"],
+  },
+  {
+    role: "HR", label: "HR", scope: "branch",
+    description: "Human resources — employees, recruitment, leave and payroll.",
+    modules: ["dashboard", "employees", "recruitment", "leave", "payroll", "attendance", "reports", "communication", "tasks"],
+    defaultActions: ["view", "create", "edit", "approve", "export"],
   },
   {
     role: "Receptionist", label: "Receptionist", scope: "branch",
@@ -168,8 +200,12 @@ export const ROLE_DEFS: RoleDef[] = [
 export const STAFF_LOGIN_ROLES: UserRole[] = [
   "Super Admin",
   "Owner",
+  "Admin",
   "Branch Admin",
+  "Account",
   "Accountant",
+  "Admission",
+  "HR",
   "Receptionist",
 ];
 
@@ -221,8 +257,10 @@ export const DEFAULT_ROLE_LIST: UserRole[] = ROLE_DEFS.map((r) => r.role);
 /** Normalize legacy / alternate role labels onto the catalog. */
 export function normalizeUserRole(role: string | null | undefined): UserRole {
   const raw = String(role || "").trim();
-  if (raw === "Admin" || raw === "Administrator") return "Super Admin";
-  if (raw === "Principal" || raw === "Academic Coordinator" || raw === "HR Manager") return "Branch Admin";
+  if (raw === "Administrator") return "Admin";
+  if (raw === "Accountant") return "Account";
+  if (raw === "Principal" || raw === "Academic Coordinator") return "Admin";
+  if (raw === "HR Manager") return "HR";
   if (raw === "Librarian" || raw === "Transport Manager" || raw === "Hostel Warden" || raw === "Parent") {
     return "Receptionist";
   }

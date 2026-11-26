@@ -79,7 +79,7 @@ export default function StudentFeesPage() {
         title="My Fee Receipts"
         subtitle={
           student
-            ? `${student.name} · ${student.cls}-${student.section} — saved payment receipts from the school office`
+            ? `${student.name} · ${student.course || student.cls}-${student.section} — saved payment receipts from the school office`
             : "Saved payment receipts"
         }
         actions={<Btn variant="secondary" Icon={RefreshCw} onClick={() => load()}>Refresh</Btn>}

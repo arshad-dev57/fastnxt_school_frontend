@@ -226,7 +226,7 @@ export const USER_ROWS: UserRow[] = [
   { id: "USR-08", name: "Farhan Sheikh", email: "farhan.s@school.local", phone: "0300-8889900", role: "Branch Admin", lastLogin: "2026-01-09 10:02", status: "Active" },
 ];
 
-export const USER_ROLES: UserRole[] = ["Super Admin", "Owner", "Branch Admin", "Accountant", "Receptionist", "Teacher", "Student"];
+export const USER_ROLES: UserRole[] = ["Super Admin", "Owner", "Admin", "Branch Admin", "Account", "Admission", "HR", "Receptionist", "Teacher", "Student"];
 
 /* ---------------------------------------------------- Roles & Permissions */
 export type PermissionGroup = { module: string; actions: string[] };
