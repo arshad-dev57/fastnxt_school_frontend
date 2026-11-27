@@ -185,6 +185,18 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     ],
   },
   {
+    k: "onlineclasses", label: "Online Classes", Icon: Video, children: [
+      { label: "Dashboard", href: "/online-classes", module: "onlineclasses" },
+      { label: "Create Online Class", href: "/online-classes/new", module: "onlineclasses" },
+      { label: "Upcoming", href: "/online-classes/upcoming", module: "onlineclasses" },
+      { label: "Live", href: "/online-classes/live", module: "onlineclasses" },
+      { label: "Completed", href: "/online-classes/completed", module: "onlineclasses" },
+      { label: "Class History", href: "/online-classes/history", module: "onlineclasses" },
+      { label: "Attendance Reports", href: "/online-classes/attendance", module: "onlineclasses" },
+      { label: "Google Account", href: "/online-classes/settings", module: "onlineclasses" },
+    ],
+  },
+  {
     k: "tasks", label: "Tasks", Icon: ListChecks, children: [
       { label: "Task Board", href: "/tasks", module: "tasks" },
     ],
@@ -240,6 +252,7 @@ export const ADMIN_ICON_RAIL: AdminRailGroup[] = [
       { k: "classes", label: "Classes", Icon: School, href: "/classes", module: "classes" },
       { k: "exams", label: "Exams & Results", Icon: GraduationCap, href: "/exams", module: "exams" },
       { k: "homework", label: "Homework / LMS", Icon: NotebookPen, href: "/homework", module: "homework" },
+      { k: "onlineclasses", label: "Online Classes", Icon: Video, href: "/online-classes", module: "onlineclasses" },
     ],
   },
   {

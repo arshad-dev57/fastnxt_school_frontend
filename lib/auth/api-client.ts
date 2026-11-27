@@ -1436,6 +1436,180 @@ export const meetingsApi = {
   delete: (id: string) => request<{ deleted: boolean }>(`/meetings/${id}`, { method: "DELETE" }),
 };
 
+// ─── ONLINE CLASSES (Google Meet) ──────────────────────────────────────────
+
+export type OnlineClassItem = {
+  id: string;
+  schoolId: string;
+  branchId: string | null;
+  teacherUserId: string;
+  teacherName: string;
+  teacherEmployeeId: string | null;
+  cls: string;
+  section: string;
+  subjectId: string | null;
+  subjectName: string;
+  title: string;
+  description: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  timezone: string;
+  endsAt: string;
+  meetingSpaceName: string | null;
+  meetingUrl: string | null;
+  meetingCode: string | null;
+  conferenceRecordName: string | null;
+  status: "Scheduled" | "Live" | "Completed" | "Cancelled" | string;
+  studentIds: string[];
+  cancelReason: string | null;
+  googleIntegrationId: string | null;
+  createdById: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OnlineClassParticipant = {
+  id: string;
+  studentId: string | null;
+  studentName: string;
+  studentCode: string | null;
+  attendanceStatus: string;
+  attendedMinutes: number;
+  joinTime: string | null;
+  leaveTime: string | null;
+  joinAttempts: number;
+  lastJoinAt: string | null;
+  manuallyVerified: boolean;
+  matchedBy: string | null;
+  googleDisplayName: string | null;
+};
+
+export type GoogleIntegrationStatus = {
+  id: string;
+  schoolId: string;
+  userId: string;
+  googleEmail: string;
+  connectionStatus: string;
+  tokenExpiry: string | null;
+  scopes: string;
+  lastError: string | null;
+  connected: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OnlineClassDashboard = {
+  summary: {
+    total: number;
+    upcoming: number;
+    live: number;
+    completed: number;
+    cancelled: number;
+    attendanceRate: number;
+  };
+  recent: OnlineClassItem[];
+  asOf: string;
+};
+
+export const onlineClassesApi = {
+  dashboard: (params?: { branchId?: string }, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (params?.branchId && params.branchId !== "all") query.set("branchId", params.branchId);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<OnlineClassDashboard>(`/online-classes/dashboard${qs}`, { signal });
+  },
+  list: (
+    params?: {
+      branchId?: string;
+      cls?: string;
+      section?: string;
+      subjectId?: string;
+      teacherUserId?: string;
+      status?: string;
+      bucket?: "upcoming" | "live" | "completed" | "history";
+      from?: string;
+      to?: string;
+      sort?: "asc" | "desc";
+      limit?: number;
+    },
+    signal?: AbortSignal
+  ) => {
+    const query = new URLSearchParams();
+    if (params?.branchId && params.branchId !== "all") query.set("branchId", params.branchId);
+    if (params?.cls) query.set("cls", params.cls);
+    if (params?.section) query.set("section", params.section);
+    if (params?.subjectId) query.set("subjectId", params.subjectId);
+    if (params?.teacherUserId) query.set("teacherUserId", params.teacherUserId);
+    if (params?.status) query.set("status", params.status);
+    if (params?.bucket) query.set("bucket", params.bucket);
+    if (params?.from) query.set("from", params.from);
+    if (params?.to) query.set("to", params.to);
+    if (params?.sort) query.set("sort", params.sort);
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ classes: OnlineClassItem[] }>(`/online-classes${qs}`, { signal });
+  },
+  get: (id: string, signal?: AbortSignal) =>
+    request<{ class: OnlineClassItem; participants: OnlineClassParticipant[] }>(`/online-classes/${id}`, { signal }),
+  create: (data: {
+    title: string;
+    cls: string;
+    section: string;
+    scheduledAt: string;
+    durationMinutes?: number;
+    subjectId?: string;
+    subjectName?: string;
+    description?: string;
+    studentIds?: string[];
+    timezone?: string;
+    branchId?: string;
+    teacherUserId?: string;
+    teacherName?: string;
+  }) => request<{ class: OnlineClassItem }>("/online-classes", { method: "POST", body: data }),
+  update: (id: string, data: Partial<OnlineClassItem> & { studentIds?: string[] }) =>
+    request<{ class: OnlineClassItem }>(`/online-classes/${id}`, { method: "PATCH", body: data }),
+  cancel: (id: string, reason?: string) =>
+    request<{ class: OnlineClassItem }>(`/online-classes/${id}/cancel`, { method: "POST", body: { reason } }),
+  remove: (id: string) => request<{ deleted: boolean; id: string }>(`/online-classes/${id}`, { method: "DELETE" }),
+  join: (id: string) =>
+    request<{ meetingUrl: string; class: OnlineClassItem }>(`/online-classes/${id}/join`, { method: "POST" }),
+  syncAttendance: (id: string, force?: boolean) =>
+    request<{ sync: unknown; matched: number; unmatched: unknown[] }>(`/online-classes/${id}/sync-attendance`, {
+      method: "POST",
+      body: { force: Boolean(force) },
+    }),
+  syncLogs: (id: string, signal?: AbortSignal) =>
+    request<{ logs: unknown[] }>(`/online-classes/${id}/sync-logs`, { signal }),
+  correctParticipant: (participantId: string, data: { attendanceStatus: string; attendedMinutes?: number }) =>
+    request<{ participant: OnlineClassParticipant }>(`/online-classes/participants/${participantId}`, {
+      method: "PATCH",
+      body: data,
+    }),
+  eligibleStudents: (params: { cls: string; section: string; branchId?: string }, signal?: AbortSignal) => {
+    const query = new URLSearchParams({ cls: params.cls, section: params.section });
+    if (params.branchId && params.branchId !== "all") query.set("branchId", params.branchId);
+    return request<{
+      students: Array<{ id: string; name: string; studentId: string | null; email: string | null; cls: string; section: string }>;
+    }>(`/online-classes/eligible-students?${query.toString()}`, { signal });
+  },
+  googleStatus: (signal?: AbortSignal) =>
+    request<{ configured: boolean; integration: GoogleIntegrationStatus | null }>("/online-classes/google/status", {
+      signal,
+    }),
+  googleConnect: (returnTo?: string, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    if (returnTo) query.set("returnTo", returnTo);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request<{ url: string }>(`/online-classes/google/connect${qs}`, { signal });
+  },
+  googleDisconnect: () => request<{ disconnected: boolean }>("/online-classes/google/disconnect", { method: "DELETE" }),
+  syncDue: (body?: { lookbackHours?: number; withinMinutes?: number }) =>
+    request<{ processed: number; results: unknown[]; reminders?: { notified: number } }>(
+      "/online-classes/sync-due",
+      { method: "POST", body: body || {} }
+    ),
+};
+
 /** Homework item attachment */
 export type HomeworkAttachment = {
   name: string;

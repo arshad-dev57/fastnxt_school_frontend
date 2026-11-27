@@ -38,6 +38,7 @@ export type AccessModule =
   | "communication"
   | "events"
   | "meetings"
+  | "onlineclasses"
   | "tasks"
   | "complaints"
   | "reports"
@@ -77,6 +78,7 @@ export const ACCESS_MODULES: ModuleMeta[] = [
   { key: "communication", label: "Communication", group: "Communication" },
   { key: "events", label: "Events", group: "Communication" },
   { key: "meetings", label: "Meetings", group: "Communication" },
+  { key: "onlineclasses", label: "Online Classes", group: "Academics" },
   { key: "tasks", label: "Tasks", group: "Workspace" },
   { key: "complaints", label: "Complaints", group: "Workspace" },
   { key: "reports", label: "Reports", group: "Management" },
@@ -108,7 +110,7 @@ const ACADEMIC_MODULES: AccessModule[] = [
   "dashboard", "admissions", "students", "families", "classes", "subjects", "timetable",
   "attendance", "exams", "results", "homework", "certificates", "fees", "employees",
   "recruitment", "leave", "library", "transport", "hostel", "health", "discipline",
-  "inventory", "assets", "frontoffice", "communication", "events", "meetings", "tasks", "complaints", "reports",
+  "inventory", "assets", "frontoffice", "communication", "events", "meetings", "onlineclasses", "tasks", "complaints", "reports",
 ];
 
 export const ROLE_DEFS: RoleDef[] = [
@@ -177,7 +179,7 @@ export const ROLE_DEFS: RoleDef[] = [
   {
     role: "Teacher", label: "Teacher", scope: "own",
     description: "Own classes only: attendance, homework, marks and lesson plans. Created via Employees.",
-    modules: ["dashboard", "classes", "students", "timetable", "attendance", "homework", "exams", "results", "communication", "meetings", "tasks", "leave", "payroll", "settings"],
+    modules: ["dashboard", "classes", "students", "timetable", "attendance", "homework", "exams", "results", "communication", "meetings", "onlineclasses", "tasks", "leave", "payroll", "settings"],
     actions: {
       leave: ["view", "create", "edit", "approve"],
       payroll: ["view"],
@@ -190,7 +192,7 @@ export const ROLE_DEFS: RoleDef[] = [
   {
     role: "Student", label: "Student", scope: "own",
     description: "Student portal — own timetable, homework, results and library. Created via Students.",
-    modules: ["dashboard", "timetable", "attendance", "exams", "results", "homework", "library", "events", "communication", "meetings", "certificates", "leave", "settings"],
+    modules: ["dashboard", "timetable", "attendance", "exams", "results", "homework", "library", "events", "communication", "meetings", "onlineclasses", "certificates", "leave", "settings"],
     actions: { leave: ["view", "create"], settings: ["view"] },
     defaultActions: ["view"],
   },

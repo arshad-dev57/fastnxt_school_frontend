@@ -41,6 +41,7 @@ const ROUTE_MODULES: { prefix: string; module: AccessModule | null }[] = [
   { prefix: "/communication", module: "communication" },
   { prefix: "/events", module: "events" },
   { prefix: "/meetings", module: "meetings" },
+  { prefix: "/online-classes", module: "onlineclasses" },
   { prefix: "/tasks", module: "tasks" },
   { prefix: "/complaints", module: "complaints" },
   { prefix: "/reports", module: "reports" },

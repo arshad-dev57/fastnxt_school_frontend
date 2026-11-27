@@ -68,12 +68,22 @@ export default function LoginPage() {
       title="Welcome to FastNxt"
       subtitle="Sign in with your school email — we'll open the right workspace for your account."
       footer={
-        <span className="text-[var(--theme-text-muted)]">
-          New school?{" "}
-          <Link href="/register" className="font-semibold text-[var(--theme-primary)] hover:text-[var(--theme-primary-hover)]">
-            Create School Account
-          </Link>
-        </span>
+        <div className="space-y-3">
+          <span className="block text-[var(--theme-text-muted)]">
+            New school?{" "}
+            <Link href="/register" className="font-semibold text-[var(--theme-primary)] hover:text-[var(--theme-primary-hover)]">
+              Create School Account
+            </Link>
+          </span>
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[12px] text-[var(--theme-text-faint)]">
+            <Link href="/privacy-policy" className="hover:text-[var(--theme-primary)]">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-[var(--theme-primary)]">
+              Terms of Service
+            </Link>
+          </nav>
+        </div>
       }
     >
       <form onSubmit={handleSubmit} noValidate>

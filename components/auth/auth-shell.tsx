@@ -27,7 +27,7 @@ const HIGHLIGHTS = [
 
 export function BrandLockup({ invert = false, className = "" }: { invert?: boolean; className?: string }) {
   return (
-    <Link href="/login" className={cn("inline-flex items-center", className)} aria-label="FastNxt home">
+    <Link href="/" className={cn("inline-flex items-center", className)} aria-label="FastNxt home">
       <span
         className={cn(
           "flex h-12 items-center overflow-hidden rounded-xl px-2 py-1",
